@@ -1,0 +1,12 @@
+[submodule "libs/GeomLib"]
+	path = libs/GeomLib
+	url = git@github.com:I1Va/GeomLib.git
+[submodule "libs/MyGUI"]
+	path = libs/MyGUI
+	url = git@github.com:I1Va/MyGUI.git
+[submodule "libs/RayTracer"]
+	path = libs/RayTracer
+	url = git@github.com:I1Va/RayTracer.git
+[submodule "libs/geometry_module"]
+	path = libs/geometry_module
+	url = git@github.com:I1Va/geometry_module.git
