@@ -11,13 +11,12 @@ const std::pair<int, int> SCREEN_RESOLUTION = {600, 600};
 
 
 SDL_Color convertRTColor(const RTColor &color) {
-    return 
-    {
-        (uint8_t) (color.x() * 255.999),
-        (uint8_t) (color.y() * 255.999),
-        (uint8_t) (color.z() * 255.999),
-        (uint8_t) 255
-    };
+    static const Interval intensity(0.000, 0.999);
+    uint8_t rbyte = uint8_t(256 * intensity.clamp(color.x()));
+    uint8_t gbyte = uint8_t(256 * intensity.clamp(color.y()));
+    uint8_t bbyte = uint8_t(256 * intensity.clamp(color.z()));
+
+    return { rbyte, gbyte, bbyte, 255 };
 }
 
 class CameraWindow : public Widget {
@@ -67,9 +66,9 @@ int main() {
     SceneManager sceneManager;
 
     SphereObject *sphere = new SphereObject(1, &sceneManager);
-    sceneManager.addObject({0, 0, 5}, sphere);
+    sceneManager.addObject({0, 0, -5}, sphere);
     
-    Camera camera({0, 0, 0}, {0, 0, 1}, SCREEN_RESOLUTION);
+    Camera camera({0, 0, 0}, {0, 0, -1}, SCREEN_RESOLUTION);
     sceneManager.render(camera);
 
     cameraWindow->setCamera(&camera);
