@@ -7,7 +7,18 @@
 const std::pair<int, int> MAIN_WINDOW_SIZE = {900, 700};
 const int APP_BORDER_SIZE = 20;
 
-const std::pair<int, int> SCREEN_RESOLUTION = {800, 600};
+const std::pair<int, int> SCREEN_RESOLUTION = {600, 600};
+
+
+SDL_Color convertRTColor(const RTColor &color) {
+    return 
+    {
+        (uint8_t) (color.x() * 255.999),
+        (uint8_t) (color.y() * 255.999),
+        (uint8_t) (color.z() * 255.999),
+        (uint8_t) 255
+    };
+}
 
 class CameraWindow : public Widget {
     const Camera *camera_ = nullptr;
@@ -23,7 +34,8 @@ class CameraWindow : public Widget {
         
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                RTColor color = camera_->getPixel(i, j);
+                RTColor colorVec = camera_->getPixel(i, j);
+                SDL_Color color = convertRTColor(colorVec);
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a); 
                 SDL_RenderDrawPoint(renderer, i, j); 
             }
@@ -54,6 +66,9 @@ int main() {
 
     SceneManager sceneManager;
 
+    SphereObject *sphere = new SphereObject(1, &sceneManager);
+    sceneManager.addObject({0, 0, 5}, sphere);
+    
     Camera camera({0, 0, 0}, {0, 0, 1}, SCREEN_RESOLUTION);
     sceneManager.render(camera);
 
