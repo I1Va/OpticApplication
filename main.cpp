@@ -41,7 +41,6 @@ class CameraWindow : public Widget {
         }
     }
 
-
     void renderSelfAction(SDL_Renderer *renderer) override {
         assert(renderer);
         if (!camera_) return;
@@ -66,7 +65,7 @@ int main() {
     SceneManager sceneManager;
 
     SphereObject *sphere = new SphereObject(1, &sceneManager);
-    sceneManager.addObject({0, 0, -5}, sphere);
+    sceneManager.addObject({0, 0, -15}, sphere);
     
     Camera camera({0, 0, 0}, {0, 0, -1}, SCREEN_RESOLUTION);
     sceneManager.render(camera);
@@ -75,5 +74,4 @@ int main() {
 
     application.addUserEvent([&sceneManager, &camera](int deltaMS) {sceneManager.render(camera); });
     application.run();
-
 }
