@@ -7,34 +7,25 @@
 const std::pair<int, int> MAIN_WINDOW_SIZE = {900, 700};
 const int APP_BORDER_SIZE = 20;
 
-const std::pair<int, int> SCREEN_RESOLUTION = {600, 600};
+const std::pair<int, int> SCREEN_RESOLUTION = {300, 300};
 
-
-SDL_Color convertRTColor(const RTColor &color) {
-    static const Interval intensity(0.000, 0.999);
-    uint8_t rbyte = uint8_t(256 * intensity.clamp(color.x()));
-    uint8_t gbyte = uint8_t(256 * intensity.clamp(color.y()));
-    uint8_t bbyte = uint8_t(256 * intensity.clamp(color.z()));
-
-    return { rbyte, gbyte, bbyte, 255 };
-}
+inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
 
 class CameraWindow : public Widget {
     const Camera *camera_ = nullptr;
 
     bool updateSelfAction() override {
-        setRerenderFlag();
+        // setRerenderFlag();
 
         return true;
     }
 
-    void updateTexture(SDL_Renderer *renderer, const std::vector<RTColor>& pixels, int width, int height)
+    void updateTexture(SDL_Renderer *renderer, const std::vector<RTPixelColor>& pixels, int width, int height)
     {
         
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                RTColor colorVec = camera_->getPixel(i, j);
-                SDL_Color color = convertRTColor(colorVec);
+                SDL_Color color = convertRTPixelColor(camera_->getPixel(i, j));
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a); 
                 SDL_RenderDrawPoint(renderer, i, j); 
             }
@@ -62,16 +53,35 @@ int main() {
     CameraWindow *cameraWindow = new CameraWindow(SCREEN_RESOLUTION.first, SCREEN_RESOLUTION.second, mainWindow);
     mainWindow->addWidget((mainWindow->rect().w - cameraWindow->rect().w) / 2, (mainWindow->rect().h - cameraWindow->rect().h) / 2, cameraWindow);
 
+
+
+
+
+
+
     SceneManager sceneManager;
 
-    SphereObject *sphere = new SphereObject(1, &sceneManager);
-    sceneManager.addObject({0, 0, -15}, sphere);
-    
-    Camera camera({0, 0, 0}, {0, 0, -1}, SCREEN_RESOLUTION);
+    RTMaterial *sphereMaterial = new RTLambertian({0.0, 1, 0.0});
+
+    SphereObject *smallSphere = new SphereObject(1, sphereMaterial, &sceneManager);
+    SphereObject *bigSphere = new SphereObject(10, sphereMaterial, &sceneManager);
+
+    sceneManager.addObject({0, 0, -10}, bigSphere);
+    sceneManager.addObject({0, 0, 1}, smallSphere);
+
+    Camera camera(/*center*/{3, 0, 3}, /*direction*/{-1, 0, -1}, SCREEN_RESOLUTION);
+    camera.setSamplesPerPixel(10);
+
     sceneManager.render(camera);
 
     cameraWindow->setCamera(&camera);
 
-    application.addUserEvent([&sceneManager, &camera](int deltaMS) {sceneManager.render(camera); });
+
+
+    // !!!!! WARNING  
+    sceneManager.render(camera);
+    // application.addUserEvent([&sceneManager, &camera](int deltaMS) { std::cout << "updateSmth!!!\n";});
     application.run();
+
+    delete sphereMaterial;
 }
