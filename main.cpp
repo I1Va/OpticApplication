@@ -60,16 +60,22 @@ int main() {
 
 
     SceneManager sceneManager;
-
-    RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
     RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0});
-    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8});
 
-    SphereObject *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
-    SphereObject *rightSphere = new SphereObject(1, rightSphereMaterial, &sceneManager);
+    RTMaterial *leftSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
+    RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
+    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.6, 0.2}, 1.0);
+    
     SphereObject *ground = new SphereObject(100, groundMaterial, &sceneManager);
 
+    SphereObject *leftSphere = new SphereObject(1, leftSphereMaterial, &sceneManager);
+    SphereObject *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
+    SphereObject *rightSphere = new SphereObject(1, rightSphereMaterial, &sceneManager);
+   
+
     sceneManager.addObject({0, 0, -100}, ground);
+
+    sceneManager.addObject({-2, 0, 1}, leftSphere);
     sceneManager.addObject({0, 0, 1}, midSphere);
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
