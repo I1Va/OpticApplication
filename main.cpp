@@ -62,13 +62,19 @@ int main() {
     SceneManager sceneManager;
     RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0});
 
-    RTMaterial *leftSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
+    RTMaterial *leftSphereMaterial = new RTDielectric(1.50);
+    RTMaterial *leftSphereBubbleMaterial = new RTDielectric(1.00 / 1.33);
+
     RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
-    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.6, 0.2}, 1.0);
+    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
     
     SphereObject *ground = new SphereObject(100, groundMaterial, &sceneManager);
 
-    SphereObject *leftSphere = new SphereObject(1, leftSphereMaterial, &sceneManager);
+    SphereObject *leftSphere = new SphereObject(0.8, leftSphereMaterial, &sceneManager);
+    SphereObject *leftBubbleSphere = new SphereObject(1, leftSphereBubbleMaterial, &sceneManager);
+
+
+
     SphereObject *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
     SphereObject *rightSphere = new SphereObject(1, rightSphereMaterial, &sceneManager);
    
@@ -76,11 +82,12 @@ int main() {
     sceneManager.addObject({0, 0, -100}, ground);
 
     sceneManager.addObject({-2, 0, 1}, leftSphere);
+    sceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
     sceneManager.addObject({0, 0, 1}, midSphere);
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
-    Camera camera(/*center*/{0, -4, 4}, /*direction*/{0, 1, -1}, SCREEN_RESOLUTION);
-    camera.setSamplesPerPixel(10);
+    Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
+    camera.setSamplesPerPixel(30);
 
     sceneManager.render(camera);
 
