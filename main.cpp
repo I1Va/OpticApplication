@@ -7,7 +7,7 @@
 const std::pair<int, int> MAIN_WINDOW_SIZE = {900, 700};
 const int APP_BORDER_SIZE = 20;
 
-const std::pair<int, int> SCREEN_RESOLUTION = {300, 300};
+const std::pair<int, int> SCREEN_RESOLUTION = {600, 600};
 
 inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
 
@@ -55,10 +55,6 @@ int main() {
 
 
 
-
-
-
-
     SceneManager sceneManager;
     RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0});
 
@@ -67,12 +63,19 @@ int main() {
 
     RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
     RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
+
+    RTMaterial *lightSrcMaterial = new RTEmissive({10.0, 10.0, 10.0});
+
+
+
+
     
     SphereObject *ground = new SphereObject(100, groundMaterial, &sceneManager);
 
     SphereObject *leftSphere = new SphereObject(0.8, leftSphereMaterial, &sceneManager);
     SphereObject *leftBubbleSphere = new SphereObject(1, leftSphereBubbleMaterial, &sceneManager);
 
+    SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
 
 
     SphereObject *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
@@ -86,8 +89,10 @@ int main() {
     sceneManager.addObject({0, 0, 1}, midSphere);
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
+    sceneManager.addObject({0, 0, 4}, light);
+
     Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
-    camera.setSamplesPerPixel(30);
+    camera.setSamplesPerPixel(10);
 
     sceneManager.render(camera);
 
