@@ -61,15 +61,19 @@ int main() {
 
     SceneManager sceneManager;
 
-    RTMaterial *sphereMaterial = new RTLambertian({0.0, 1, 0.0});
+    RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
+    RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0});
+    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8});
 
-    SphereObject *smallSphere = new SphereObject(1, sphereMaterial, &sceneManager);
-    SphereObject *bigSphere = new SphereObject(10, sphereMaterial, &sceneManager);
+    SphereObject *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
+    SphereObject *rightSphere = new SphereObject(1, rightSphereMaterial, &sceneManager);
+    SphereObject *ground = new SphereObject(100, groundMaterial, &sceneManager);
 
-    sceneManager.addObject({0, 0, -10}, bigSphere);
-    sceneManager.addObject({0, 0, 1}, smallSphere);
+    sceneManager.addObject({0, 0, -100}, ground);
+    sceneManager.addObject({0, 0, 1}, midSphere);
+    sceneManager.addObject({2, 0, 1}, rightSphere);
 
-    Camera camera(/*center*/{3, 0, 3}, /*direction*/{-1, 0, -1}, SCREEN_RESOLUTION);
+    Camera camera(/*center*/{0, -4, 4}, /*direction*/{0, 1, -1}, SCREEN_RESOLUTION);
     camera.setSamplesPerPixel(10);
 
     sceneManager.render(camera);
@@ -83,5 +87,4 @@ int main() {
     // application.addUserEvent([&sceneManager, &camera](int deltaMS) { std::cout << "updateSmth!!!\n";});
     application.run();
 
-    delete sphereMaterial;
 }
