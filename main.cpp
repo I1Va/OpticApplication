@@ -105,10 +105,6 @@ int main() {
 
 
 
-
-
-
-
     sceneManager.addObject({0, 0, 1}, midSphere);
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
@@ -116,7 +112,7 @@ int main() {
 
     Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
     camera.setSamplesPerPixel(1);
-    camera.setMaxRayDepth(50);
+    camera.setMaxRayDepth(10);
 
     sceneManager.render(camera);
 
