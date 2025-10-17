@@ -20,9 +20,6 @@ target_include_directories(OpticApplication
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
-# target_compile_options(OpticApplication PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
-# target_link_options(OpticApplication PRIVATE -fsanitize=address,undefined)
-
 target_include_directories(OpticApplication PRIVATE ${SDL2_GFX_INCLUDE})
 target_link_libraries(OpticApplication PRIVATE ${SDL2_GFX_LIB})
 
