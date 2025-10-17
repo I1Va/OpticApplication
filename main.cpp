@@ -82,12 +82,12 @@ int main() {
 
     sceneManager.addObject({0, 0, -100}, ground);
 
-    // sceneManager.addObject({-3, 0, 1}, leftSphere);
-    sceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
+    sceneManager.addObject({-2, 0, 1}, leftSphere);
+    // sceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
     sceneManager.addObject({0, 0, 1}, midSphere);
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
-    sceneManager.addObject({0, 0, 4}, light);
+    // sceneManager.addObject({0, 0, 4}, light);
 
     Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
     camera.setSamplesPerPixel(1);
