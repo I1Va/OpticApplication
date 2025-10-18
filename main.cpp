@@ -4,6 +4,8 @@
 #include "RayTracer.h"
 #include "Camera.h"
 
+#include <chrono>
+
 const std::pair<int, int> MAIN_WINDOW_SIZE = {900, 700};
 const int APP_BORDER_SIZE = 20;
 
@@ -63,15 +65,24 @@ int main() {
     RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
     RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
 
-    RTMaterial *lightSrcMaterial = new RTEmissive({10.0, 10.0, 10.0});
+    RTMaterial *sunMaterial = new RTEmissive(GmVec<double, 3>(1.0, 0.95, 0.9) * 10);
 
 
   
     PlaneObject *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &sceneManager);
 
 
-    SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
+    // SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
 
+    SphereObject *sun = new SphereObject(0.5, sunMaterial, &sceneManager);
+
+    Light *light = new Light
+    (
+        /* ambientIntensity  */  GmVec<double, 3>(0.2, 0.2, 0.2),
+        /* defuseIntensity   */  GmVec<double, 3>(0.8, 0.7, 0.6),
+        /* specularIntensity */  GmVec<double, 3>(0.7, 0.7, 0),
+        /* viewLightPow      */  15.0
+    );
 
     SphereObject *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
     SphereObject *rightSphere = new SphereObject(1, rightSphereMaterial, &sceneManager);
@@ -88,8 +99,8 @@ int main() {
 
 
 
-    RTMaterial *leftSphereMaterial = new RTDielectric(1.50);
-    RTMaterial *leftSphereBubbleMaterial = new RTDielectric(1.00 / 1.50);
+    RTMaterial *leftSphereMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.50);
+    RTMaterial *leftSphereBubbleMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.00 / 1.50);
 
     SphereObject *leftSphere = new SphereObject(0.8, leftSphereBubbleMaterial, &sceneManager);
     SphereObject *leftBubbleSphere = new SphereObject(1, leftSphereBubbleMaterial, &sceneManager);
@@ -97,10 +108,7 @@ int main() {
 
     
     sceneManager.addObject({-2, 0, 1}, leftSphere);
-    sceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
-
-
-
+    // sceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
 
 
 
@@ -108,12 +116,16 @@ int main() {
     sceneManager.addObject({0, 0, 1}, midSphere);
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
-    sceneManager.addObject({0, 0, 4}, light);
+    sceneManager.addLight({0, 0, 4}, light);
+    sceneManager.addObject({-2, 0, 10}, sun);
 
     Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
     camera.setSamplesPerPixel(1);
     camera.setMaxRayDepth(10);
+   
+    sceneManager.render(camera);
 
+    
     cameraWindow->setCamera(&camera);
 
 
