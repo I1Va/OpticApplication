@@ -114,8 +114,6 @@ int main() {
     camera.setSamplesPerPixel(1);
     camera.setMaxRayDepth(10);
 
-    sceneManager.render(camera);
-
     cameraWindow->setCamera(&camera);
 
 
