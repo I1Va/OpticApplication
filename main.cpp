@@ -48,7 +48,7 @@ public:
 
 
 int main() {
-    UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second);
+    UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 1000);
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
     application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
 
@@ -74,7 +74,7 @@ int main() {
 
     // SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
 
-    SphereObject *sun = new SphereObject(0.5, sunMaterial, &sceneManager);
+    SphereObject *sun = new SphereObject(1, sunMaterial, &sceneManager);
 
     Light *light = new Light
     (
@@ -89,13 +89,6 @@ int main() {
    
 
     sceneManager.addObject({0, 0, -100}, ground);
-
-
-
-
-
-
-
 
 
 
@@ -117,11 +110,14 @@ int main() {
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
     sceneManager.addLight({0, 0, 4}, light);
-    sceneManager.addObject({-2, 0, 10}, sun);
+    sceneManager.addObject({-2, 0, 4}, sun);
 
     Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
     camera.setSamplesPerPixel(1);
-    camera.setMaxRayDepth(10);
+    camera.setSamplesPerScatter(1);
+    camera.disableLDirect();
+    camera.setMaxRayDepth(5);
+    
    
     sceneManager.render(camera);
 
@@ -131,7 +127,7 @@ int main() {
 
     // !!!!! WARNING  
     sceneManager.render(camera);
-    // application.addUserEvent([&sceneManager, &camera](int deltaMS) { std::cout << "updateSmth!!!\n";});
+    // application.addUserEvent([&sceneManager, &camera](int deltaMS) { sceneManager.render(camera);});
     application.run();
 
 }
