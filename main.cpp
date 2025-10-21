@@ -126,8 +126,19 @@ int main() {
 
 
     // !!!!! WARNING  
-    sceneManager.render(camera);
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Code to measure
+    camera.render(sceneManager);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << "Render time: " << duration << " ms\n";
+
+        
     // application.addUserEvent([&sceneManager, &camera](int deltaMS) { sceneManager.render(camera);});
     application.run();
 
 }
+

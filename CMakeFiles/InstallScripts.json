@@ -1,0 +1,11 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/iabrutin/Work/Ded/OpticApplication/cmake_install.cmake",
+		"/home/iabrutin/Work/Ded/OpticApplication/libs/GeomLib/cmake_install.cmake",
+		"/home/iabrutin/Work/Ded/OpticApplication/libs/MyGUI/cmake_install.cmake",
+		"/home/iabrutin/Work/Ded/OpticApplication/libs/RayTracer/cmake_install.cmake",
+		"/home/iabrutin/Work/Ded/OpticApplication/libs/geometry_module/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
