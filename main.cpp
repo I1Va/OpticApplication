@@ -10,6 +10,7 @@
 const std::pair<int, int> MAIN_WINDOW_SIZE = {600, 600};
 const int APP_BORDER_SIZE = 20;
 const int CAMERA_KEY_CONTROL_DELTA = 10;
+const int CAMERA_MOUSE_RELOCATION_SCALE = 2;
 const std::pair<int, int> SCREEN_RESOLUTION = {600, 600};
 
 inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
@@ -88,7 +89,7 @@ class CameraWindow : public Widget {
                 cameraNeedRotation_ = true;
                 return false;
             case SDL_BUTTON_LEFT:
-                accumulatedCameraRel_ += event.rel;
+                accumulatedCameraRel_ += event.rel * CAMERA_MOUSE_RELOCATION_SCALE;
                 cameraNeedRelocation_ = true;
                 return false;
         }
@@ -98,7 +99,7 @@ class CameraWindow : public Widget {
     void applyCameraRelocation() {
         double dx = (double) accumulatedCameraRel_.x / camera_->screenResolution().first * camera_->viewPort().VIEWPORT_WIDTH;
         double dy = (double) accumulatedCameraRel_.y / camera_->screenResolution().second * camera_->viewPort().VIEWPORT_HEIGHT;
-        
+
         gm::IVec3f motionVec = camera_->viewPort().rightDir_ * dx + camera_->viewPort().downDir_ * dy;
         camera_->move(motionVec * (-1));
     
@@ -200,7 +201,7 @@ double measureRenderTime(SceneManager &sceneManager, Camera &camera) {
 }
 
 int main() {
-    UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 30);
+    UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
     application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
 
@@ -253,7 +254,7 @@ int main() {
     sceneManager.addObject({0, 4, 3}, midSphere);
     sceneManager.addObject({2, 0, 1}, rightSphere);
 
-    sceneManager.addLight({0, 0, 4}, light);
+    sceneManager.addLight({0, 0, 10}, light);
     sceneManager.addObject({-2, 0, 4}, sun);
 
     Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
@@ -261,7 +262,7 @@ int main() {
     camera.setSamplesPerScatter(1);
     // camera.disableLDirect();
     camera.setMaxRayDepth(5);
-    camera.setThreadPixelbunchSize(64);
+    camera.setThreadPixelbunchSize(100);
     // camera.disableParallelRender();
 
 
