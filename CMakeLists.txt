@@ -7,7 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_library(SDL2_GFX_LIB SDL2_gfx)
 find_path(SDL2_GFX_INCLUDE SDL2/SDL2_gfxPrimitives.h)
 
+
+set(GEOMLIB_BUILD_TESTS OFF CACHE BOOL "Disable GeomLib tests")
 add_subdirectory(libs/GeomLib)
+
 add_subdirectory(libs/MyGUI)
 add_subdirectory(libs/RayTracer)
 add_subdirectory(libs/geometry_module)
@@ -22,6 +25,7 @@ target_include_directories(OpticApplication
 
 target_include_directories(OpticApplication PRIVATE ${SDL2_GFX_INCLUDE})
 target_link_libraries(OpticApplication PRIVATE ${SDL2_GFX_LIB})
+
 
 target_link_libraries(OpticApplication PRIVATE
     GeomLib

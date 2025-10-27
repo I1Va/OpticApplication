@@ -1,14 +1,15 @@
 #include <iostream>
+#include <chrono>
 
 #include "MyGUI.h"
 #include "RayTracer.h"
 #include "Camera.h"
+#include "ScrollBar.h"
 
-#include <chrono>
 
-const std::pair<int, int> MAIN_WINDOW_SIZE = {900, 700};
+const std::pair<int, int> MAIN_WINDOW_SIZE = {600, 600};
 const int APP_BORDER_SIZE = 20;
-
+const int CAMERA_KEY_CONTROL_DELTA = 10;
 const std::pair<int, int> SCREEN_RESOLUTION = {600, 600};
 
 inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
@@ -27,6 +28,52 @@ class CameraWindow : public Widget {
     int            accumulatedCameraZoom_     = 0;
     bool           cameraNeedZoom_            = false;
 
+
+    bool onKeyDownSelfAction(const KeyEvent &event) override {
+        switch (event.sym) {
+            case SDLK_a:    
+                accumulatedCameraRotation_ += gm_dot<int, 2> (-CAMERA_KEY_CONTROL_DELTA, 0);
+                cameraNeedRotation_ = true;
+                return false;
+
+            case SDLK_d:
+                accumulatedCameraRotation_ += gm_dot<int, 2> (CAMERA_KEY_CONTROL_DELTA, 0);
+                cameraNeedRotation_ = true;
+                return false;
+
+            case SDLK_w: 
+                accumulatedCameraRotation_ += gm_dot<int, 2> (0, -CAMERA_KEY_CONTROL_DELTA);
+                cameraNeedRotation_ = true;
+                return false;
+            
+            case SDLK_s:
+                accumulatedCameraRotation_ += gm_dot<int, 2> (0, CAMERA_KEY_CONTROL_DELTA);
+                cameraNeedRotation_ = true;
+                return false;
+                
+            case SDLK_LEFT:
+                accumulatedCameraRel_ += gm_dot<int, 2> (CAMERA_KEY_CONTROL_DELTA, 0);
+                cameraNeedRelocation_ = true;
+                return false;
+            
+            case SDLK_RIGHT:    
+                accumulatedCameraRel_ += gm_dot<int, 2> (-CAMERA_KEY_CONTROL_DELTA, 0);
+                cameraNeedRelocation_ = true;
+                return false;
+
+            case SDLK_UP: 
+                accumulatedCameraRel_ += gm_dot<int, 2> (0, CAMERA_KEY_CONTROL_DELTA);
+                cameraNeedRelocation_ = true;
+                return false;
+            
+            case SDLK_DOWN:
+                accumulatedCameraRel_ += gm_dot<int, 2> (0, -CAMERA_KEY_CONTROL_DELTA);
+                cameraNeedRelocation_ = true;
+                return false;
+        }
+
+        return true;
+    }
 
     bool onMouseWheelSelfAction(const MouseWheelEvent &event) override {
         accumulatedCameraZoom_ += event.rot.y;
@@ -48,12 +95,11 @@ class CameraWindow : public Widget {
         return true;
     }
 
-
     void applyCameraRelocation() {
         double dx = (double) accumulatedCameraRel_.x / camera_->screenResolution().first * camera_->viewPort().VIEWPORT_WIDTH;
         double dy = (double) accumulatedCameraRel_.y / camera_->screenResolution().second * camera_->viewPort().VIEWPORT_HEIGHT;
         
-        GmVec<double, 3> motionVec = camera_->viewPort().rightDir_ * dx + camera_->viewPort().downDir_ * dy;
+        gm::IVec3 motionVec = camera_->viewPort().rightDir_ * dx + camera_->viewPort().downDir_ * dy;
         camera_->move(motionVec * (-1));
     
         accumulatedCameraRel_ = {0, 0};
@@ -63,15 +109,14 @@ class CameraWindow : public Widget {
     void applyCameraRotation() {
         double widthRadians  = (double) accumulatedCameraRotation_.x / camera_->screenResolution().first * camera_->viewAngle().x();
         double heightRadians = (double) accumulatedCameraRotation_.y / camera_->screenResolution().second * camera_->viewAngle().y();
-        camera_->rotate(widthRadians, heightRadians);
+        camera_->rotate(-widthRadians, -heightRadians);
     
         accumulatedCameraRotation_ = {0, 0};
         cameraNeedRotation_ = false;
     }
 
     void applyCameraZoom() {
-        
-        GmVec<double, 3> zoomVec = camera_->direction() * CAMERA_ZOOM_DELTA * accumulatedCameraZoom_;
+        gm::IVec3 zoomVec = camera_->direction() * CAMERA_ZOOM_DELTA * accumulatedCameraZoom_;
         camera_->move(zoomVec);
 
         accumulatedCameraZoom_ = 0;
@@ -117,17 +162,49 @@ public:
 
 
 
+// class ObjectsListWidget : public Widget {
+
+// };
+
+
+// class OjectsListWindow : public Window {
+//     ObjectsListWidget *objectList = nullptr;
+//     ScrollBar *scalbar = nullptr;
+// };
+
+
+// class SceneWindow : public Window {
+//     CameraWindow *cameraWindow = nullptr;
+    
+//     SceneWindow(int w, int h, Widget *parent=nullptr): Window(w, h, this) { 
+//         cameraWindow = new CameraWindow(SCREEN_RESOLUTION.first, SCREEN_RESOLUTION.second, this);
+//         addWidget(0, 0, cameraWindow);
+//     }
+// };
+
+
+
+double measureRenderTime(SceneManager &sceneManager, Camera &camera) {
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    sceneManager.render(camera);
+    
+    auto end = std::chrono::high_resolution_clock::now();    
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    return duration;
+}
+
 int main() {
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second);
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
     application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
 
-    CameraWindow *cameraWindow = new CameraWindow(SCREEN_RESOLUTION.first, SCREEN_RESOLUTION.second, mainWindow);
-    mainWindow->addWidget((mainWindow->rect().w - cameraWindow->rect().w) / 2, (mainWindow->rect().h - cameraWindow->rect().h) / 2, cameraWindow);
-
-
-
     SceneManager sceneManager;
+
+    CameraWindow *cameraWindow = new CameraWindow(SCREEN_RESOLUTION.first, SCREEN_RESOLUTION.second, mainWindow);
+    mainWindow->addWidget(0, 0, cameraWindow);
+
 
 
 
@@ -137,7 +214,7 @@ int main() {
     RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
     RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
     RTMaterial *glassMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.50);
-    RTMaterial *sunMaterial = new RTEmissive(GmVec<double, 3>(1.0, 0.95, 0.9) * 10);
+    RTMaterial *sunMaterial = new RTEmissive(gm::IVec3(1.0, 0.95, 0.9) * 10);
 
 
 
@@ -150,9 +227,9 @@ int main() {
 
     Light *light = new Light
     (
-        /* ambientIntensity  */  GmVec<double, 3>(0.2, 0.2, 0.2),
-        /* defuseIntensity   */  GmVec<double, 3>(0.8, 0.7, 0.6),
-        /* specularIntensity */  GmVec<double, 3>(0.7, 0.7, 0),
+        /* ambientIntensity  */  gm::IVec3(0.2, 0.2, 0.2),
+        /* defuseIntensity   */  gm::IVec3(0.8, 0.7, 0.6),
+        /* specularIntensity */  gm::IVec3(0.7, 0.7, 0),
         /* viewLightPow      */  15.0
     );
 
@@ -172,15 +249,16 @@ int main() {
     sceneManager.addObject({0, 4, 3}, midSphere);
     // sceneManager.addObject({2, 0, 1}, rightSphere);
 
-    // sceneManager.addLight({0, 0, 4}, light);
+    sceneManager.addLight({0, 0, 4}, light);
     sceneManager.addObject({-2, 0, 4}, sun);
 
     Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
     camera.setSamplesPerPixel(1);
     camera.setSamplesPerScatter(1);
-    camera.disableLDirect();
+    // camera.disableLDirect();
     camera.setMaxRayDepth(5);
     camera.setThreadPixelbunchSize(64);
+    // camera.disableParallelRender();
 
 
 
@@ -190,14 +268,9 @@ int main() {
 
     // // !!!!! WARNING  
 
-    // auto start = std::chrono::high_resolution_clock::now();
+   
 
-    // // Code to measure
-    // sceneManager.render(camera);
-
-    // auto end = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    // std::cout << "Render time: " << duration << " ms\n";
+    // std::cout << "renderTime : " << measureRenderTime(sceneManager, camera) << '\n'; exit(0);
 
         
     application.addUserEvent([&sceneManager, &camera](int deltaMS) { sceneManager.render(camera);});
