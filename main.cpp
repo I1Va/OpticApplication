@@ -99,7 +99,7 @@ class CameraWindow : public Widget {
         double dx = (double) accumulatedCameraRel_.x / camera_->screenResolution().first * camera_->viewPort().VIEWPORT_WIDTH;
         double dy = (double) accumulatedCameraRel_.y / camera_->screenResolution().second * camera_->viewPort().VIEWPORT_HEIGHT;
         
-        gm::IVec3 motionVec = camera_->viewPort().rightDir_ * dx + camera_->viewPort().downDir_ * dy;
+        gm::IVec3f motionVec = camera_->viewPort().rightDir_ * dx + camera_->viewPort().downDir_ * dy;
         camera_->move(motionVec * (-1));
     
         accumulatedCameraRel_ = {0, 0};
@@ -116,7 +116,7 @@ class CameraWindow : public Widget {
     }
 
     void applyCameraZoom() {
-        gm::IVec3 zoomVec = camera_->direction() * CAMERA_ZOOM_DELTA * accumulatedCameraZoom_;
+        gm::IVec3f zoomVec = camera_->direction() * CAMERA_ZOOM_DELTA * accumulatedCameraZoom_;
         camera_->move(zoomVec);
 
         accumulatedCameraZoom_ = 0;
@@ -185,18 +185,22 @@ public:
 
 
 double measureRenderTime(SceneManager &sceneManager, Camera &camera) {
-    auto start = std::chrono::high_resolution_clock::now();
+    const std::size_t MEASURE_COUNT = 100;
     
-    sceneManager.render(camera);
-    
-    auto end = std::chrono::high_resolution_clock::now();    
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    double duration = 0;
+    for (std::size_t i = 0; i < MEASURE_COUNT; i++) {
+        auto start = std::chrono::high_resolution_clock::now();
+        sceneManager.render(camera);
+        auto end = std::chrono::high_resolution_clock::now();  
+     
+        duration += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    }
 
-    return duration;
+    return duration / MEASURE_COUNT;
 }
 
 int main() {
-    UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second);
+    UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 30);
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
     application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
 
@@ -214,7 +218,7 @@ int main() {
     RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
     RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
     RTMaterial *glassMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.50);
-    RTMaterial *sunMaterial = new RTEmissive(gm::IVec3(1.0, 0.95, 0.9) * 10);
+    RTMaterial *sunMaterial = new RTEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
 
 
 
@@ -227,9 +231,9 @@ int main() {
 
     Light *light = new Light
     (
-        /* ambientIntensity  */  gm::IVec3(0.2, 0.2, 0.2),
-        /* defuseIntensity   */  gm::IVec3(0.8, 0.7, 0.6),
-        /* specularIntensity */  gm::IVec3(0.7, 0.7, 0),
+        /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
+        /* defuseIntensity   */  gm::IVec3f(0.8, 0.7, 0.6),
+        /* specularIntensity */  gm::IVec3f(0.7, 0.7, 0),
         /* viewLightPow      */  15.0
     );
 
@@ -247,7 +251,7 @@ int main() {
     sceneManager.addObject({0, 0, 1}, glassSphere);
     // // sceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
     sceneManager.addObject({0, 4, 3}, midSphere);
-    // sceneManager.addObject({2, 0, 1}, rightSphere);
+    sceneManager.addObject({2, 0, 1}, rightSphere);
 
     sceneManager.addLight({0, 0, 4}, light);
     sceneManager.addObject({-2, 0, 4}, sun);
@@ -268,9 +272,7 @@ int main() {
 
     // // !!!!! WARNING  
 
-   
-
-    // std::cout << "renderTime : " << measureRenderTime(sceneManager, camera) << '\n'; exit(0);
+    std::cout << "renderTime : " << measureRenderTime(sceneManager, camera) << '\n';
 
         
     application.addUserEvent([&sceneManager, &camera](int deltaMS) { sceneManager.render(camera);});

@@ -1,3 +1,8 @@
 .vscode/
 build/
 perf.data
+get_perf.sh
+perf.data.old
+debug.sh
+release.sh
+
