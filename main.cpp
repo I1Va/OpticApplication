@@ -187,22 +187,29 @@ public:
 
 
 class TextWidget : public Widget {
+protected:
     std::string text_;
     SDL_Color textColor_;
     std::size_t fontSize_;
     TTF_Font* font_;
+
     
+    std::function<void(const std::string)> onEnter_;
+    bool needOnEnterCall_ = false;
+
 public:
     TextWidget
     (
         const std::size_t width, const std::size_t height,
         const std::string &text, const SDL_Color textColor,
         const std::size_t fontSize, const std::string &fontPath,
+        std::function<void(const std::string &)> onEnter=nullptr,
         Widget *parent=nullptr
     ): 
         Widget(width, height, parent),
         text_(text), textColor_(textColor), 
-        fontSize_(fontSize), font_(nullptr)
+        fontSize_(fontSize), font_(nullptr),
+        onEnter_(onEnter)
     {
         font_ = TTF_OpenFont(fontPath.c_str(), fontSize); 
         if (!font_) {
@@ -211,33 +218,99 @@ public:
         }
     }
 
-    void renderSelfAction(SDL_Renderer* renderer) {
+    void renderSelfAction(SDL_Renderer* renderer) override {
         assert(renderer);
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
         SDL_Rect full = {0, 0, rect_.w, rect_.h};
-
         SDL_RenderFillRect(renderer, &full);
+
+
+        SDL_Rect textRect = {0, 0, rect_.w, rect_.h};
+
+        if (TTF_SizeUTF8(font_, text_.c_str(), &textRect.w, &textRect.h)) {
+            SDL_Log("TTF_SizeUTF8 failed: %s", TTF_GetError());
+        }
+
         SDL_Texture* textTexture = createFontTexture(font_, text_.c_str(), fontSize_, textColor_, renderer);
-        SDL_RenderCopy(renderer, textTexture, nullptr, &full);
+        SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
     }
+
+    void setText(const std::string &str) { text_ = str; } 
+    void setOnEnter( std::function<void(const std::string &)> onEnter) { onEnter_ = onEnter; } 
+    const std::string &text() const { return text_; } 
 };
 
+class TextInputWidget : public TextWidget {
+public:
+    TextInputWidget
+    (
+        const std::size_t width, const std::size_t height,
+        const std::string &text, const SDL_Color textColor,
+        const std::size_t fontSize, const std::string &fontPath,
+        std::function<void(const std::string)> onEnter=nullptr,
+        Widget *parent=nullptr
+    ):  TextWidget(width, height, text, textColor, fontSize, fontPath, onEnter, parent) {}
 
+    bool updateSelfAction() {
+        if (needOnEnterCall_) {
+            if (onEnter_) onEnter_(text_);
+            needOnEnterCall_ = false;
+            return true;
+        }
 
+        return false;
+    }
 
+    bool onKeyDownSelfAction(const KeyEvent &event) override {
+        if (event.sym == SDLK_BACKSPACE && !text_.empty()) {
+            text_.pop_back();
+            setRerenderFlag();
+            return false;
+        }
 
+        if (event.sym >= SDLK_0 && event.sym <= SDLK_9) {
+            text_.push_back(static_cast<char>('0' + (event.sym - SDLK_0)));
+            setRerenderFlag();
+            return false;
+        }
 
+        if (event.sym >= SDLK_a && event.sym <= SDLK_z) {
+            bool shift = (event.keymod & KMOD_SHIFT);
+            char c = static_cast<char>(shift ? ('A' + (event.sym - SDLK_a))
+                                             : ('a' + (event.sym - SDLK_a)));
+            text_.push_back(c);
+            setRerenderFlag();
+            return false;
+        }
 
+        if (event.sym == SDLK_SPACE) {
+            text_.push_back(' ');
+            setRerenderFlag();
+            return false;
+        }
 
+        if (event.sym == SDLK_PERIOD) {
+            text_.push_back('.');
+            setRerenderFlag();
+            return false;
+        }
 
+        if (event.sym == SDLK_COMMA) {
+            text_.push_back(',');
+            setRerenderFlag();
+            return false;
+        }
 
+        if (event.sym == SDLK_KP_ENTER || event.sym == SDLK_RETURN) {
+            setRerenderFlag();
+            needOnEnterCall_ = true;
+            return false;
+        }
 
-
-
-
-
-
+        return true;
+    }
+};
 
 
 
@@ -257,6 +330,10 @@ double measureRenderTime(SceneManager &sceneManager, Camera &camera, const std::
     return duration / MEASURE_COUNT;
 }
 
+void textReceived(const std::string &str) {
+    std::cout << "textReceived : `" << str << "`" << "\n";
+}
+
 int main() {
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
@@ -267,7 +344,7 @@ int main() {
     CameraWindow *cameraWindow = new CameraWindow(RENDER_SCREEN_RESOLUTION.first, RENDER_SCREEN_RESOLUTION.second, mainWindow);
     mainWindow->addWidget(0, 0, cameraWindow);
 
-    TextWidget *textField = new TextWidget(300, 100, "23423", BLACK_SDL_COLOR, 52, FONT_PATH, mainWindow);
+    TextInputWidget *textField = new TextInputWidget(300, 100, "23423", BLACK_SDL_COLOR, 32, FONT_PATH, textReceived, mainWindow);
     mainWindow->addWidget(650, 0, textField);
 
 
