@@ -1,17 +1,18 @@
 #include <iostream>
 #include <chrono>
+#include <string>
 
 #include "MyGUI.h"
 #include "RayTracer.h"
 #include "Camera.h"
 #include "ScrollBar.h"
 
-
-const std::pair<int, int> MAIN_WINDOW_SIZE = {600, 600};
+const char FONT_PATH[] = "fonts/Roboto/RobotoFont.ttf";
+const std::pair<int, int> MAIN_WINDOW_SIZE = {1000, 600};
 const int APP_BORDER_SIZE = 20;
 const int CAMERA_KEY_CONTROL_DELTA = 10;
 const int CAMERA_MOUSE_RELOCATION_SCALE = 2;
-const std::pair<int, int> SCREEN_RESOLUTION = {600, 600};
+const std::pair<int, int> RENDER_SCREEN_RESOLUTION = {600, 600};
 
 inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
 
@@ -185,9 +186,65 @@ public:
 
 
 
-double measureRenderTime(SceneManager &sceneManager, Camera &camera) {
-    const std::size_t MEASURE_COUNT = 100;
+class TextWidget : public Widget {
+    std::string text_;
+    SDL_Color textColor_;
+    std::size_t fontSize_;
+    TTF_Font* font_;
     
+public:
+    TextWidget
+    (
+        const std::size_t width, const std::size_t height,
+        const std::string &text, const SDL_Color textColor,
+        const std::size_t fontSize, const std::string &fontPath,
+        Widget *parent=nullptr
+    ): 
+        Widget(width, height, parent),
+        text_(text), textColor_(textColor), 
+        fontSize_(fontSize), font_(nullptr)
+    {
+        font_ = TTF_OpenFont(fontPath.c_str(), fontSize); 
+        if (!font_) {
+            SDL_Log("TTF_OpenFont: %s", TTF_GetError());
+            assert(0);
+        }
+    }
+
+    void renderSelfAction(SDL_Renderer* renderer) {
+        assert(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
+        SDL_Rect full = {0, 0, rect_.w, rect_.h};
+
+        SDL_RenderFillRect(renderer, &full);
+        SDL_Texture* textTexture = createFontTexture(font_, text_.c_str(), fontSize_, textColor_, renderer);
+        SDL_RenderCopy(renderer, textTexture, nullptr, &full);
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+double measureRenderTime(SceneManager &sceneManager, Camera &camera, const std::size_t MEASURE_COUNT=1) {
     double duration = 0;
     for (std::size_t i = 0; i < MEASURE_COUNT; i++) {
         auto start = std::chrono::high_resolution_clock::now();
@@ -207,8 +264,21 @@ int main() {
 
     SceneManager sceneManager;
 
-    CameraWindow *cameraWindow = new CameraWindow(SCREEN_RESOLUTION.first, SCREEN_RESOLUTION.second, mainWindow);
+    CameraWindow *cameraWindow = new CameraWindow(RENDER_SCREEN_RESOLUTION.first, RENDER_SCREEN_RESOLUTION.second, mainWindow);
     mainWindow->addWidget(0, 0, cameraWindow);
+
+    TextWidget *textField = new TextWidget(300, 100, "23423", BLACK_SDL_COLOR, 52, FONT_PATH, mainWindow);
+    mainWindow->addWidget(650, 0, textField);
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -220,6 +290,22 @@ int main() {
     RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
     RTMaterial *glassMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.50);
     RTMaterial *sunMaterial = new RTEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -257,10 +343,10 @@ int main() {
     sceneManager.addLight({0, 0, 10}, light);
     sceneManager.addObject({-2, 0, 4}, sun);
 
-    Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
-    camera.setSamplesPerPixel(1);
+    Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, RENDER_SCREEN_RESOLUTION);
     camera.setSamplesPerScatter(1);
-    // camera.disableLDirect();
+    camera.setSamplesPerPixel(1);
+    camera.disableLDirect();
     camera.setMaxRayDepth(5);
     camera.setThreadPixelbunchSize(100);
     // camera.disableParallelRender();
