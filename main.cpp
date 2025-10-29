@@ -171,38 +171,46 @@ public:
 
  
 class TextWidget : public Widget {
+    static constexpr SDL_Color DEFAULT_TEXT_COLOR=BLACK_SDL_COLOR;
+    static constexpr SDL_Color DEFAULT_BACKGROUND_COLOR=WHITE_SDL_COLOR;
 protected:
     std::string text_;
-    SDL_Color textColor_;
     TTF_Font* font_;
+    SDL_Color textColor_;
+    SDL_Color backColor_;
+    
 
 public:
     TextWidget
     (
         const std::size_t width, const std::size_t height,
-        const std::string &text, const SDL_Color textColor,
-        TTF_Font *font,
+        const std::string &text, TTF_Font *font,
         Widget *parent=nullptr
     ): 
         Widget(width, height, parent),
-        text_(text), textColor_(textColor), 
-        font_(font)
-    { assert(font_); }
+        text_(text), 
+        font_(font),
+        textColor_(DEFAULT_TEXT_COLOR),
+        backColor_(DEFAULT_BACKGROUND_COLOR)
+    { 
+        assert(font_); 
+    }
 
     void renderSelfAction(SDL_Renderer* renderer) override {
         assert(renderer);
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
+        SDL_SetRenderDrawColor(renderer, backColor_.r, backColor_.g, backColor_.b, backColor_.a);
         SDL_Rect full = {0, 0, rect_.w, rect_.h};
         SDL_RenderFillRect(renderer, &full);
-
 
         SDL_Rect textRect = getTextSize(font_, text_.c_str());
         SDL_Texture* textTexture = createFontTexture(font_, text_.c_str(), textColor_, renderer);
         SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
     }
 
-    void setText(const std::string &str) { text_ = str; } 
+    void setText(const std::string &str)     { text_ = str; setRerenderFlag();        }
+    void setBackColor(const SDL_Color color) { backColor_ = color; setRerenderFlag(); }
+    void setTextColor(const SDL_Color color) { textColor_ = color; setRerenderFlag(); }
     
     const std::string &text() const { return text_; } 
 };
@@ -214,12 +222,12 @@ public:
     TextInputWidget
     (
         const std::size_t width, const std::size_t height,
-        const std::string &text, const SDL_Color textColor,
+        const std::string &text,
         TTF_Font *font,
         std::function<void(const std::string)> onEnter=nullptr,
         Widget *parent=nullptr
     ):  
-        TextWidget(width, height, text, textColor, font, parent),
+        TextWidget(width, height, text, font, parent),
         onEnter_(onEnter) {}
 
     bool updateSelfAction() {
@@ -285,6 +293,116 @@ public:
 };
 
 
+class Button : public Widget {
+protected:
+    bool pressed_ = false;
+    std::function<void()> onClickFunction_= nullptr;
+
+public:
+    Button
+    (
+        int width, int height,
+        std::function<void()> onClickFunction=nullptr, Widget *parent=nullptr
+    ) : Widget(width, height, parent),  
+        onClickFunction_(onClickFunction)
+    {}
+
+    // bool onMouseUpSelfAction(const MouseButtonEvent &event) {
+    //     if (event.button == SDL_BUTTON_LEFT) {
+    //         pressed_ = false;
+    //         setRerenderFlag();
+    //         return true;
+    //     }
+    //     return false;
+    // }
+
+    bool onMouseDownSelfAction(const MouseButtonEvent &event) {
+       
+        if (event.button == SDL_BUTTON_LEFT) {
+            pressed_ = !pressed_;
+            setRerenderFlag();
+            if (onClickFunction_) onClickFunction_();
+            return true;
+        }
+        return false;
+    }
+
+    virtual void setPressedTexture(SDL_Renderer* renderer) {
+        assert(renderer);
+
+        SDL_Rect buttonRect = {0, 0, rect_.w, rect_.h};
+        SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+        SDL_RenderFillRect(renderer, &buttonRect);
+    }
+
+    virtual void setUnPressedTexture(SDL_Renderer* renderer) {
+        assert(renderer);
+
+        SDL_Rect buttonRect = {0, 0, rect_.w, rect_.h};
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderFillRect(renderer, &buttonRect);
+    }
+
+    void renderSelfAction(SDL_Renderer* renderer) override {
+        if (pressed_) {
+            setPressedTexture(renderer);
+        } else {
+            setUnPressedTexture(renderer);
+        }
+    }
+};
+
+class ClickableTextWidget : public Button {
+    static constexpr SDL_Color PRESSED_BACK_COLOR = {128, 128, 128, 255};
+    static constexpr SDL_Color UNPRESSED_BACK_COLOR = WHITE_SDL_COLOR;
+    static constexpr SDL_Color TEXT_COLOR = BLACK_SDL_COLOR;
+    TextWidget textWidget_;
+
+public:
+    ClickableTextWidget
+    (   
+        int width, int height, 
+        const std::string &text,
+        TTF_Font *font,
+        std::function<void()> onClickFunction,
+        Widget *parent=nullptr
+    ): 
+        Button(width, height, onClickFunction, parent),
+        textWidget_(width, height, text, font, parent)
+    {}
+
+protected:
+
+    void setPressedTexture(SDL_Renderer* renderer) override {
+        assert(renderer);      
+        SDL_Rect buttonRect = {0, 0, rect_.w, rect_.h};
+        SDL_SetRenderDrawColor(renderer, PRESSED_BACK_COLOR.r, PRESSED_BACK_COLOR.g, PRESSED_BACK_COLOR.b, PRESSED_BACK_COLOR.a);
+        SDL_RenderFillRect(renderer, &buttonRect);
+
+        textWidget_.setBackColor(PRESSED_BACK_COLOR);
+        textWidget_.render(renderer);
+    
+        SDL_Rect dst = textWidget_.rect();
+        SDL_RenderCopy(renderer, textWidget_.texture(), NULL, &dst);
+    }
+
+    void setUnPressedTexture(SDL_Renderer* renderer) override {
+        assert(renderer);      
+
+        SDL_Rect buttonRect = {0, 0, rect_.w, rect_.h};
+        SDL_SetRenderDrawColor(renderer, UNPRESSED_BACK_COLOR.r, UNPRESSED_BACK_COLOR.g, UNPRESSED_BACK_COLOR.b, UNPRESSED_BACK_COLOR.a);
+        SDL_RenderFillRect(renderer, &buttonRect);
+
+        textWidget_.setBackColor(UNPRESSED_BACK_COLOR);
+        textWidget_.render(renderer);
+    
+        SDL_Rect dst = textWidget_.rect();
+        SDL_RenderCopy(renderer, textWidget_.texture(), NULL, &dst);
+    }
+};
+
+
+
 // // Material properties (shader, color, roughness, etc.)
 // class MaterialPropertiesWidget : public Widget {
 // public:
@@ -325,14 +443,17 @@ class ObjectListWidget : public Container {
     std::vector<Primitives *> objects_{};
     int selectedIndex_ = -1;
 
+    bool objectListChanged = true;
+
 public:
     ObjectListWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
         Container(width, height, parent), font_(font) {}
     
 
     void setObjects(const std::vector<Primitives *> objects) { objects_ = objects; }
-    bool updateSelfAction() override {
-        for (Widget *child : children_) {
+
+    void updateRecords() {
+         for (Widget *child : children_) {
             assert(child);
         
             if (UIManager_->hovered() == child) UIManager_->setHovered(nullptr);
@@ -346,16 +467,27 @@ public:
             Primitives *primitive = objects_[i];
             std::string recordName = std::to_string(i) + ") " + primitive->typeString();
             
-            TextWidget *objectRecord = new TextWidget(rect_.w, OBJECT_RECORD_HEIGHT, recordName, TEXT_COLOR, font_, this);
+            ClickableTextWidget *objectRecord = new ClickableTextWidget(rect_.w, OBJECT_RECORD_HEIGHT, recordName, font_, nullptr, this);
             addWidget(0, i * OBJECT_RECORD_HEIGHT, objectRecord);
         }
 
         setRerenderFlag();
+        objectListChanged = false;
+    }
+
+    bool updateSelfAction() override {
+        if (objectListChanged) updateRecords();       
 
         return true; 
     }
 };
 
+
+//   int width, int height, 
+//         const std::string &text,
+//         TTF_Font *font,
+//         std::function<void()> onClickFunction,
+//         Widget *parent=nullptr
 
 
 
@@ -433,7 +565,7 @@ int main() {
    
 
 
-    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", BLACK_SDL_COLOR, font, textReceived, mainWindow);
+    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", font, textReceived, mainWindow);
     mainWindow->addWidget(650, 0, textField);
 
 
