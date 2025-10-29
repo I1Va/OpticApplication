@@ -53,7 +53,7 @@ public:
 };
 
 class TextInputWidget : public TextWidget {
-    std::function<void(const std::string)> onEnter_;
+    std::function<void(const std::string&)> onEnter_;
     bool needOnEnterCall_ = false;
 public:
     TextInputWidget

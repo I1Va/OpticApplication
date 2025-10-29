@@ -169,7 +169,7 @@ public:
 };
 
 class ObjectListWidget : public Container {
-    static constexpr std::size_t BORDER_THIKNESS = 3;
+    static constexpr int BORDER_THIKNESS = 3;
     static constexpr SDL_Color BORDER_COLOR = BLACK_SDL_COLOR;
     static constexpr SDL_Color BACK_COLOR = WHITE_SDL_COLOR;
 
@@ -178,23 +178,37 @@ class ObjectListWidget : public Container {
     TTF_Font* font_ = nullptr;
 
     std::vector<Primitives *> objects_{};
+
+
+    std::function<void(Primitives *)> onSelect_;
+    std::function<void(Primitives *)> onUnSelect_;
+
     Primitives *selectedObject_ = nullptr;
 
     bool objectListChanged = true;
 
 public:
-    ObjectListWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
-        Container(width, height, parent), font_(font) {}
+    ObjectListWidget(int width, int height, TTF_Font* font,
+        std::function<void(Primitives *)> onSelect=nullptr,
+        std::function<void(Primitives *)> onUnSelect=nullptr,
+        Widget *parent=nullptr
+    ):
+        Container(width, height, parent), font_(font),
+        onSelect_(onSelect), onUnSelect_(onUnSelect)
+    {}
     
     void setObjects(const std::vector<Primitives *> objects) { objects_ = objects; }
 
     void unselectObject(Primitives *primitive) {
         primitive->setSelectFlag(false);
+        if (onUnSelect_) onUnSelect_(primitive);
     }
 
     void selectObject(Primitives *primitive) {
+
         selectedObject_ = primitive;
         selectedObject_->setSelectFlag(true);
+        if (onSelect_) onSelect_(primitive);
     }
 
     void updateRecords() {
@@ -245,8 +259,17 @@ public:
     Primitives *selectedObject() { return selectedObject_; }
 };
 
+
+void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
+    char* end = nullptr;
+    float val = std::strtof(inp.c_str(), &end);
+    if (*end == '\0' && end != inp.c_str()) {
+        setter(val);
+    }
+}
+
 class ObjectPropertiesWidget : public Container {
-    static constexpr std::size_t BORDER_THIKNESS = 3;
+    static constexpr int BORDER_THIKNESS = 3;
     static constexpr SDL_Color BORDER_COLOR = BLACK_SDL_COLOR;
     static constexpr SDL_Color BACK_COLOR = WHITE_SDL_COLOR;
 
@@ -254,20 +277,26 @@ class ObjectPropertiesWidget : public Container {
     static constexpr std::size_t OBJECT_RECORD_HEIGHT = 20;
     TTF_Font* font_ = nullptr;
 
-    const Primitives *selected_=nullptr;
+    Primitives *selected_=nullptr;
     bool needUpdateRecords = false;
 
 public:
     ObjectPropertiesWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
         Container(width, height, parent), font_(font) {}
     
-    void selectObject(const Primitives *object) { 
+    void selectObject(Primitives *object) { 
         selected_ = object; 
         needUpdateRecords = true;
     }
 
+    
+    
+
     void updateRecords() {
-         for (Widget *child : children_) {
+        setRerenderFlag();
+        needUpdateRecords = false;
+    
+        for (Widget *child : children_) {
             assert(child);
         
             if (UIManager_->hovered() == child) UIManager_->setHovered(nullptr);
@@ -275,6 +304,7 @@ public:
             
             delete child;
         }
+    
         children_.clear();
 
         if (!selected_) return;
@@ -284,56 +314,109 @@ public:
         int startY = BORDER_THIKNESS;
         int recordWidth = rect_.w / 2 - BORDER_THIKNESS * 2;
         int recordHeight = OBJECT_RECORD_HEIGHT;
-    
-        TextWidget *nameLabel = new TextWidget(recordWidth, recordHeight, "Name", font_, this);
-        TextWidget *nameField = new TextWidget(recordWidth, recordHeight, selected_->typeString(), font_, this);
-        addWidget(startX, startY, nameLabel);
-        addWidget(startX + recordWidth, startY, nameField);
-    
-        TextWidget *materialLabel = new TextWidget(recordWidth, recordHeight, "Material", font_, this);
-        TextWidget *materialField = new TextWidget(recordWidth, recordHeight, selected_->material()->typeString(), font_, this);
-        addWidget(startX, startY + recordHeight, materialLabel);
-        addWidget(startX + recordWidth, startY + recordHeight, materialField);
+        std::function<void(float)> setter = nullptr;
 
+        auto addRecord = [&](const std::string &label, const std::string &value,
+                        std::function<void(const std::string&)> callback, int row)
+        {
+            TextWidget *lbl = new TextWidget(recordWidth, recordHeight, label, font_, this);
+            Widget *field;
 
-        TextWidget *posXLabel = new TextWidget(recordWidth, recordHeight, "Pos X", font_, this);
-        TextInputWidget *posXField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->position().x()), font_, nullptr, this);
-        addWidget(startX, startY + recordHeight * 2, posXLabel);
-        addWidget(startX + recordWidth, startY + recordHeight * 2, posXField);
+            if (callback)
+                field = new TextInputWidget(recordWidth, recordHeight, value, font_, callback, this);
+            else
+                field = new TextWidget(recordWidth, recordHeight, value, font_, this);
 
-        TextWidget *posYLabel = new TextWidget(recordWidth, recordHeight, "Pos Y", font_, this);
-        TextInputWidget *posYField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->position().y()), font_, nullptr, this);
-        addWidget(startX, startY + recordHeight * 3, posYLabel);
-        addWidget(startX + recordWidth, startY + recordHeight * 3, posYField);
-
-        TextWidget *posZLabel = new TextWidget(recordWidth, recordHeight, "Pos Z", font_, this);
-        TextInputWidget *posZField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->position().z()), font_, nullptr, this);
-        addWidget(startX, startY + recordHeight * 4, posZLabel);
-        addWidget(startX + recordWidth, startY + recordHeight * 4, posZField);
-
-
-        TextWidget *diffuseXLabel = new TextWidget(recordWidth, recordHeight, "Diffuse X", font_, this);
-        TextInputWidget *diffuseXField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->material()->diffuse().x()), font_, nullptr, this);
-        addWidget(startX, startY + recordHeight * 5, diffuseXLabel);
-        addWidget(startX + recordWidth, startY + recordHeight * 5, diffuseXField);
-
-        TextWidget *diffuseYLabel = new TextWidget(recordWidth, recordHeight, "Diffuse Y", font_, this);
-        TextInputWidget *diffuseYField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->material()->diffuse().y()), font_, nullptr, this);
-        addWidget(startX, startY + recordHeight * 6, diffuseYLabel);
-        addWidget(startX + recordWidth, startY + recordHeight * 6, diffuseYField);
-        
-        TextWidget *diffuseZLabel = new TextWidget(recordWidth, recordHeight, "Diffuse Z", font_, this);
-        TextInputWidget *diffuseZField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->material()->diffuse().z()), font_, nullptr, this);
-        addWidget(startX, startY + recordHeight * 7, diffuseZLabel);
-        addWidget(startX + recordWidth, startY + recordHeight * 7, diffuseZField);
+            addWidget(startX, startY + recordHeight * row, lbl);
+            addWidget(startX + recordWidth, startY + recordHeight * row, field);
+        };
 
         
+        // usage
+        addRecord("Name", selected_->typeString(), nullptr, 0);
+        addRecord("Material", selected_->material()->typeString(), nullptr, 1);
+
+        // position fields
+        addRecord("Pos X", std::to_string(selected_->position().x()),
+                [this](const std::string &inp) {
+                    setIfStringConvertedToFloat(inp, [this](float val) { selected_->position().setX(val); });
+                }, 2);
+
+        addRecord("Pos Y", std::to_string(selected_->position().y()),
+                [this](const std::string &inp) {
+                    setIfStringConvertedToFloat(inp, [this](float val) { selected_->position().setY(val); });
+                }, 3);
+
+        addRecord("Pos Z", std::to_string(selected_->position().z()),
+                [this](const std::string &inp) {
+                    setIfStringConvertedToFloat(inp, [this](float val) { selected_->position().setZ(val); });
+                }, 4);
+
+        // diffuse fields
+        addRecord("Diffuse X", std::to_string(selected_->material()->diffuse().x()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->diffuse().setX(val);
+                });
+            }, 5);
         
-        // selected_->material();
-        // selected_->position();
-    
-        setRerenderFlag();
-        needUpdateRecords = false;
+        addRecord("Diffuse Y", std::to_string(selected_->material()->diffuse().y()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->diffuse().setY(val);
+                });
+            }, 6);
+
+        addRecord("Diffuse Z", std::to_string(selected_->material()->diffuse().z()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->diffuse().setZ(val);
+                });
+            }, 7);
+
+        // Specular fields
+        addRecord("Specular X", std::to_string(selected_->material()->specular().x()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->specular().setX(val);
+                });
+            }, 8);
+
+        addRecord("Specular Y", std::to_string(selected_->material()->specular().y()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->specular().setY(val);
+                });
+            }, 9);
+
+        addRecord("Specular Z", std::to_string(selected_->material()->specular().z()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->specular().setZ(val);
+                });
+            }, 10);
+
+        // Emitted fields
+        addRecord("Emitted X", std::to_string(selected_->material()->emitted().x()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->emitted().setX(val);
+                });
+            }, 11);
+
+        addRecord("Emitted Y", std::to_string(selected_->material()->emitted().y()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->emitted().setY(val);
+                });
+            }, 12);
+
+        addRecord("Emitted Z", std::to_string(selected_->material()->emitted().z()),
+            [this](const std::string &inp) {
+                setIfStringConvertedToFloat(inp, [this](float val) {
+                    selected_->material()->emitted().setZ(val);
+                });
+            }, 13);
     }
 
     bool updateSelfAction() override {
@@ -407,17 +490,8 @@ public:
 
 };
 
-
-void textReceived(const std::string &str) {
-    std::cout << "textReceived : `" << str << "`" << "\n";
-}
-
 int main() {
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
-
-
-
-
 
 
     RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0});    
@@ -436,16 +510,21 @@ int main() {
     SceneWidget *sceneWindow = new SceneWidget(RENDER_SCREEN_RESOLUTION.first, RENDER_SCREEN_RESOLUTION.second, mainWindow);
     mainWindow->addWidget(0, 0, sceneWindow);
 
-    ObjectListWidget *objectListWidget = new ObjectListWidget(200, 150, font, mainWindow);
+    ObjectPropertiesWidget *objectPropertiesWidget = new  ObjectPropertiesWidget(300, 400, font, mainWindow);
+    mainWindow->addWidget(650, 300, objectPropertiesWidget);
+
+    ObjectListWidget *objectListWidget = new ObjectListWidget(200, 150, font, 
+        [objectPropertiesWidget](Primitives *selected) { objectPropertiesWidget->selectObject(selected); },
+        [objectPropertiesWidget](Primitives *selected) { objectPropertiesWidget->selectObject(nullptr); },
+        mainWindow);
+    
     mainWindow->addWidget(650, 100, objectListWidget);
+
+    
+
 
 
    
-
-
-    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", font, textReceived, mainWindow);
-    mainWindow->addWidget(650, 0, textField);
-
     
 
     // SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
@@ -470,10 +549,7 @@ int main() {
 
 
 
-
-    ObjectPropertiesWidget *objectPropertiesWidget = new  ObjectPropertiesWidget(200, 200, font, mainWindow);
-    objectPropertiesWidget->selectObject(midSphere);
-    mainWindow->addWidget(650, 300, objectPropertiesWidget);
+   
 
 
 
