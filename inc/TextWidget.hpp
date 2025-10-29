@@ -99,6 +99,13 @@ public:
             return false;
         }
 
+
+        if (event.sym == SDLK_MINUS) {
+            text_.push_back('-');
+            setRerenderFlag();
+            return false;
+        }
+
         if (event.sym == SDLK_SPACE) {
             text_.push_back(' ');
             setRerenderFlag();
@@ -144,8 +151,8 @@ public:
         std::function<void()> onDownFunction,
         std::function<void()> onUpFunction,
         Widget *parent=nullptr
-    ): 
-        Button(width, height, onDownFunction, onUpFunction, parent),
+    ):  
+        Button(width, height, Button::STICKY, onDownFunction, onUpFunction, parent),
         textWidget_(width, height, text, font, parent)
     {}
 

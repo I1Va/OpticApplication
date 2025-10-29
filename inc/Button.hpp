@@ -6,31 +6,37 @@
 class Button : public Widget {
 protected:
     bool pressed_ = false;
-    std::function<void()> onDownFunction_= nullptr;
-    std::function<void()> onUpFunction_= nullptr;
+    std::function<void()> onDownFunction_;
+    std::function<void()> onUpFunction_;
+    bool sticky_;
 public:
+    static constexpr bool STICKY = true;
+
     Button
     (
         int width, int height,
+        bool sticky=STICKY,
         std::function<void()> onDownFunction=nullptr,
         std::function<void()> onUpFunction=nullptr,
         Widget *parent=nullptr
     ) : Widget(width, height, parent),  
         onDownFunction_(onDownFunction),
-        onUpFunction_(onUpFunction)
+        onUpFunction_(onUpFunction),
+        sticky_(sticky)
     {}
 
-    // bool onMouseUpSelfAction(const MouseButtonEvent &event) {
-    //     if (event.button == SDL_BUTTON_LEFT) {
-    //         pressed_ = false;
-    //         setRerenderFlag();
-    //         return true;
-    //     }
-    //     return false;
-    // }
+    bool onMouseUpSelfAction(const MouseButtonEvent &event) {
+        if (sticky_) return false;
+
+        if (event.button == SDL_BUTTON_LEFT) {
+            pressed_ = false;
+            setRerenderFlag();
+            return true;
+        }
+        return false;
+    }
 
     bool onMouseDownSelfAction(const MouseButtonEvent &event) {
-       
         if (event.button == SDL_BUTTON_LEFT) {
             pressed_ = !pressed_;
             setRerenderFlag();

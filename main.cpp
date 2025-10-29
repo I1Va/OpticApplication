@@ -22,6 +22,15 @@ const std::pair<int, int> RENDER_SCREEN_RESOLUTION = {600, 600};
 
 inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
 
+void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
+    char* end = nullptr;
+    float val = std::strtof(inp.c_str(), &end);
+    if (*end == '\0' && end != inp.c_str()) {
+        setter(val);
+    }
+}
+
+
 class CameraWindow : public Widget {
     static constexpr double CAMERA_ZOOM_DELTA = 0.1;
 
@@ -168,7 +177,7 @@ public:
     CameraWindow(int width, int height, Widget * parent=nullptr): Widget(width, height, parent) {}
 };
 
-class ObjectListWidget : public Container {
+class ObjectListComponent : public Container {
     static constexpr int BORDER_THIKNESS = 3;
     static constexpr SDL_Color BORDER_COLOR = BLACK_SDL_COLOR;
     static constexpr SDL_Color BACK_COLOR = WHITE_SDL_COLOR;
@@ -188,7 +197,7 @@ class ObjectListWidget : public Container {
     bool objectListChanged = true;
 
 public:
-    ObjectListWidget(int width, int height, TTF_Font* font,
+    ObjectListComponent(int width, int height, TTF_Font* font,
         std::function<void(Primitives *)> onSelect=nullptr,
         std::function<void(Primitives *)> onUnSelect=nullptr,
         Widget *parent=nullptr
@@ -259,16 +268,7 @@ public:
     Primitives *selectedObject() { return selectedObject_; }
 };
 
-
-void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
-    char* end = nullptr;
-    float val = std::strtof(inp.c_str(), &end);
-    if (*end == '\0' && end != inp.c_str()) {
-        setter(val);
-    }
-}
-
-class ObjectPropertiesWidget : public Container {
+class ObjectPropertiesComponent : public Container {
     static constexpr int BORDER_THIKNESS = 3;
     static constexpr SDL_Color BORDER_COLOR = BLACK_SDL_COLOR;
     static constexpr SDL_Color BACK_COLOR = WHITE_SDL_COLOR;
@@ -281,16 +281,13 @@ class ObjectPropertiesWidget : public Container {
     bool needUpdateRecords = false;
 
 public:
-    ObjectPropertiesWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
+    ObjectPropertiesComponent(int width, int height, TTF_Font* font, Widget *parent=nullptr):
         Container(width, height, parent), font_(font) {}
     
     void selectObject(Primitives *object) { 
         selected_ = object; 
         needUpdateRecords = true;
     }
-
-    
-    
 
     void updateRecords() {
         setRerenderFlag();
@@ -441,7 +438,7 @@ class SceneWidget : public Container {
     SceneManager sceneManager_;
     Camera camera_;
     CameraWindow *cameraWindow_ = nullptr;
-    ObjectPropertiesWidget *objectProperties_ = nullptr;
+    ObjectPropertiesComponent *objectProperties_ = nullptr;
 
 public:
     SceneWidget(int w, int h, Widget *parent=nullptr): 
@@ -490,6 +487,22 @@ public:
 
 };
 
+
+
+
+class ObjectPropertiesWidget : public Container {
+    
+
+
+};
+
+
+
+
+
+
+
+
 int main() {
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
 
@@ -510,15 +523,15 @@ int main() {
     SceneWidget *sceneWindow = new SceneWidget(RENDER_SCREEN_RESOLUTION.first, RENDER_SCREEN_RESOLUTION.second, mainWindow);
     mainWindow->addWidget(0, 0, sceneWindow);
 
-    ObjectPropertiesWidget *objectPropertiesWidget = new  ObjectPropertiesWidget(300, 400, font, mainWindow);
-    mainWindow->addWidget(650, 300, objectPropertiesWidget);
+    ObjectPropertiesComponent *objectPropertiesComponent = new ObjectPropertiesComponent(300, 400, font, mainWindow);
+    mainWindow->addWidget(650, 300, objectPropertiesComponent);
 
-    ObjectListWidget *objectListWidget = new ObjectListWidget(200, 150, font, 
-        [objectPropertiesWidget](Primitives *selected) { objectPropertiesWidget->selectObject(selected); },
-        [objectPropertiesWidget](Primitives *selected) { objectPropertiesWidget->selectObject(nullptr); },
+    ObjectListComponent *objectListComponent = new ObjectListComponent(200, 150, font, 
+        [objectPropertiesComponent](Primitives *selected) { objectPropertiesComponent->selectObject(selected); },
+        [objectPropertiesComponent](Primitives *selected) { objectPropertiesComponent->selectObject(nullptr); },
         mainWindow);
     
-    mainWindow->addWidget(650, 100, objectListWidget);
+    mainWindow->addWidget(650, 100, objectListComponent);
 
     
 
@@ -566,7 +579,7 @@ int main() {
     sceneWindow->addLight({0, 0, 10}, light);
     sceneWindow->addObject({-2, 0, 4}, sun);
 
-    objectListWidget->setObjects(sceneWindow->sceneManager().primitives());
+    objectListComponent->setObjects(sceneWindow->sceneManager().primitives());
 
 
 
