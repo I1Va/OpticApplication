@@ -169,8 +169,7 @@ public:
     CameraWindow(int width, int height, Widget * parent=nullptr): Widget(width, height, parent) {}
 };
 
-
-
+ 
 class TextWidget : public Widget {
 protected:
     std::string text_;
@@ -178,30 +177,18 @@ protected:
     std::size_t fontSize_;
     TTF_Font* font_;
 
-    
-    std::function<void(const std::string)> onEnter_;
-    bool needOnEnterCall_ = false;
-
 public:
     TextWidget
     (
         const std::size_t width, const std::size_t height,
         const std::string &text, const SDL_Color textColor,
-        const std::size_t fontSize, const std::string &fontPath,
-        std::function<void(const std::string &)> onEnter=nullptr,
+        const std::size_t fontSize, TTF_Font *font,
         Widget *parent=nullptr
     ): 
         Widget(width, height, parent),
         text_(text), textColor_(textColor), 
-        fontSize_(fontSize), font_(nullptr),
-        onEnter_(onEnter)
-    {
-        font_ = TTF_OpenFont(fontPath.c_str(), fontSize); 
-        if (!font_) {
-            SDL_Log("TTF_OpenFont: %s", TTF_GetError());
-            assert(0);
-        }
-    }
+        fontSize_(fontSize), font_(font)
+    { assert(font_); }
 
     void renderSelfAction(SDL_Renderer* renderer) override {
         assert(renderer);
@@ -222,20 +209,24 @@ public:
     }
 
     void setText(const std::string &str) { text_ = str; } 
-    void setOnEnter( std::function<void(const std::string &)> onEnter) { onEnter_ = onEnter; } 
+    
     const std::string &text() const { return text_; } 
 };
 
 class TextInputWidget : public TextWidget {
+    std::function<void(const std::string)> onEnter_;
+    bool needOnEnterCall_ = false;
 public:
     TextInputWidget
     (
         const std::size_t width, const std::size_t height,
         const std::string &text, const SDL_Color textColor,
-        const std::size_t fontSize, const std::string &fontPath,
+        const std::size_t fontSize, TTF_Font *font,
         std::function<void(const std::string)> onEnter=nullptr,
         Widget *parent=nullptr
-    ):  TextWidget(width, height, text, textColor, fontSize, fontPath, onEnter, parent) {}
+    ):  
+        TextWidget(width, height, text, textColor, fontSize, font, parent),
+        onEnter_(onEnter) {}
 
     bool updateSelfAction() {
         if (needOnEnterCall_) {
@@ -295,30 +286,92 @@ public:
 
         return true;
     }
+
+    void setOnEnter( std::function<void(const std::string &)> onEnter) { onEnter_ = onEnter; }
 };
 
 
 
 
-class ObjectsListWidget : public Widget {
 
+
+// List of scene objects
+class ObjectListWidget : public Container {
+    static constexpr double OBJECT_RECORD_HEIGHT = 20;
+    static constexpr std::size_t FONT_SIZE = 20; 
+    static constexpr SDL_Color TEXT_COLOR = BLACK_SDL_COLOR;
+    TTF_Font* font = nullptr;
+
+    std::vector<Primitives *> objects;
+
+    int selectedIndex = -1;
+
+
+    ObjectListWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
+        Container(width, height, parent) {}
+    
+
+    bool updateSelfAction() override {
+        for (Widget *child : children_) {
+            assert(child);
+            delete child;
+        }
+        children_.clear();
+
+        for (size_t i = 0; i < objects.size(); i++) {
+            Primitives *primitive = objects[i];
+            std::string recordName = std::to_string(i) + ") " + primitive->typeString();
+    
+            TextWidget *objectRecord = new TextWidget(rect_.w, OBJECT_RECORD_HEIGHT, recordName, TEXT_COLOR, FONT_SIZE, font, this);
+            addWidget(0, i * OBJECT_RECORD_HEIGHT, objectRecord);
+        }
+    }
 };
 
 
-class OjectsListWindow : public Window {
-    ObjectsListWidget *objectList = nullptr;
-    // ScrollBar *scalbar = nullptr;
-};
 
 
-class SceneWindow : public Window {
+
+// // Material properties (shader, color, roughness, etc.)
+// class MaterialPropertiesWidget : public Widget {
+// public:
+//     Material* target;
+//     Slider colorR, colorG, colorB;
+//     Slider roughness, metallic;
+//     void draw() override;
+//     void update() override;
+// };
+
+// // Transformation controls (position, rotation, scale)
+// class TransformWidget : public Widget {
+// public:
+//     Object* target;
+//     Vec3Input position, rotation, scale; // custom composed widgets
+//     void draw() override;
+//     void update() override;
+// };
+
+
+// class PropertiesPanel : public Container {
+// public:
+//     ObjectListWidget objList;
+//     MaterialPropertiesWidget matProps;
+//     TransformWidget transform;
+//     void draw() override;
+//     void update() override;
+// };
+
+
+
+
+class SceneWindow : public Container {
     SceneManager sceneManager_;
     Camera camera_;
     CameraWindow *cameraWindow_ = nullptr;
 
 public:
     SceneWindow(int w, int h, Widget *parent=nullptr): 
-        Window(w, h, parent), 
+        Container(w, h, parent), 
         sceneManager_(), camera_(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, RENDER_SCREEN_RESOLUTION) 
     { 
         camera_.setSamplesPerScatter(1);
@@ -370,6 +423,10 @@ void textReceived(const std::string &str) {
 
 int main() {
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
+
+
+    TTF_Font* font = application.createFont(FONT_PATH, 52);
+
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
     application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
 
@@ -377,7 +434,7 @@ int main() {
     mainWindow->addWidget(0, 0, sceneWindow);
 
 
-    TextInputWidget *textField = new TextInputWidget(300, 100, "23423", BLACK_SDL_COLOR, 32, FONT_PATH, textReceived, mainWindow);
+    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", BLACK_SDL_COLOR, 100, font, textReceived, mainWindow);
     mainWindow->addWidget(650, 0, textField);
 
 
