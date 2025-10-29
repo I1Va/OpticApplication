@@ -1,7 +1,9 @@
 #pragma once
 #include "MyGUI.h"
 #include "Button.hpp" 
+#include <algorithm>
  
+
 class TextWidget : public Widget {
     static constexpr SDL_Color DEFAULT_TEXT_COLOR=BLACK_SDL_COLOR;
     static constexpr SDL_Color DEFAULT_BACKGROUND_COLOR=WHITE_SDL_COLOR;
@@ -36,6 +38,9 @@ public:
         SDL_RenderFillRect(renderer, &full);
 
         SDL_Rect textRect = getTextSize(font_, text_.c_str());
+        textRect.w = std::clamp(textRect.w, 0, rect_.w);
+        textRect.h = std::clamp(textRect.h, 0, rect_.h);
+
         SDL_Texture* textTexture = createFontTexture(font_, text_.c_str(), textColor_, renderer);
         SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
     }

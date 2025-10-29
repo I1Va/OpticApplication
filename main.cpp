@@ -8,8 +8,6 @@
 #include "ScrollBar.h"
 #include "TextWidget.hpp"
 
-
-
 // const ButtonTexturePath scrollBarTopBtnPath    = {"images/scrollBar/topButton/unpressed.png", "images/scrollBar/topButton/pressed.png"};
 // const ButtonTexturePath scrollBarBottomBtnPath = {"images/scrollBar/bottomButton/unpressed.png", "images/scrollBar/bottomButton/pressed.png"};
 // const ButtonTexturePath scrollThumbBtnPath     = {"images/scrollBar/thumbButton/unpressed.png", "images/scrollBar/thumbButton/pressed.png"};
@@ -213,7 +211,7 @@ public:
         for (size_t i = 0; i < objects_.size(); i++) {
             Primitives *primitive = objects_[i];
         
-            std::string recordName = std::to_string(i) + ") " + primitive->typeString();
+            std::string recordName = primitive->typeString() + " " + std::to_string(i);
             
             ClickableTextWidget *objectRecord = new ClickableTextWidget(rect_.w - 2 * BORDER_THIKNESS, OBJECT_RECORD_HEIGHT, recordName, font_, 
                                                                         [this, primitive]() { selectObject(primitive); },
@@ -247,25 +245,123 @@ public:
     Primitives *selectedObject() { return selectedObject_; }
 };
 
-// class ObjectPropertiesWidget : public Container {
+class ObjectPropertiesWidget : public Container {
+    static constexpr std::size_t BORDER_THIKNESS = 3;
+    static constexpr SDL_Color BORDER_COLOR = BLACK_SDL_COLOR;
+    static constexpr SDL_Color BACK_COLOR = WHITE_SDL_COLOR;
 
-// public:
-//     ObjectPropertiesWidget(int width, int height, Widget *parent=nullptr): Container(width, height, parent) {}
+    static constexpr SDL_Color TEXT_COLOR = BLACK_SDL_COLOR;
+    static constexpr std::size_t OBJECT_RECORD_HEIGHT = 20;
+    TTF_Font* font_ = nullptr;
+
+    const Primitives *selected_=nullptr;
+    bool needUpdateRecords = false;
+
+public:
+    ObjectPropertiesWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
+        Container(width, height, parent), font_(font) {}
+    
+    void selectObject(const Primitives *object) { 
+        selected_ = object; 
+        needUpdateRecords = true;
+    }
+
+    void updateRecords() {
+         for (Widget *child : children_) {
+            assert(child);
+        
+            if (UIManager_->hovered() == child) UIManager_->setHovered(nullptr);
+            if (UIManager_->mouseActived() == child) UIManager_->setMouseActived(nullptr);
+            
+            delete child;
+        }
+        children_.clear();
+
+        if (!selected_) return;
 
 
+        int startX = BORDER_THIKNESS;
+        int startY = BORDER_THIKNESS;
+        int recordWidth = rect_.w / 2 - BORDER_THIKNESS * 2;
+        int recordHeight = OBJECT_RECORD_HEIGHT;
+    
+        TextWidget *nameLabel = new TextWidget(recordWidth, recordHeight, "Name", font_, this);
+        TextWidget *nameField = new TextWidget(recordWidth, recordHeight, selected_->typeString(), font_, this);
+        addWidget(startX, startY, nameLabel);
+        addWidget(startX + recordWidth, startY, nameField);
+    
+        TextWidget *materialLabel = new TextWidget(recordWidth, recordHeight, "Material", font_, this);
+        TextWidget *materialField = new TextWidget(recordWidth, recordHeight, selected_->material()->typeString(), font_, this);
+        addWidget(startX, startY + recordHeight, materialLabel);
+        addWidget(startX + recordWidth, startY + recordHeight, materialField);
 
 
-// };
+        TextWidget *posXLabel = new TextWidget(recordWidth, recordHeight, "Pos X", font_, this);
+        TextInputWidget *posXField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->position().x()), font_, nullptr, this);
+        addWidget(startX, startY + recordHeight * 2, posXLabel);
+        addWidget(startX + recordWidth, startY + recordHeight * 2, posXField);
+
+        TextWidget *posYLabel = new TextWidget(recordWidth, recordHeight, "Pos Y", font_, this);
+        TextInputWidget *posYField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->position().y()), font_, nullptr, this);
+        addWidget(startX, startY + recordHeight * 3, posYLabel);
+        addWidget(startX + recordWidth, startY + recordHeight * 3, posYField);
+
+        TextWidget *posZLabel = new TextWidget(recordWidth, recordHeight, "Pos Z", font_, this);
+        TextInputWidget *posZField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->position().z()), font_, nullptr, this);
+        addWidget(startX, startY + recordHeight * 4, posZLabel);
+        addWidget(startX + recordWidth, startY + recordHeight * 4, posZField);
 
 
+        TextWidget *diffuseXLabel = new TextWidget(recordWidth, recordHeight, "Diffuse X", font_, this);
+        TextInputWidget *diffuseXField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->material()->diffuse().x()), font_, nullptr, this);
+        addWidget(startX, startY + recordHeight * 5, diffuseXLabel);
+        addWidget(startX + recordWidth, startY + recordHeight * 5, diffuseXField);
 
-class SceneWindow : public Container {
+        TextWidget *diffuseYLabel = new TextWidget(recordWidth, recordHeight, "Diffuse Y", font_, this);
+        TextInputWidget *diffuseYField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->material()->diffuse().y()), font_, nullptr, this);
+        addWidget(startX, startY + recordHeight * 6, diffuseYLabel);
+        addWidget(startX + recordWidth, startY + recordHeight * 6, diffuseYField);
+        
+        TextWidget *diffuseZLabel = new TextWidget(recordWidth, recordHeight, "Diffuse Z", font_, this);
+        TextInputWidget *diffuseZField = new TextInputWidget(recordWidth, recordHeight, std::to_string(selected_->material()->diffuse().z()), font_, nullptr, this);
+        addWidget(startX, startY + recordHeight * 7, diffuseZLabel);
+        addWidget(startX + recordWidth, startY + recordHeight * 7, diffuseZField);
+
+        
+        
+        // selected_->material();
+        // selected_->position();
+    
+        setRerenderFlag();
+        needUpdateRecords = false;
+    }
+
+    bool updateSelfAction() override {
+        if (needUpdateRecords) updateRecords();       
+
+        return true; 
+    }
+
+    void renderSelfAction(SDL_Renderer* renderer) override { 
+
+        SDL_Rect frame = {0, 0, rect_.w, rect_.h};
+        SDL_SetRenderDrawColor(renderer, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, BORDER_COLOR.a);
+        SDL_RenderFillRect(renderer, &frame);
+    
+        SDL_SetRenderDrawColor(renderer, BACK_COLOR.r, BACK_COLOR.g, BACK_COLOR.b, BACK_COLOR.a);
+        SDL_Rect interior = {BORDER_THIKNESS, BORDER_THIKNESS, rect_.w - 2 * BORDER_THIKNESS, rect_.h - 2 * BORDER_THIKNESS};
+        SDL_RenderFillRect(renderer, &interior);                
+    }
+};
+
+class SceneWidget : public Container {
     SceneManager sceneManager_;
     Camera camera_;
     CameraWindow *cameraWindow_ = nullptr;
+    ObjectPropertiesWidget *objectProperties_ = nullptr;
 
 public:
-    SceneWindow(int w, int h, Widget *parent=nullptr): 
+    SceneWidget(int w, int h, Widget *parent=nullptr): 
         Container(w, h, parent), 
         sceneManager_(), camera_(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, RENDER_SCREEN_RESOLUTION) 
     { 
@@ -320,23 +416,6 @@ int main() {
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
 
 
-    TTF_Font* font = application.createFont(FONT_PATH, 18);
-
-    Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
-    application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
-
-    SceneWindow *sceneWindow = new SceneWindow(RENDER_SCREEN_RESOLUTION.first, RENDER_SCREEN_RESOLUTION.second, mainWindow);
-    mainWindow->addWidget(0, 0, sceneWindow);
-
-    ObjectListWidget * objectListWidget = new ObjectListWidget(200, 150, font, mainWindow);
-    mainWindow->addWidget(650, 100, objectListWidget);
-   
-
-
-    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", font, textReceived, mainWindow);
-    mainWindow->addWidget(650, 0, textField);
-
-
 
 
 
@@ -349,8 +428,25 @@ int main() {
 
 
 
+    TTF_Font* font = application.createFont(FONT_PATH, 22);
+
+    Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
+    application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
+
+    SceneWidget *sceneWindow = new SceneWidget(RENDER_SCREEN_RESOLUTION.first, RENDER_SCREEN_RESOLUTION.second, mainWindow);
+    mainWindow->addWidget(0, 0, sceneWindow);
+
+    ObjectListWidget *objectListWidget = new ObjectListWidget(200, 150, font, mainWindow);
+    mainWindow->addWidget(650, 100, objectListWidget);
 
 
+   
+
+
+    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", font, textReceived, mainWindow);
+    mainWindow->addWidget(650, 0, textField);
+
+    
 
     // SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
 
@@ -369,9 +465,20 @@ int main() {
   
     PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &sceneWindow->sceneManager());
 
-
-
     SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &sceneWindow->sceneManager());
+
+
+
+
+
+    ObjectPropertiesWidget *objectPropertiesWidget = new  ObjectPropertiesWidget(200, 200, font, mainWindow);
+    objectPropertiesWidget->selectObject(midSphere);
+    mainWindow->addWidget(650, 300, objectPropertiesWidget);
+
+
+
+
+
 
     
     sceneWindow->addObject({0, 0, -100}, ground);
@@ -386,6 +493,8 @@ int main() {
     objectListWidget->setObjects(sceneWindow->sceneManager().primitives());
 
 
+
+    
  
 
     // // !!!!! WARNING  
@@ -397,4 +506,3 @@ int main() {
     application.run();
 
 }
-
