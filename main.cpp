@@ -174,7 +174,6 @@ class TextWidget : public Widget {
 protected:
     std::string text_;
     SDL_Color textColor_;
-    std::size_t fontSize_;
     TTF_Font* font_;
 
 public:
@@ -182,12 +181,12 @@ public:
     (
         const std::size_t width, const std::size_t height,
         const std::string &text, const SDL_Color textColor,
-        const std::size_t fontSize, TTF_Font *font,
+        TTF_Font *font,
         Widget *parent=nullptr
     ): 
         Widget(width, height, parent),
         text_(text), textColor_(textColor), 
-        fontSize_(fontSize), font_(font)
+        font_(font)
     { assert(font_); }
 
     void renderSelfAction(SDL_Renderer* renderer) override {
@@ -198,13 +197,8 @@ public:
         SDL_RenderFillRect(renderer, &full);
 
 
-        SDL_Rect textRect = {0, 0, rect_.w, rect_.h};
-
-        if (TTF_SizeUTF8(font_, text_.c_str(), &textRect.w, &textRect.h)) {
-            SDL_Log("TTF_SizeUTF8 failed: %s", TTF_GetError());
-        }
-
-        SDL_Texture* textTexture = createFontTexture(font_, text_.c_str(), fontSize_, textColor_, renderer);
+        SDL_Rect textRect = getTextSize(font_, text_.c_str());
+        SDL_Texture* textTexture = createFontTexture(font_, text_.c_str(), textColor_, renderer);
         SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
     }
 
@@ -221,11 +215,11 @@ public:
     (
         const std::size_t width, const std::size_t height,
         const std::string &text, const SDL_Color textColor,
-        const std::size_t fontSize, TTF_Font *font,
+        TTF_Font *font,
         std::function<void(const std::string)> onEnter=nullptr,
         Widget *parent=nullptr
     ):  
-        TextWidget(width, height, text, textColor, fontSize, font, parent),
+        TextWidget(width, height, text, textColor, font, parent),
         onEnter_(onEnter) {}
 
     bool updateSelfAction() {
@@ -291,47 +285,6 @@ public:
 };
 
 
-
-
-
-
-// List of scene objects
-class ObjectListWidget : public Container {
-    static constexpr double OBJECT_RECORD_HEIGHT = 20;
-    static constexpr std::size_t FONT_SIZE = 20; 
-    static constexpr SDL_Color TEXT_COLOR = BLACK_SDL_COLOR;
-    TTF_Font* font = nullptr;
-
-    std::vector<Primitives *> objects;
-
-    int selectedIndex = -1;
-
-
-    ObjectListWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
-        Container(width, height, parent) {}
-    
-
-    bool updateSelfAction() override {
-        for (Widget *child : children_) {
-            assert(child);
-            delete child;
-        }
-        children_.clear();
-
-        for (size_t i = 0; i < objects.size(); i++) {
-            Primitives *primitive = objects[i];
-            std::string recordName = std::to_string(i) + ") " + primitive->typeString();
-    
-            TextWidget *objectRecord = new TextWidget(rect_.w, OBJECT_RECORD_HEIGHT, recordName, TEXT_COLOR, FONT_SIZE, font, this);
-            addWidget(0, i * OBJECT_RECORD_HEIGHT, objectRecord);
-        }
-    }
-};
-
-
-
-
-
 // // Material properties (shader, color, roughness, etc.)
 // class MaterialPropertiesWidget : public Widget {
 // public:
@@ -360,6 +313,48 @@ class ObjectListWidget : public Container {
 //     void draw() override;
 //     void update() override;
 // };
+
+
+
+// List of scene objects
+class ObjectListWidget : public Container {
+    static constexpr SDL_Color TEXT_COLOR = BLACK_SDL_COLOR;
+    static constexpr std::size_t OBJECT_RECORD_HEIGHT = 20;
+    TTF_Font* font_ = nullptr;
+
+    std::vector<Primitives *> objects_{};
+    int selectedIndex_ = -1;
+
+public:
+    ObjectListWidget(int width, int height, TTF_Font* font, Widget *parent=nullptr):
+        Container(width, height, parent), font_(font) {}
+    
+
+    void setObjects(const std::vector<Primitives *> objects) { objects_ = objects; }
+    bool updateSelfAction() override {
+        for (Widget *child : children_) {
+            assert(child);
+        
+            if (UIManager_->hovered() == child) UIManager_->setHovered(nullptr);
+            if (UIManager_->mouseActived() == child) UIManager_->setMouseActived(nullptr);
+            
+            delete child;
+        }
+        children_.clear();
+
+        for (size_t i = 0; i < objects_.size(); i++) {
+            Primitives *primitive = objects_[i];
+            std::string recordName = std::to_string(i) + ") " + primitive->typeString();
+            
+            TextWidget *objectRecord = new TextWidget(rect_.w, OBJECT_RECORD_HEIGHT, recordName, TEXT_COLOR, font_, this);
+            addWidget(0, i * OBJECT_RECORD_HEIGHT, objectRecord);
+        }
+
+        setRerenderFlag();
+
+        return true; 
+    }
+};
 
 
 
@@ -425,7 +420,7 @@ int main() {
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
 
 
-    TTF_Font* font = application.createFont(FONT_PATH, 52);
+    TTF_Font* font = application.createFont(FONT_PATH, 18);
 
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
     application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
@@ -433,8 +428,12 @@ int main() {
     SceneWindow *sceneWindow = new SceneWindow(RENDER_SCREEN_RESOLUTION.first, RENDER_SCREEN_RESOLUTION.second, mainWindow);
     mainWindow->addWidget(0, 0, sceneWindow);
 
+    ObjectListWidget * objectListWidget = new ObjectListWidget(200, 500, font, mainWindow);
+    mainWindow->addWidget(650, 100, objectListWidget);
+   
 
-    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", BLACK_SDL_COLOR, 100, font, textReceived, mainWindow);
+
+    TextInputWidget *textField = new TextInputWidget(300, 50, "23423", BLACK_SDL_COLOR, font, textReceived, mainWindow);
     mainWindow->addWidget(650, 0, textField);
 
 
@@ -483,6 +482,9 @@ int main() {
 
     sceneWindow->addLight({0, 0, 10}, light);
     sceneWindow->addObject({-2, 0, 4}, sun);
+
+    objectListWidget->setObjects(sceneWindow->sceneManager().primitives());
+
 
  
 

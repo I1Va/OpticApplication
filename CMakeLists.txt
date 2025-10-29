@@ -4,9 +4,10 @@ project(OpticApplication LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+
 find_library(SDL2_GFX_LIB SDL2_gfx)
 find_path(SDL2_GFX_INCLUDE SDL2/SDL2_gfxPrimitives.h)
-
 
 set(GEOMLIB_BUILD_TESTS OFF CACHE BOOL "Disable GeomLib tests")
 add_subdirectory(libs/GeomLib)
@@ -33,3 +34,9 @@ target_link_libraries(OpticApplication PRIVATE
     RayTracer
     geometry_module
 )   
+
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(OpticApplication PRIVATE -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+    target_link_options(OpticApplication PRIVATE -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+endif()
