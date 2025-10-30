@@ -40,10 +40,7 @@ int main() {
     
     mainWindow->addWidget(650, 10, objectListComponent);
 
-          
-   
-
-
+        
 
     // SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
 
