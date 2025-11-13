@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 23)
 
 option(GEOMLIB_BUILD_TESTS "GeomLib unit tests" OFF)
 
+option(SANITIZE "Enable compiler sanitizers" OFF)
+option(BUILD_TESTS "Build unit tests" ON)
+
 add_subdirectory(libs/GeomLib)
 add_subdirectory(libs/MyGUI)
 add_subdirectory(libs/RayTracer)

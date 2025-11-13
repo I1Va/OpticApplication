@@ -439,7 +439,7 @@ public:
     { 
         camera_.setSamplesPerScatter(1);
         camera_.setSamplesPerPixel(1);
-        camera_.disableLDirect();
+        // camera_.disableLDirect();
         camera_.setMaxRayDepth(5);
         camera_.setThreadPixelbunchSize(100);
         // camera.disableParallelRender();
