@@ -9,6 +9,17 @@ option(GEOMLIB_BUILD_TESTS "GeomLib unit tests" OFF)
 option(SANITIZE "Enable compiler sanitizers" OFF)
 option(BUILD_TESTS "Build unit tests" ON)
 
+if (MSVC)
+    add_compile_options(/W4 /WX)
+else()
+    add_compile_options(
+         $<$<BOOL:${SANITIZE}>:-fsanitize=address,undefined>
+    )
+    add_link_options(
+         $<$<BOOL:${SANITIZE}>:-fsanitize=address,undefined>
+    )
+endif()
+
 add_subdirectory(libs/GeomLib)
 add_subdirectory(libs/MyGUI)
 add_subdirectory(libs/RayTracer)

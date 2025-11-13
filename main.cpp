@@ -12,15 +12,42 @@ const int APP_BORDER_SIZE = 20;
 
 class ScreenShotWindow : public Container {
     public:
-        ScreenShotWindow(int w, int h, Widget *parent=nullptr) : Container(w, h, parent) {}
+        ScreenShotWindow(int w, int h) : Container(w, h, /*parent=*/nullptr) {
+            SDL_SetTextureAlphaMod(texture_, 0);
+        }
     
     private:
         void renderSelfAction(SDL_Renderer* renderer) override {
             assert(renderer);
-
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // black
+            
+            SDL_SetRenderDrawColor(renderer, 120, 40, 30, 120); // black
             SDL_Rect full = {0, 0, rect_.w, rect_.h};
             SDL_RenderFillRect(renderer, &full);
+        }
+
+        bool updateSelfAction() override {
+            setRerenderFlag();
+
+            return true;
+        }
+
+        bool onMouseWheelSelfAction(const MouseWheelEvent &event) override {
+            return true;
+        }
+        bool onMouseDownSelfAction(const MouseButtonEvent &event) override {
+            return true;
+        }
+        bool onMouseUpSelfAction(const MouseButtonEvent &event) override {
+            return true;
+        }
+        bool onMouseMoveSelfAction(const MouseMotionEvent &event) override {
+            return true;
+        }
+        bool onKeyDownSelfAction(const KeyEvent &event) override {
+            return true;
+        }
+        bool onKeyUpSelfAction(const KeyEvent &event) override {
+            return true;
         }
 };
 
@@ -85,7 +112,46 @@ ObjectListComponent *createObjectsPanel(Container *mainWindow, SceneWidget *scen
     return objectListComponent;
 }
 
+void test() {
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Window *win = SDL_CreateWindow("Transparency Demo",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, 0);
+    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+
+    SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+
+    int quit = 0;
+    SDL_Event e;
+    while (!quit) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) quit = 1;
+        }
+
+        SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
+        SDL_RenderClear(ren);
+
+        // Opaque blue rectangle
+        SDL_Rect r1 = {100, 100, 200, 200};
+        SDL_SetRenderDrawColor(ren, 0, 0, 255, 255);
+        SDL_RenderFillRect(ren, &r1);
+
+        // Semi-transparent red rectangle overlapping
+        SDL_Rect r2 = {180, 180, 200, 200};
+        SDL_SetRenderDrawColor(ren, 255, 0, 0, 128);
+        SDL_RenderFillRect(ren, &r2);
+
+        SDL_RenderPresent(ren);
+        SDL_Delay(16);
+    }
+
+    SDL_DestroyRenderer(ren);
+    SDL_DestroyWindow(win);
+    SDL_Quit();
+}
+
+
 int main() {
+
     UIManager application(MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second, 10);
     TTF_Font* font = application.createFont(FONT_PATH, 22);
 
@@ -99,6 +165,9 @@ int main() {
     mainWindow->addWidget(650, 10, objectsPanel);
 
 
+    ScreenShotWindow *screenShotWindow = new ScreenShotWindow(400, 431);
+
+    application.pinModalWidget(100, 100, screenShotWindow);
 
 
     std::cout << "renderTime : " << sceneWidget->measureRenderTime() << "\n"; 
