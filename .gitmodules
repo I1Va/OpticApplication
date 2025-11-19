@@ -1,0 +1,3 @@
+[submodule "external/gui-interface"]
+	path = external/gui-interface
+	url = git@github.com:random-username-here/mipt-ded-zemax.git
