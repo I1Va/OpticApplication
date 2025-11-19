@@ -1,8 +1,8 @@
 #pragma once
-#include "MyGUI.h"
-#include "Button.hpp" 
 #include <algorithm>
- 
+#include "Events.h"
+#include "Button.hpp" 
+#include "Widget.h"
 
 class TextWidget : public Widget {
     static constexpr SDL_Color DEFAULT_TEXT_COLOR=BLACK_SDL_COLOR;
@@ -81,13 +81,13 @@ public:
         if (event.sym == SDLK_BACKSPACE && !text_.empty()) {
             text_.pop_back();
             setRerenderFlag();
-            return false;
+            return CONSUME;
         }
 
         if (event.sym >= SDLK_0 && event.sym <= SDLK_9) {
             text_.push_back(static_cast<char>('0' + (event.sym - SDLK_0)));
             setRerenderFlag();
-            return false;
+            return CONSUME;
         }
 
         if (event.sym >= SDLK_a && event.sym <= SDLK_z) {
@@ -96,41 +96,40 @@ public:
                                              : ('a' + (event.sym - SDLK_a)));
             text_.push_back(c);
             setRerenderFlag();
-            return false;
+            return CONSUME;
         }
-
 
         if (event.sym == SDLK_MINUS) {
             text_.push_back('-');
             setRerenderFlag();
-            return false;
+            return CONSUME;
         }
 
         if (event.sym == SDLK_SPACE) {
             text_.push_back(' ');
             setRerenderFlag();
-            return false;
+            return CONSUME;
         }
 
         if (event.sym == SDLK_PERIOD) {
             text_.push_back('.');
             setRerenderFlag();
-            return false;
+            return CONSUME;
         }
 
         if (event.sym == SDLK_COMMA) {
             text_.push_back(',');
             setRerenderFlag();
-            return false;
+            return CONSUME;
         }
 
         if (event.sym == SDLK_KP_ENTER || event.sym == SDLK_RETURN) {
             setRerenderFlag();
             needOnEnterCall_ = true;
-            return false;
+            return CONSUME;
         }
 
-        return true;
+        return PROPAGATE;
     }
 
     void setOnEnter( std::function<void(const std::string &)> onEnter) { onEnter_ = onEnter; }

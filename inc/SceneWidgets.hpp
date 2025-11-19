@@ -2,8 +2,10 @@
 
 #include <chrono>
 
+#include "Container.h"
+#include "Events.h"
+
 #include "RayTracer.h"
-#include "MyGUI.h"
 #include "Camera.h"
 #include "ScrollBar.h"
 #include "TextWidget.hpp"
@@ -43,51 +45,51 @@ class CameraWindow : public Widget {
             case SDLK_a:    
                 accumulatedCameraRotation_ += gm_dot<int, 2> (-CAMERA_KEY_CONTROL_DELTA, 0);
                 cameraNeedRotation_ = true;
-                return false;
+                return CONSUME;
 
             case SDLK_d:
                 accumulatedCameraRotation_ += gm_dot<int, 2> (CAMERA_KEY_CONTROL_DELTA, 0);
                 cameraNeedRotation_ = true;
-                return false;
+                return CONSUME;
 
             case SDLK_w: 
                 accumulatedCameraRotation_ += gm_dot<int, 2> (0, -CAMERA_KEY_CONTROL_DELTA);
                 cameraNeedRotation_ = true;
-                return false;
+                return CONSUME;
             
             case SDLK_s:
                 accumulatedCameraRotation_ += gm_dot<int, 2> (0, CAMERA_KEY_CONTROL_DELTA);
                 cameraNeedRotation_ = true;
-                return false;
+                return CONSUME;
                 
             case SDLK_LEFT:
                 accumulatedCameraRel_ += gm_dot<int, 2> (CAMERA_KEY_CONTROL_DELTA, 0);
                 cameraNeedRelocation_ = true;
-                return false;
+                return CONSUME;
             
             case SDLK_RIGHT:    
                 accumulatedCameraRel_ += gm_dot<int, 2> (-CAMERA_KEY_CONTROL_DELTA, 0);
                 cameraNeedRelocation_ = true;
-                return false;
+                return CONSUME;
 
             case SDLK_UP: 
                 accumulatedCameraRel_ += gm_dot<int, 2> (0, CAMERA_KEY_CONTROL_DELTA);
                 cameraNeedRelocation_ = true;
-                return false;
+                return CONSUME;
             
             case SDLK_DOWN:
                 accumulatedCameraRel_ += gm_dot<int, 2> (0, -CAMERA_KEY_CONTROL_DELTA);
                 cameraNeedRelocation_ = true;
-                return false;
+                return CONSUME;
         }
 
-        return true;
+        return PROPAGATE;
     }
 
     bool onMouseWheelSelfAction(const MouseWheelEvent &event) override {
         accumulatedCameraZoom_ += event.rot.y;
         cameraNeedZoom_ = true;
-        return false;
+        return CONSUME;
     }
 
     bool onMouseMoveSelfAction(const MouseMotionEvent &event) override {
@@ -95,13 +97,13 @@ class CameraWindow : public Widget {
             case SDL_BUTTON_MIDDLE:
                 accumulatedCameraRotation_ += event.rel;
                 cameraNeedRotation_ = true;
-                return false;
+                return CONSUME;
             case SDL_BUTTON_LEFT:
                 accumulatedCameraRel_ += event.rel * CAMERA_MOUSE_RELOCATION_SCALE;
                 cameraNeedRelocation_ = true;
-                return false;
+                return CONSUME;
         }
-        return true;
+        return PROPAGATE;
     }
 
     void applyCameraRelocation() {
@@ -439,10 +441,10 @@ public:
     { 
         camera_.setSamplesPerScatter(1);
         camera_.setSamplesPerPixel(1);
-        // camera_.disableLDirect();
+        camera_.disableLDirect();
         camera_.setMaxRayDepth(5);
         camera_.setThreadPixelbunchSize(100);
-        // camera.disableParallelRender();
+        // camera_.disableParallelRender();
 
         cameraWindow_ = new CameraWindow(w, h, this);
 

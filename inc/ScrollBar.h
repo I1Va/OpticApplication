@@ -2,8 +2,9 @@
 #define SCROLL_BAR_H
 
 #include "gm_primitives.hpp"
-#include "MyGUI.h"
 #include "Button.hpp"
+#include "UIManager.h"
+
 
 class ThumbButton : public Button {
     gm_dot<int, 2> accumulatedRel_ = {};
@@ -26,10 +27,10 @@ public:
         if (this == UIManager_->mouseActived() && event.button == SDL_BUTTON_LEFT) {
             accumulatedRel_ += event.rel;
             replaced_ = true;
-            return true;
+            return CONSUME;
         }
 
-        return false;
+        return PROPAGATE;
     }
 
     void clampPos() {
@@ -170,7 +171,7 @@ public:
 
     bool onMouseDownSelfAction(const MouseButtonEvent &event) override {
         std::cout << "Scroll Bar :  hitting a free area TODO!\n";
-        return true;
+        return CONSUME;
     }
 };
 

@@ -1,7 +1,13 @@
 #pragma once
 
-#include "MyGUI.h"
+#include <functional>
+#include "Widget.h"
 
+
+struct ButtonTexturePath {
+    const char *unpressed;
+    const char *pressed;
+};
 
 class Button : public Widget {
 protected:
@@ -26,14 +32,14 @@ public:
     {}
 
     bool onMouseUpSelfAction(const MouseButtonEvent &event) {
-        if (sticky_) return false;
+        if (sticky_) return PROPAGATE;
 
         if (event.button == SDL_BUTTON_LEFT) {
             pressed_ = false;
             setRerenderFlag();
-            return true;
+            return CONSUME;
         }
-        return false;
+        return PROPAGATE;
     }
 
     bool onMouseDownSelfAction(const MouseButtonEvent &event) {
@@ -47,9 +53,9 @@ public:
                 if (onUpFunction_) onUpFunction_();
             }
 
-            return true;
+            return CONSUME;
         }
-        return false;
+        return PROPAGATE;
     }
 
     virtual void setPressedTexture(SDL_Renderer* renderer) {

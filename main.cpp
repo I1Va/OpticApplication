@@ -2,9 +2,9 @@
 #include <chrono>
 #include <string>
 
-#include "MyGUI.h"
 #include "RayTracer.h"
 #include "SceneWidgets.hpp"
+
 
 const char FONT_PATH[] = "fonts/Roboto/RobotoFont.ttf";
 const std::pair<int, int> MAIN_WINDOW_SIZE = {1000, 600};
@@ -19,10 +19,18 @@ class ScreenShotWindow : public Container {
     private:
         void renderSelfAction(SDL_Renderer* renderer) override {
             assert(renderer);
+
+
+            int border = 3; 
+            // SDL_SetRenderDrawColor(renderer, 2, 250, 247, 255);
+            // SDL_Rect full =  {0, 0, rect_.w, rect_.h};
+            // SDL_RenderFillRect(renderer, &full);
             
-            SDL_SetRenderDrawColor(renderer, 120, 40, 30, 120); // black
-            SDL_Rect full = {0, 0, rect_.w, rect_.h};
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 128); // black
+            SDL_Rect full = {border, border, rect_.w - 2 * border, rect_.h - 2 * border};
             SDL_RenderFillRect(renderer, &full);
+
+            
         }
 
         bool updateSelfAction() override {
@@ -32,22 +40,22 @@ class ScreenShotWindow : public Container {
         }
 
         bool onMouseWheelSelfAction(const MouseWheelEvent &event) override {
-            return true;
+            return PROPAGATE;
         }
         bool onMouseDownSelfAction(const MouseButtonEvent &event) override {
-            return true;
+            return PROPAGATE;
         }
         bool onMouseUpSelfAction(const MouseButtonEvent &event) override {
-            return true;
+            return PROPAGATE;
         }
         bool onMouseMoveSelfAction(const MouseMotionEvent &event) override {
-            return true;
+            return PROPAGATE;
         }
         bool onKeyDownSelfAction(const KeyEvent &event) override {
-            return true;
+            return PROPAGATE;
         }
         bool onKeyUpSelfAction(const KeyEvent &event) override {
-            return true;
+            return PROPAGATE;
         }
 };
 
@@ -158,6 +166,9 @@ int main() {
     Container *mainWindow = new Container(MAIN_WINDOW_SIZE.first - 2 * APP_BORDER_SIZE, MAIN_WINDOW_SIZE.second - 2 * APP_BORDER_SIZE);
     application.setMainWidget(APP_BORDER_SIZE, APP_BORDER_SIZE, mainWindow);
 
+    Widget *wgt = new Widget(100, 100);
+    mainWindow->addWidget(100, 100, wgt);
+
     SceneWidget *sceneWidget = createSceneWidget(mainWindow);
     ObjectListComponent *objectsPanel = createObjectsPanel(mainWindow, sceneWidget, font);
 
@@ -165,11 +176,13 @@ int main() {
     mainWindow->addWidget(650, 10, objectsPanel);
 
 
-    ScreenShotWindow *screenShotWindow = new ScreenShotWindow(400, 431);
+    // ScreenShotWindow *screenShotWindow = new ScreenShotWindow(400, 431);
 
-    application.pinModalWidget(100, 100, screenShotWindow);
 
+    // application.pushModalWidget(100, 100, screenShotWindow);
 
     std::cout << "renderTime : " << sceneWidget->measureRenderTime() << "\n"; 
     application.run();
+
+    TTF_CloseFont(font);
 }
