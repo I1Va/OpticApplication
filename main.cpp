@@ -8,7 +8,7 @@
 
 #include "RayTracer.h"
 #include "Camera.h"
-#include "hui/state.hpp"
+#include "hui/ui.hpp"
 #include "misc/dr4_ifc.hpp"
 #include "hui/container.hpp"
 #include "hui/event.hpp"
@@ -188,174 +188,13 @@ namespace roa
 //     return duration / MEASURE_COUNT;
 // }
 
-
-class UIManager {
-    static constexpr double DEFAULT_FRAME_DELAY_SECS = 32.0 / 1000;
-
-    double frameDelaySecs_ = DEFAULT_FRAME_DELAY_SECS;
-
-    hui::State state_;
-    dr4::Texture *windowTexture_;
-    hui::Widget *wTreeRoot_;
-
-    std::vector<std::function<void(int)>> userEvents_ = {};
-
-private:
-    void handleSDLEvents(bool *running) {
-        while (1) {
-            std::optional<dr4::Event> rawDr4Event = state_.GetWindow()->PollEvent();
-            if (!rawDr4Event.has_value()) break;
-
-            dr4::Event dr4Event = rawDr4Event.value();
-            
-            if (dr4Event.type == dr4::Event::Type::QUIT || 
-            (dr4Event.type == dr4::Event::Type::KEY_DOWN && dr4Event.key.sym == dr4::KeyCode::KEYCODE_ESCAPE)) {
-                *running = false;
-                break;
-            }
-
-            switch (dr4Event.type) {
-                case dr4::Event::Type::KEY_DOWN:
-                    {
-                        hui::KeyEvent keyEvent = {};
-                        keyEvent.key = dr4Event.key.sym;
-                        keyEvent.mods = dr4Event.key.mods;
-                        keyEvent.pressed = true;
-
-                        if (state_.GetFocused()) { keyEvent.Apply(*state_.GetFocused()); }
-                        break;
-                    } 
-                case dr4::Event::Type::KEY_UP:
-                    {
-                        hui::KeyEvent keyEvent = {};
-                        keyEvent.key = dr4Event.key.sym;
-                        keyEvent.mods = dr4Event.key.mods;
-                        keyEvent.pressed = false;
-
-                        if (state_.GetFocused()) { keyEvent.Apply(*state_.GetFocused()); }
-                        break;
-                    }
-                case dr4::Event::Type::MOUSE_MOVE:
-                    {
-                        hui::MouseMoveEvent mouseMoveEvent = {};
-                        mouseMoveEvent.rel = dr4Event.mouseMove.rel;
-                        mouseMoveEvent.pos = dr4Event.mouseMove.pos;
-            
-                        if (wTreeRoot_) { 
-                            if (wTreeRoot_->GetRect().Contains(mouseMoveEvent.pos)) {
-                                mouseMoveEvent.Apply(*wTreeRoot_); 
-                            }
-                        }
-                    
-                        break;
-                    }
-                case dr4::Event::Type::MOUSE_WHEEL:
-                    {
-                        hui::MouseWheelEvent mouseWheelEvent = {};
-                        mouseWheelEvent.delta = dr4::Vec2f(dr4Event.mouseWheel.deltaX, dr4Event.mouseWheel.deltaY);
-                        mouseWheelEvent.pos = dr4Event.mouseWheel.pos;
-
-                        if (state_.GetFocused()) { 
-                            if (state_.GetFocused()->GetParent() != nullptr)
-                                mouseWheelEvent.pos -= state_.GetFocused()->GetParent()->GetPos();
-                            if (state_.GetFocused()->GetRect().Contains(mouseWheelEvent.pos))
-                                mouseWheelEvent.Apply(*state_.GetFocused()); 
-                        }
-                    
-                        break;
-                    }
-                case dr4::Event::Type::MOUSE_DOWN:
-                    {
-                        hui::MouseButtonEvent mouseDownEvent = {};
-                        mouseDownEvent.pressed = true;
-                        mouseDownEvent.pos = dr4Event.mouseButton.pos;
-                       if (wTreeRoot_) { 
-                            if (wTreeRoot_->GetRect().Contains(mouseDownEvent.pos))
-                                mouseDownEvent.Apply(*wTreeRoot_); 
-                        }
-
-                        break;
-                    }
-                case dr4::Event::Type::MOUSE_UP:
-                    {
-                        hui::MouseButtonEvent mouseUpEvent = {};
-                        mouseUpEvent.pressed = false;
-                        mouseUpEvent.pos = dr4Event.mouseButton.pos;
-                        if (wTreeRoot_) { 
-                            if (wTreeRoot_->GetRect().Contains(mouseUpEvent.pos))
-                                mouseUpEvent.Apply(*wTreeRoot_); 
-                        }
-
-                        break;
-                    }
-                case dr4::Event::Type::TEXT_EVENT:
-                    {
-                        hui::TextEvent textEvent = {};
-                        textEvent.text = dr4Event.text.unicode;
-
-                        if (state_.GetFocused()) { textEvent.Apply(*state_.GetFocused()); }
-                        break;
-                    }
-                default:
-                    throw std::runtime_error(std::string("UIManager::handleSDLEvents unknown event : ") + std::to_string(static_cast<int>(dr4Event.type)));
-            }
-        }
-    }
-
-public:
-    UIManager(dr4::Window *window): state_(window), windowTexture_(window->CreateTexture()) {
-        windowTexture_->SetPos(0, 0);
-        windowTexture_->SetSize(window->GetSize());
-    }
-
-    ~UIManager() { delete windowTexture_; }
-
-    void setMainWidget(hui::Widget *widget) { wTreeRoot_ = widget; }
-
-    void run() {
-        bool running = true;
-        while (running) {
-            double frameStartSecs = state_.GetWindow()->GetTime();
-
-            handleSDLEvents(&running);
-            // updates
-            hui::IdleEvent idleEvent;
-            idleEvent.absTime = frameStartSecs;
-            idleEvent.deltaTime = frameDelaySecs_;
-            if (wTreeRoot_) wTreeRoot_->OnIdle(idleEvent);
-            for (std::function<void(int)> userEvent : userEvents_)
-                userEvent(frameDelaySecs_);
-            
-            // render 
-            windowTexture_->Clear({50, 50, 50, 255});
-            if (wTreeRoot_) wTreeRoot_->DrawOn(*windowTexture_);
-            state_.GetWindow()->Draw(*windowTexture_);
-            state_.GetWindow()->Display();
-
-            // frame pacing
-            double frameTimeSecs = state_.GetWindow()->GetTime() - frameStartSecs;
-            if (frameDelaySecs_ > frameTimeSecs) 
-                std::this_thread::sleep_for(std::chrono::duration<double>(frameTimeSecs));
-        }
-
-    }
-    void addUserEvent(std::function<void(int)> userEvent) { userEvents_.push_back(userEvent); };
-
-    dr4::Window *getDr4Window() const { return state_.GetWindow(); }
-    hui::State *getState() { return &state_; }
-
-private:
-};
-
 class LinContainer : public hui::Container {
     std::vector<hui::Widget *> children_; 
 public:
-    LinContainer(hui::State *state): hui::Container(state) {}
+    LinContainer(hui::UI *ui): hui::Container(ui) {}
     hui::EventResult PropogateToChildren(hui::Event &event) override {
-        event.TransformFor(*this);
-    
         for (Widget *child : children_) {
-            if (!child->GetRect().Contains(event.getPos().value_or(child->GetPos()))) continue;
+
             if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
             
         }
@@ -367,7 +206,13 @@ public:
         children_.push_back(widget);
     }
 
-    // Become Parent Of  
+    void Redraw() const override { 
+        GetTexture().Clear({(int)GetSize().x % 255, (int)GetSize().y % 255, 0, 255});
+        for (Widget *child : children_) {
+            child->GetFreshTexture().DrawOn(GetTexture());
+        }
+        
+    }
 };
 
 }
@@ -380,38 +225,74 @@ int main() {
     dr4::Window *window = backend->CreateWindow(); assert(window);
 
     window->SetSize({MAIN_WINDOW_SIZE.first, MAIN_WINDOW_SIZE.second});
+    window->StartTextInput();
     window->Open();
+    window->Display();
 
-    roa::UIManager application(window);
+    hui::UI ui(window);
 
-    roa::LinContainer *mainWindow = new roa::LinContainer(application.getState());
+    roa::LinContainer *mainWindow = new roa::LinContainer(&ui);
     mainWindow->SetPos(0, 0);
     mainWindow->SetSize(500, 500);
-    application.setMainWidget(mainWindow);
+    ui.SetRoot(mainWindow);
 
     
-    roa::LinContainer *c1 = new roa::LinContainer(application.getState());
+    roa::LinContainer *c1 = new roa::LinContainer(&ui);
     c1->SetPos(50, 50);
     c1->SetSize(400, 400);
     mainWindow->addWidget(c1);
 
-    roa::LinContainer *c2 = new roa::LinContainer(application.getState());
+    roa::LinContainer *c2 = new roa::LinContainer(&ui);
     c2->SetPos(50, 50);
     c2->SetSize(300, 300);
     c1->addWidget(c2);
 
+    roa::LinContainer *c3 = new roa::LinContainer(&ui);
+    c3->SetPos(50, 50);
+    c3->SetSize(200, 200);
+    c2->addWidget(c3);
 
 
 
+    double frameDelaySecs_ = 0.032;
+    while (window->IsOpen()) {
+        while (1) {
+            if (ui.GetHovered()) 
+                std::cout << "hovered : " << ui.GetHovered()->GetSize().x << "\n";
+            if (ui.GetFocused()) 
+                std::cout << "focused : " << ui.GetFocused()->GetSize().x << "\n";
 
-    application.run();
+            auto evt = window->PollEvent();
+            double frameStartSecs = ui.GetWindow()->GetTime();
 
+            if (evt.has_value()) {
+                if (evt.value().type == dr4::Event::Type::QUIT ||
+                    (evt.value().type == dr4::Event::Type::KEY_DOWN && evt.value().key.sym == dr4::KeyCode::KEYCODE_ESCAPE)) {
+                        window->Close();
+                        break;
+                }
+        
+                ui.ProcessEvent(evt.value());
+            }
+    
+            hui::IdleEvent idleEvent;
+            idleEvent.absTime = frameStartSecs;
+            idleEvent.deltaTime = frameDelaySecs_;
+            ui.OnIdle(idleEvent);
 
-
-
-
-
-
+            // render
+            window->Clear({50, 50, 50, 255});
+            if (ui.GetTexture()) {
+                window->Draw(*ui.GetTexture());
+            }
+            
+            window->Display(); 
+            
+            double frameTimeSecs = ui.GetWindow()->GetTime() - frameStartSecs;
+            if (frameDelaySecs_ > frameTimeSecs) 
+            std::this_thread::sleep_for(std::chrono::duration<double>(frameTimeSecs));
+        }
+    }
 
 
 
