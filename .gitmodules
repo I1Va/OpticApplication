@@ -1,3 +1,9 @@
 [submodule "external/gui-interface"]
 	path = external/gui-interface
 	url = git@github.com:random-username-here/mipt-ded-zemax.git
+[submodule "external/RayTracer"]
+	path = external/RayTracer
+	url = git@github.com:I1Va/RayTracer.git
+[submodule "external/GeomLib"]
+	path = external/GeomLib
+	url = git@github.com:I1Va/GeomLib.git
