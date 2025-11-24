@@ -36,17 +36,16 @@ add_executable(${PROJECT_NAME} main.cpp)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/external/gui-interface)
 
-add_library(AIDr4Plugin SHARED IMPORTED)
-set_target_properties(AIDr4Plugin PROPERTIES
-    IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/external/libAIPlugin.so"
-)
+# add_library(libIAGraphicsPlugin SHARED IMPORTED)
+# set_target_properties(libIAGraphicsPlugin PROPERTIES
+#     IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/external/libIAGraphicsPlugin.so"
+# )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     cum
     dr4
     hui
     pp
-    AIDr4Plugin
     GeomLib
     RayTracer
 )

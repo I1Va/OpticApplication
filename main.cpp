@@ -13,14 +13,16 @@
 #include "hui/ui.hpp"
 #include "dr4/event.hpp"
 #include "dr4/mouse_buttons.hpp"
-#include "misc/dr4_ifc.hpp"
+
+#include "cum/manager.hpp"
+#include "cum/plugin.hpp"
+#include "cum/ifc/dr4.hpp"
+
 #include "hui/container.hpp"
 #include "hui/event.hpp"
 
 
-const char PLAGIN_PATH[] = "external/libAIPlugin.so";
 const char FONT_PATH[] = "Roboto/RobotoFont.ttf";
-typedef dr4::DR4Backend* (*DR4BackendFunction)();
 const std::pair<int, int> MAIN_WINDOW_SIZE = {600, 600};
 const int APP_BORDER_SIZE = 20;
 const int CAMERA_KEY_CONTROL_DELTA = 10;
@@ -168,7 +170,7 @@ class CameraWindow : public hui::Widget {
         cameraNeedZoom_ = false;
     }
 
-      hui::EventResult OnIdle([[maybe_unused]] hui::IdleEvent &evt) override {
+      hui::EventResult OnIdle(hui::IdleEvent &) override {
         if (cameraNeedRotation_  ) applyCameraRotation();
         if (cameraNeedRelocation_) applyCameraRelocation();
         if (cameraNeedZoom_)       applyCameraZoom();
@@ -228,13 +230,28 @@ class LinContainer : public hui::Container {
 public:
     LinContainer(hui::UI *ui): hui::Container(ui) {}
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (Widget *child : children_) {
+        try {
+            hui::IdleEvent idleEvent = dynamic_cast<hui::IdleEvent&>(event);
+            bool handled = false;
+            for (Widget *child : children_) {
+                if (idleEvent.Apply(*child) == hui::EventResult::HANDLED) handled = true;
+            }
 
-            if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-            
+            if (handled) return hui::EventResult::HANDLED;
+            else return hui::EventResult::UNHANDLED;
+        } catch (std::exception &exc) { 
+            for (Widget *child : children_) {
+                if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+            }
+        
+            return hui::EventResult::UNHANDLED;
         }
-        return hui::EventResult::UNHANDLED;
     }
+
+    // void deleteWidget(int idx) {
+    //     UnbecomeParentOf(children_[idx]);
+    //     children_.erase(idx);
+    // }
 
     void addWidget(Widget *widget) {
         BecomeParentOf(widget);
@@ -255,14 +272,97 @@ public:
     }
 };
 
+class FocusButton : public hui::Widget {
+public:
+    FocusButton(hui::UI *ui): hui::Widget(ui) {}
+    
+    hui::EventResult OnIdle(hui::IdleEvent &) override {    
+        ForceRedraw();
+
+        return hui::EventResult::HANDLED;
+    }
+    
+    void Redraw() const override { 
+        dr4::Color color = {0, 0, 0, 255};
+
+        if (GetUI()->GetFocused() == this) {
+            color = {255, 0, 0, 255};
+        }        
+        GetTexture().Clear(color);
+    }
+};
+
+class Button : public hui::Widget {
+    bool pressed = true;
+
+public:
+    Button(hui::UI *ui): hui::Widget(ui) {}
+    
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
+        if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
+
+        GetUI()->ReportFocus(this);
+        pressed = !pressed;
+        ForceRedraw();
+
+        return hui::EventResult::HANDLED;
+    } 
+    
+    void Redraw() const override { 
+        dr4::Color color = {0, 0, 0, 255};
+
+        if (pressed) {
+            color = {0, 0, 255, 255};
+        }        
+        GetTexture().Clear(color);
+    }
+};
+
+class HoverButton : public hui::Widget {
+public:
+    HoverButton(hui::UI *ui): hui::Widget(ui) {}
+    
+    hui::EventResult OnIdle(hui::IdleEvent &) override {   
+        ForceRedraw();
+
+        return hui::EventResult::HANDLED;
+    }
+    
+    void Redraw() const override { 
+        dr4::Color color = {0, 0, 0, 255};
+
+        if (GetUI()->GetHovered() == this) {
+            color = {0, 255, 0, 255};
+        }        
+        GetTexture().Clear(color);
+    }
+};
+
+// class Text : public hui::Widget {
+
+// };
+
 }
 
-int main() {
-    void *backendLib = dlopen(PLAGIN_PATH, RTLD_LAZY); assert(backendLib);
-    DR4BackendFunction func = (DR4BackendFunction) dlsym(backendLib, dr4::DR4BackendFunctionName); assert(func);
-    dr4::DR4Backend *backend = func(); assert(backend);
+int main(int argc, const char *argv[]) {
+    if (argc != 2) {
+        std::cerr << "Expected one argument: dr4 backend path\n";
+        return 1;
+    }
+    const char *dr4BackendPath = argv[1];
+
+    cum::Manager pluginManager;
+    pluginManager.LoadFromFile(dr4BackendPath);
+    auto *dr4Backend = pluginManager.GetAnyOfType<cum::DR4BackendPlugin>();
+    assert(dr4Backend);
+
+
+    std::cout << "dr4 plugin identifier  : " << dr4Backend->GetIdentifier() << "\n";
+    std::cout << "dr4 plugin description : " << dr4Backend->GetDescription() << "\n";
+
     
-    dr4::Window *window = backend->CreateWindow(); assert(window);
+    dr4::Window *window = dr4Backend->CreateWindow();
+
 
     window->SetSize({float(MAIN_WINDOW_SIZE.first), float(MAIN_WINDOW_SIZE.second)});
     window->StartTextInput();
@@ -276,79 +376,46 @@ int main() {
     mainWindow->SetSize(500.0f, 500.0f);
     ui.SetRoot(mainWindow);
 
+           
+    roa::LinContainer *c1 = new roa::LinContainer(&ui);
+    c1->SetPos(50, 50);
+    c1->SetSize(400, 400);
+    mainWindow->addWidget(c1);
 
-        
+    roa::LinContainer *c2 = new roa::LinContainer(&ui);
+    c2->SetPos(50, 50);
+    c2->SetSize(300, 300);
+    c1->addWidget(c2);
+
+    roa::LinContainer *c3 = new roa::LinContainer(&ui);
+    c3->SetPos(50, 50);
+    c3->SetSize(200, 200);
+    c2->addWidget(c3);
+
+    roa::FocusButton *focusbutton = new roa::FocusButton(&ui);
+    focusbutton->SetPos(10, 10);
+    focusbutton->SetSize(50, 50);
+    c3->addWidget(focusbutton);
+
+    roa::HoverButton * hoverButton = new roa::HoverButton(&ui);
+    hoverButton->SetPos(60, 60);
+    hoverButton->SetSize(40, 40);
+    c3->addWidget(hoverButton);
+
+
+    roa::Button *button = new roa::Button(&ui);
+    button->SetPos(70, 0);
+    button->SetSize(30, 30);
+    c3->addWidget(button);
+
+
+    // dr4::Font *font = window->CreateFont();
+    // font->LoadFromFile(FONT_PATH)
     
-    SceneManager sceneManager;
-    RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0});    
-    RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
-    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
-    RTMaterial *glassMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.50);
-    RTMaterial *sunMaterial = new RTEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
-    // SphereObject *light = new SphereObject(1, lightSrcMaterial, &sceneManager);
-
-    SphereObject *sun = new SphereObject(1, sunMaterial, &sceneManager);
-
-    Light *light = new Light
-    (
-        /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
-        /* defuseIntensity   */  gm::IVec3f(0.8, 0.7, 0.6),
-        /* specularIntensity */  gm::IVec3f(0.7, 0.7, 0),
-        /* viewLightPow      */  15.0
-    );
-
-    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
-    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &sceneManager);
-  
-    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &sceneManager);
-
-
-
-    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &sceneManager);
-
-    
-    sceneManager.addObject({0, 0, -100}, ground);
-    sceneManager.addObject({0, 0, 1}, glassSphere);
-    // // sceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
-    sceneManager.addObject({0, 4, 3}, midSphere);
-    sceneManager.addObject({2, 0, 1}, rightSphere);
-
-    sceneManager.addLight({0, 0, 10}, light);
-    sceneManager.addObject({-2, 0, 4}, sun);
-
-    Camera camera(/*center*/{0, -6, 1}, /*direction*/{0, 3, 0}, SCREEN_RESOLUTION);
-    camera.setSamplesPerPixel(1);
-    camera.setSamplesPerScatter(1);
-    // camera.disableLDirect();
-    camera.setMaxRayDepth(5);
-    camera.setThreadPixelbunchSize(100);
-    camera.disableParallelRender();
-
-
-
     
 
-    roa::CameraWindow *cameraWindow = new roa::CameraWindow(&ui);
-    cameraWindow->SetSize({500, 500});
-    cameraWindow->setCamera(&camera);
 
-    mainWindow->addWidget(cameraWindow);
 
-   
-    // roa::LinContainer *c1 = new roa::LinContainer(&ui);
-    // c1->SetPos(50, 50);
-    // c1->SetSize(400, 400);
-    // mainWindow->addWidget(c1);
-
-    // roa::LinContainer *c2 = new roa::LinContainer(&ui);
-    // c2->SetPos(50, 50);
-    // c2->SetSize(300, 300);
-    // c1->addWidget(c2);
-
-    // roa::LinContainer *c3 = new roa::LinContainer(&ui);
-    // c3->SetPos(50, 50);
-    // c3->SetSize(200, 200);
-    // c2->addWidget(c3);
 
 
     double frameDelaySecs_ = 0.032;
@@ -365,15 +432,11 @@ int main() {
             ui.ProcessEvent(evt.value());
         }
 
-        // one idle/update + one render
         double frameStartSecs = ui.GetWindow()->GetTime();
         hui::IdleEvent idleEvent;
         idleEvent.absTime = frameStartSecs;
         idleEvent.deltaTime = frameDelaySecs_;
         ui.OnIdle(idleEvent);
-
-        // expensive: consider moving to worker thread or reducing work per frame
-        camera.render(sceneManager);
 
         window->Clear({50,50,50,255});
         if (ui.GetTexture()) window->Draw(*ui.GetTexture());
