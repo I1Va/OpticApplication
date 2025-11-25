@@ -4,16 +4,6 @@ project(OpticApplication2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 23)
 
-
-
-find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
-find_package(SDL2_ttf REQUIRED)
-find_library(SDL2_GFX_LIB SDL2_gfx)
-
-
-
-
 option(SANITIZE "Enable compiler sanitizers" OFF)
 if (MSVC)
     add_compile_options(/W4 /WX)
@@ -30,16 +20,11 @@ endif()
 
 set(GEOMLIB_BUILD_TESTS OFF CACHE BOOL "Disable GeomLib tests")
 add_subdirectory(external/GeomLib)
-add_subdirectory(external/RayTracer)
+# add_subdirectory(external/RayTracer)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/external/gui-interface)
-
-# add_library(libIAGraphicsPlugin SHARED IMPORTED)
-# set_target_properties(libIAGraphicsPlugin PROPERTIES
-#     IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/external/libIAGraphicsPlugin.so"
-# )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     cum
@@ -47,25 +32,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     hui
     pp
     GeomLib
-    RayTracer
+    #RayTracer
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/external/gui-interface/include
-    ${CMAKE_SOURCE_DIR}/external/RayTracer/inc
+    #${CMAKE_SOURCE_DIR}/external/RayTracer/inc
     ${CMAKE_SOURCE_DIR}/external/GeomLib/inc
+    ${CMAKE_SOURCE_DIR}/include    
 )
-
-
-
-
-
-target_link_libraries(${PROJECT_NAME} 
-    PRIVATE SDL2::SDL2 SDL2_image::SDL2_image
-    PRIVATE SDL2_ttf::SDL2_ttf
-    PRIVATE ${SDL2_GFX_LIB} 
-)
-
 
     
 
