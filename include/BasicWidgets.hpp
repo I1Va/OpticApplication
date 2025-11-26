@@ -22,34 +22,89 @@
 namespace roa
 {
 
-template <typename T>
-concept WidgetDerived = std::is_base_of_v<hui::Widget, T>;
 
-template <WidgetDerived T>
-class LinContainer : public hui::Container {
-    std::vector<T *> children; 
+template <typename T>
+concept WidgetPtr =
+    std::is_pointer_v<T> &&
+    std::is_base_of_v<hui::Widget, std::remove_pointer_t<T>>;
+
+template <typename T> 
+class ZContainer : public hui::Container {
 public:
-    LinContainer(hui::UI *ui): hui::Container(ui) {}
+    ZContainer(hui::UI *ui): hui::Container(ui) {}
+    virtual ~ZContainer() = default;
+    virtual void BringToFront(T widget) = 0;
+};
+
+template <WidgetPtr T>
+class ListContainer : public ZContainer<T> {
+protected:
+    std::list<T> children;
+public:
+    ListContainer(hui::UI *ui): ZContainer<T>(ui) {}
+    ~ListContainer() {
+        for (T child : children) {
+            delete child;
+        }
+    }
+
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (Widget *child : children) {
+        for (T child : children) {
             if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }
         return hui::EventResult::UNHANDLED;
     }
 
-    void addWidget(Widget *widget) {
+    void addWidget(T widget) {
+        BecomeParentOf(widget);
+        children.push_front(widget);
+    }
+    
+    void BringToFront(T widget) override {
+        assert(widget);
+    
+        auto it = std::find(children.begin(), children.end(), widget);
+        if(it != children.end()) {
+            children.erase(it);
+            children.push_front(widget);
+        }
+    }
+
+
+};
+
+template <WidgetPtr T>
+class LinContainer : public ZContainer<T> {
+    std::vector<T> children; 
+public:
+    LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
+    ~LinContainer() {
+        for (T child : children) {
+            delete child;
+        }
+    }
+
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        for (T child : children) {
+            if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        }
+        return hui::EventResult::UNHANDLED;
+    }
+
+    void addWidget(T widget) {
         BecomeParentOf(widget);
         children.push_back(widget);
     }
 
-    void BringToFront(Widget* w) override {
-        auto it = std::find(children.begin(), children.end(), w);
+    void BringToFront(T widget) override {
+        auto it = std::find(children.begin(), children.end(), widget);
         if(it != children.end()) {
             children.erase(it);       
-            children.push_back(w);   
+            children.push_back(widget);   
         }
     }
 };
+
 
 class FocusButton : public hui::Widget {
 public:
