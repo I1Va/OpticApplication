@@ -1,7 +1,8 @@
 #include <iostream>
+#include <functional>
 #include <cassert>
 #include <list>
-
+#include <cmath>
 #include "BasicWidgets.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
@@ -33,67 +34,81 @@ public:
 };
 
 class Button : public hui::Widget {
-    bool pressed = true;
+    constexpr static int DEFAULT_FONT_SIZE = 18;
+
     std::string labelContent;
+    int fontSize;
     dr4::Text *label = nullptr;
 
+    std::function<void()> onClickAction = nullptr;
+    bool pressed = false;
+
+    bool needRelayout = true;
+
 public:
-    Button(hui::UI *ui, const std::string &lbl) : hui::Widget(ui), labelContent(lbl) {
+    Button(hui::UI *ui, const std::string &lbl, const int fontSize=DEFAULT_FONT_SIZE, std::function<void()> onClickAction=nullptr)
+    : hui::Widget(ui), labelContent(lbl), fontSize(fontSize), onClickAction(onClickAction) 
+    {
         assert(ui);
     
         label = GetUI()->GetWindow()->CreateText();
         label->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
         label->SetText(labelContent);
+        label->SetFontSize(fontSize);
 
-        layoutText();
+        layout();
+    }
+
+    ~Button() { delete label; }
+
+    void SetOnClickAction(std::function<void()> action) { onClickAction = action; }
+    
+    bool IsPressed() const { return pressed; }
+    void Unpress() {
+        pressed = false;
+        ForceRedraw();
     }
 
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
         if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
-
         GetUI()->ReportFocus(this);
-        pressed = !pressed;
+        if (onClickAction) onClickAction();
+    
+        pressed = !pressed;    
         ForceRedraw();
 
         return hui::EventResult::HANDLED;
     }
 
 private:
+
+    hui::EventResult OnIdle(hui::IdleEvent &) override {
+        if (needRelayout) layout();
+
+        return hui::EventResult::UNHANDLED;
+    }
+
+
     void Redraw() const override { 
         dr4::Color color = (pressed ? dr4::Color{0, 0, 255, 255} : dr4::Color{255, 255, 255, 255});
-
-        GetTexture().Clear(color);   
+        GetTexture().Clear(color); 
+        label->DrawOn(GetTexture());
     }
 
-    void layoutText() {
-        label->SetVAlign(dr4::Text::VAlign::MIDDLE);
-
-        float fontSize = GetRect().size.y;
-        label->SetFontSize(fontSize);
-
-        float btnX = GetRect().pos.x;
-        float btnY = GetRect().pos.y;
-        float btnWidth = GetRect().size.x;
-        float btnHeight = GetRect().size.y;
-
-        float textWidth = label->GetBounds().x;      
-        float textHeight = label->GetFont()->GetAscent(fontSize) + label->GetFont()->GetDescent(fontSize);
-
-        float textX = btnX + (btnWidth - textWidth) / 2.0f;
-        float textY = btnY + (btnHeight - textHeight) / 2.0f + label->GetFont()->GetAscent(fontSize);
-
-        label->SetPos(textX, textY);
+    void layout() {
+        // label->SetVAlign(dr4::Text::VAlign::MIDDLE);
+        SetSize({label->GetBounds().x, label->GetBounds().y});
+        needRelayout = false;
     }
-    
-    void OnSizeChanged() { layoutText(); }
-
 
 };
 
 class DropDownMenu : public ListContainer<Button *> {
-    bool visible = true;
+    bool visible = false;
 public:
     DropDownMenu(hui::UI *ui): ListContainer(ui) {}
+
+    bool IsVisible() const { return visible; }
 
     void Redraw() const override { 
         if (!visible) { // full transparent
@@ -107,13 +122,13 @@ public:
         }
     }
 
-    void hide() {
+    void Hide() {
         visible = false;
         ForceRedraw();
     }
 
     // anchor is the widget that dropdown menu is positioned relative to.
-    void show(dr4::Vec2f showPos) {
+    void Show(dr4::Vec2f showPos) {
         visible = true;
         
         SetPos(showPos);
@@ -127,39 +142,81 @@ public:
 };
 
 class MenuBar : public LinContainer<Button *> {
+    std::vector<DropDownMenu *> dropDownMenues;
+
+    bool needRelayout = true;
+
 public:
     MenuBar(UI *ui): LinContainer(ui) {}
 
-    // void addMenuItem(const std::string &label, DropDownMenu *dropDownMenu, std::function<void()> onAction) {
-    //     Button *newButton = new Button(GetUI(), label);
-    //     addWidget(newButton);
-    //     // creates button and links it to dropDownMenu
-    // }
-};
+    hui::EventResult OnIdle(hui::IdleEvent &) override {
+        if (needRelayout) layout();
 
-class HoverButton : public hui::Widget {
-public:
-    HoverButton(UI *ui): hui::Widget(ui) {}
-    
-    hui::EventResult OnIdle(hui::IdleEvent &) override {   
-        ForceRedraw();
-
-        return hui::EventResult::HANDLED;
+        return hui::EventResult::UNHANDLED;
     }
-    
-    void Redraw() const override { 
-        dr4::Color color = {0, 0, 0, 255};
 
-        if (GetUI()->GetHovered() == this) {
-            color = {0, 255, 0, 255};
-        }        
-        GetTexture().Clear(color);
+    void Redraw() const override {    
+        GetTexture().Clear({255, 0, 0, 255});
+        for (Button *button : children) {
+            button->DrawOn(GetTexture());
+        }
+    }
+
+    void addMenuItem(const std::string &label, DropDownMenu *dropDownMenu) {
+        assert(dropDownMenu);
+    
+        Button *newButton = new Button(GetUI(), label);
+        dropDownMenues.push_back(dropDownMenu);
+    
+        newButton->SetOnClickAction
+        (
+            [this, newButton, dropDownMenu]() 
+            {       
+                if (newButton->IsPressed()) {
+                    dropDownMenu->Hide();
+                } else {
+                    unpressAllMenuButtons();
+                    hideAllDropDownMenues();
+                    dropDownMenu->Show(newButton->GetPos() + dr4::Vec2f(0, newButton->GetSize().y));
+                }
+            }
+        );
+        addWidget(newButton);
+
+        needRelayout = true;
+    }
+private:
+    void unpressAllMenuButtons() {
+        for (Button *button : children) {
+            button->Unpress();
+        }
+    }
+    void hideAllDropDownMenues() {
+        for (DropDownMenu *menu : dropDownMenues) {
+            menu->Hide();
+        }
+    }
+
+    void layout() {
+        float curBtnX = 0;
+        float maxButtonHeight = 0;
+        for (Button *button : children) {
+            button->SetPos({curBtnX, 0});
+            curBtnX += button->GetSize().x;
+            maxButtonHeight = std::fmax(maxButtonHeight, button->GetSize().y);
+        }
+        std::cout << "curBtnX : " << curBtnX << ", maxButtonHeight : " << maxButtonHeight << "\n";
+        if (curBtnX > 0 && maxButtonHeight > 0) {
+            SetSize({curBtnX, maxButtonHeight});
+            ForceRedraw();
+        }
+
+        needRelayout = false;
     }
 };
 
 
 }
-
 
 void runUI(roa::UI &ui) {
     double frameDelaySecs_ = 0.032;
@@ -202,13 +259,40 @@ int main(int argc, const char *argv[]) {
     auto *dr4Backend = pluginManager.GetAnyOfType<cum::DR4BackendPlugin>();
     assert(dr4Backend);
 
-    dr4::Window *window = dr4Backend->CreateWindow();
-    assert(window);
+    dr4::Window *window = dr4Backend->CreateWindow(); assert(window);
     window->Open();
     window->StartTextInput();
     window->SetSize({800, 600});
 
     roa::UI ui(window, FONT_PATH);
+    roa::MainWindow *mainWindow = new roa::MainWindow(&ui);
+    mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
+    ui.SetRoot(mainWindow);
+
+    
+
+
+
+
+    roa::DropDownMenu *fileDropDownMenu = new roa::DropDownMenu(&ui);
+    roa::DropDownMenu *pluginDropDownMenu = new roa::DropDownMenu(&ui);
+    mainWindow->addWidget(fileDropDownMenu);
+    mainWindow->addWidget(pluginDropDownMenu);
+
+    roa::MenuBar *menuBar = new roa::MenuBar(&ui);
+    menuBar->SetPos({0, 0});
+    menuBar->SetSize({100, 30});
+
+    menuBar->addMenuItem("file", fileDropDownMenu);
+    menuBar->addMenuItem("plugin", pluginDropDownMenu);
+
+
+
+    mainWindow->addWidget(menuBar);
+
+
+
+    
     runUI(ui);
     
     delete window;
