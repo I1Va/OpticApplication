@@ -41,8 +41,8 @@ class Button : public hui::Widget {
     dr4::Text *label = nullptr;
 
     std::function<void()> onClickAction = nullptr;
-    bool pressed = false;
 
+    bool pressed = false;
     bool needRelayout = true;
 
 public:
@@ -64,17 +64,17 @@ public:
     void SetOnClickAction(std::function<void()> action) { onClickAction = action; }
     
     bool IsPressed() const { return pressed; }
-    void Unpress() {
-        pressed = false;
-        ForceRedraw();
-    }
-
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
-        if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
+    void SetPressed(bool flag) { pressed = flag; ForceRedraw(); }
+    
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
+        if (event.pressed == false                     ||
+            event.button != dr4::MouseButtonType::LEFT || 
+              !GetRect().Contains(event.pos)) 
+            return hui::EventResult::UNHANDLED;
+    
         GetUI()->ReportFocus(this);
         if (onClickAction) onClickAction();
     
-        pressed = !pressed;    
         ForceRedraw();
 
         return hui::EventResult::HANDLED;
@@ -87,7 +87,6 @@ private:
 
         return hui::EventResult::UNHANDLED;
     }
-
 
     void Redraw() const override { 
         dr4::Color color = (pressed ? dr4::Color{0, 0, 255, 255} : dr4::Color{255, 255, 255, 255});
@@ -142,9 +141,10 @@ public:
 };
 
 class MenuBar : public LinContainer<Button *> {
-    std::vector<DropDownMenu *> dropDownMenues;
-
     bool needRelayout = true;
+
+    Button *currentlyActiveButton = nullptr;
+    DropDownMenu *currentlyActiveMenu = nullptr;
 
 public:
     MenuBar(UI *ui): LinContainer(ui) {}
@@ -166,37 +166,35 @@ public:
         assert(dropDownMenu);
     
         Button *newButton = new Button(GetUI(), label);
-        dropDownMenues.push_back(dropDownMenu);
-    
+
         newButton->SetOnClickAction
         (
             [this, newButton, dropDownMenu]() 
             {       
                 if (newButton->IsPressed()) {
+                    newButton->SetPressed(false);
                     dropDownMenu->Hide();
-                } else {
-                    unpressAllMenuButtons();
-                    hideAllDropDownMenues();
-                    dropDownMenu->Show(newButton->GetPos() + dr4::Vec2f(0, newButton->GetSize().y));
+                    currentlyActiveButton = nullptr;
+                    return;
                 }
+            
+                if (currentlyActiveButton) {
+                    currentlyActiveButton->SetPressed(false);
+                    currentlyActiveMenu->Hide();
+                }
+
+                newButton->SetPressed(true);
+                dropDownMenu->Show(newButton->GetPos() + dr4::Vec2f(0, newButton->GetSize().y));
+                currentlyActiveButton = newButton;
+                currentlyActiveMenu  = dropDownMenu;
             }
         );
+    
         addWidget(newButton);
 
         needRelayout = true;
     }
 private:
-    void unpressAllMenuButtons() {
-        for (Button *button : children) {
-            button->Unpress();
-        }
-    }
-    void hideAllDropDownMenues() {
-        for (DropDownMenu *menu : dropDownMenues) {
-            menu->Hide();
-        }
-    }
-
     void layout() {
         float curBtnX = 0;
         float maxButtonHeight = 0;
@@ -205,7 +203,6 @@ private:
             curBtnX += button->GetSize().x;
             maxButtonHeight = std::fmax(maxButtonHeight, button->GetSize().y);
         }
-        std::cout << "curBtnX : " << curBtnX << ", maxButtonHeight : " << maxButtonHeight << "\n";
         if (curBtnX > 0 && maxButtonHeight > 0) {
             SetSize({curBtnX, maxButtonHeight});
             ForceRedraw();
@@ -276,8 +273,10 @@ int main(int argc, const char *argv[]) {
 
     roa::DropDownMenu *fileDropDownMenu = new roa::DropDownMenu(&ui);
     roa::DropDownMenu *pluginDropDownMenu = new roa::DropDownMenu(&ui);
+    roa::DropDownMenu *testDropDownMenu = new roa::DropDownMenu(&ui);
     mainWindow->addWidget(fileDropDownMenu);
     mainWindow->addWidget(pluginDropDownMenu);
+    mainWindow->addWidget(testDropDownMenu);
 
     roa::MenuBar *menuBar = new roa::MenuBar(&ui);
     menuBar->SetPos({0, 0});
@@ -285,6 +284,7 @@ int main(int argc, const char *argv[]) {
 
     menuBar->addMenuItem("file", fileDropDownMenu);
     menuBar->addMenuItem("plugin", pluginDropDownMenu);
+    menuBar->addMenuItem("test", testDropDownMenu);
 
 
 
