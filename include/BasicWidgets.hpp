@@ -137,7 +137,7 @@ public:
 
     ~ThumbButton() = default;
 
-    void setMovingArea(const dr4::Rect2f rect) { 
+    void SetMovingArea(const dr4::Rect2f rect) { 
         movingArea = rect;
     }
 
@@ -147,9 +147,8 @@ protected:
             dr4::Rect2f realMovingArea = movingArea;
             realMovingArea.size.x = std::fmax(0, realMovingArea.size.x - GetSize().x);
             realMovingArea.size.y = std::fmax(0, realMovingArea.size.y - GetSize().y);
-
-            // dr4::Vec2f pos = getClampedDotInRect(GetPos() + accumulatedRel, realMovingArea);
-            dr4::Vec2f pos = GetPos() + accumulatedRel;
+        
+            dr4::Vec2f pos = getClampedDotInRect(GetPos() + accumulatedRel, realMovingArea);
             SetPos(pos);
           
             accumulatedRel = {0, 0};
@@ -187,7 +186,6 @@ protected:
         if (GetUI()->GetFocused() == this && actived) {
             accumulatedRel += event.rel;
             replaced = true;
-            std::cout << "accumulatedRel : " << accumulatedRel << "\n";
             return hui::EventResult::HANDLED;
         }
 

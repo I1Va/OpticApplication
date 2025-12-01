@@ -145,10 +145,10 @@ private:
         dr4::Rect2f thumbMovingArea;
         thumbMovingArea.pos = bottomButton->GetPos() + dr4::Vec2f(0, static_cast<float>(buttonHeight));
         thumbMovingArea.size = dr4::Vec2f(GetSize().x, GetSize().y - 2 * buttonHeight);
-        std::cout << thumbMovingArea << "\n";
-
+        
         thumbButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
         thumbButton->SetPos({0, static_cast<float>(thumbMovingArea.pos.y + thumbMovingArea.size.y * percentage)});
+        thumbButton->SetMovingArea(thumbMovingArea);
     }
 
     // gm_dot<int, 2> getThumbPos(double percentage) {
