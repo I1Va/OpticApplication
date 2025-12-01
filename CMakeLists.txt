@@ -22,7 +22,10 @@ set(GEOMLIB_BUILD_TESTS OFF CACHE BOOL "Disable GeomLib tests")
 add_subdirectory(external/GeomLib)
 # add_subdirectory(external/RayTracer)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} 
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/ROACommon.cpp    
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/external/gui-interface)
 

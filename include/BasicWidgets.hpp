@@ -6,8 +6,8 @@
 namespace roa
 {
 
-
 class Button : public hui::Widget {
+public:
     enum class Mode {
         HOVER,
         FOCUSED,
@@ -36,15 +36,19 @@ protected:
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
         if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
-        if (!event.pressed) return hui::EventResult::UNHANDLED; 
 
         pressed = true;
         GetUI()->ReportFocus(this);
+        GetUI()->SetCaptured(this);
         if (onClickAction) onClickAction();
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnMouseUp (hui::MouseButtonEvent &) override { 
+    hui::EventResult OnMouseUp (hui::MouseButtonEvent &event) override { 
+        if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
+        if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
+
+        GetUI()->SetCaptured(nullptr);
         pressed = false;
         return hui::EventResult::HANDLED;
     }
@@ -54,10 +58,10 @@ protected:
         
         switch (mode) {
         case Mode::HOVER:
-            newActiveState = (GetUI()->GetFocused() == this);
+            newActiveState = (GetUI()->GetHovered() == this);
             break;
         case Mode::FOCUSED:
-            newActiveState = (GetUI()->GetHovered() == this);
+            newActiveState = (GetUI()->GetFocused() == this);
             break;
         case Mode::CAPTURED:
             newActiveState = pressed;
@@ -66,28 +70,26 @@ protected:
             break;
         }
 
-        // std::cout << "pressed : " << pressed << "\n";
         if (actived != newActiveState) ForceRedraw();
         actived = newActiveState;
-        // pressed = false;
 
         return hui::EventResult::UNHANDLED;
     }
 };
 
 class SimpButton : public Button {
-    dr4::Color pressedColor     = dr4::Color(0, 0, 0, 255);
-    dr4::Color unpressedColor   = dr4::Color(255, 255, 255, 255);;
+    dr4::Color pressedColor     = BLACK;
+    dr4::Color unpressedColor   = WHITE;
 public:
     using Button::Button;
     ~SimpButton() = default;
 
     void SetPressedColor(const dr4::Color color) { pressedColor = color; } 
-    void SetUnpressedColor(const dr4::Color color) { pressedColor = color; }
+    void SetUnpressedColor(const dr4::Color color) { unpressedColor = color; }
 
 protected:
     void Redraw() const override {
-        if (pressed) GetTexture().Clear(pressedColor);
+        if (actived) GetTexture().Clear(pressedColor);
         else GetTexture().Clear(unpressedColor);
     }
 };
@@ -110,7 +112,7 @@ public:
     }
 protected:
     void Redraw() const override {
-        if (pressed) {
+        if (actived) {
             if (pressedTexture) pressedTexture->DrawOn(GetTexture());
             else GetTexture().Clear(BLACK);
             return;
@@ -121,5 +123,77 @@ protected:
     }
 
 };
+
+class ThumbButton : public SimpButton  {
+    dr4::Vec2f accumulatedRel = {};
+
+    bool replaced = false;
+
+    dr4::Rect2f movingArea = {};
+public:
+    ThumbButton(hui::UI *ui): SimpButton(ui) {
+        assert(ui);
+    }
+
+    ~ThumbButton() = default;
+
+    void setMovingArea(const dr4::Rect2f rect) { 
+        movingArea = rect;
+    }
+
+protected:
+    hui::EventResult OnIdle(hui::IdleEvent &) override {
+        if (replaced) {
+            dr4::Rect2f realMovingArea = movingArea;
+            realMovingArea.size.x = std::fmax(0, realMovingArea.size.x - GetSize().x);
+            realMovingArea.size.y = std::fmax(0, realMovingArea.size.y - GetSize().y);
+
+            // dr4::Vec2f pos = getClampedDotInRect(GetPos() + accumulatedRel, realMovingArea);
+            dr4::Vec2f pos = GetPos() + accumulatedRel;
+            SetPos(pos);
+          
+            accumulatedRel = {0, 0};
+            replaced = false;
+            ForceRedraw();
+            return hui::EventResult::HANDLED;
+        }
+
+        bool newActiveState = actived;
+        
+        switch (mode) {
+        case Mode::HOVER:
+            newActiveState = (GetUI()->GetHovered() == this);
+            break;
+        case Mode::FOCUSED:
+            newActiveState = (GetUI()->GetFocused() == this);
+            break;
+        case Mode::CAPTURED:
+            newActiveState = pressed;
+            break;
+        default:
+            break;
+        }
+
+        if (actived != newActiveState) ForceRedraw();
+        actived = newActiveState;
+
+        return hui::EventResult::UNHANDLED;
+
+    }
+
+    hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) override {
+        if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
+
+        if (GetUI()->GetFocused() == this && actived) {
+            accumulatedRel += event.rel;
+            replaced = true;
+            std::cout << "accumulatedRel : " << accumulatedRel << "\n";
+            return hui::EventResult::HANDLED;
+        }
+
+        return hui::EventResult::UNHANDLED;
+    }
+};
+
 
 }

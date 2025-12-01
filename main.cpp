@@ -55,94 +55,43 @@ public:
 
 
 
-// class ThumbButton : public SimpButton {
-//     gm_dot<int, 2> accumulatedRel_ = {};
 
-//     bool replaced_ = false;
-
-//     SDL_Rect movingArea_ = {};
-
-// public:
-//     ThumbButton
-//     (
-//         int width, int height,
-//         SDL_Rect movingArea,
-//         const ButtonTexturePath texturePath,
-//         std::function<void()> onClickFunction=nullptr, Widget *parent=nullptr
-//     ): SimpButton(width, height, texturePath.unpressed, texturePath.pressed, onClickFunction, parent),
-//        movingArea_(movingArea) {};
-
-//     bool onMouseMoveSelfAction(const MouseMotionEvent &event) {
-//         if (this == UIManager_->mouseActived() && event.button == SDL_BUTTON_LEFT) {
-//             accumulatedRel_ += event.rel;
-//             replaced_ = true;
-//             return true;
-//         }
-
-//         return false;
-//     }
-
-    
-
-//     void clampPos() {
-//         rect_.x = std::clamp(rect_.x, movingArea_.x, movingArea_.x + movingArea_.w);
-//         rect_.y = std::clamp(rect_.y, movingArea_.y, movingArea_.y + movingArea_.h);
-//     }
-
-//     bool updateSelfAction() {
-//         if (replaced_) {
-//             rect_.x += accumulatedRel_.x;
-//             rect_.y += accumulatedRel_.y;
-
-//             clampPos();
-            
-//             accumulatedRel_ = {0, 0};
-//             replaced_ = false;
-//             if (parent_) parent_->invalidate();
-//             return true;
-//         }
-        
-//         return false;
-//     }
-// };
 
 class VerticalScrollBar : public ZContainer<hui::Widget *> {
     static constexpr double BUTTON_LAYOUT_SHARE_ = 0.1; 
     static constexpr double THUMB_MOVING_DELTA = 0.05;
 
-    std::function<void(double)> onScroll_=nullptr;
+    std::function<void(double)> onScroll=nullptr;
+    double percentage = 0; 
 
-    // gm_dot<int, 2> startThumbPos_;
-    // double percentage_ = 0; 
-    // bool isHorizontal_;
-
-    // gm_dot<int, 2> buttonSize_ = {};
-
-    // SDL_Rect thumbMovingArea_ = {};
-
-    std::unique_ptr<SimpButton>  bottomButton = nullptr;
-    std::unique_ptr<SimpButton>  topButton    = nullptr;
-    // std::unique_ptr<ThumbButton> thumbButton  = nullptr;
+    std::unique_ptr<TextureButton>  bottomButton = nullptr;
+    std::unique_ptr<TextureButton>  topButton    = nullptr;
+    std::unique_ptr<ThumbButton>    thumbButton  = nullptr;
 
 public:
     VerticalScrollBar(hui::UI *ui): ZContainer(ui) {
 
-        bottomButton = std::make_unique<SimpButton>(ui);
-        topButton    = std::make_unique<SimpButton>(ui);
+        bottomButton = std::make_unique<TextureButton>(ui);
+        topButton    = std::make_unique<TextureButton>(ui);
+        thumbButton  = std::make_unique<ThumbButton>(ui);
 
         bottomButton->SetCapturedMode();
         topButton->SetCapturedMode();
+        thumbButton->SetCapturedMode();
+
+        thumbButton->SetUnpressedColor({255, 0, 255, 255});
         
         BecomeParentOf(bottomButton.get());
         BecomeParentOf(topButton.get());
+        BecomeParentOf(thumbButton.get());
 
         layout();
 
-        // topButton_ = new SimpButton(buttonSize_.x, buttonSize_.y, scrollBarTopBtnPath.unpressed, scrollBarTopBtnPath.pressed, 
+        // topButton_ = new TextureButton(buttonSize_.x, buttonSize_.y, scrollBarTopBtnPath.unpressed, scrollBarTopBtnPath.pressed, 
         //     [this] { move(THUMB_MOVING_DELTA); }, this);
         // addWidget(( isHorizontal ? rect_.w - buttonSize_.x : 0), (!isHorizontal ? rect_.h - buttonSize_.y : 0), topButton_);
 
-        // bottomButton_ = new SimpButton(buttonSize_.x, buttonSize_.y, scrollBarBottomBtnPath.unpressed, scrollBarBottomBtnPath.pressed, 
+        // bottomButton_ = new TextureButton(buttonSize_.x, buttonSize_.y, scrollBarBottomBtnPath.unpressed, scrollBarBottomBtnPath.pressed, 
         //     [this] { move(-THUMB_MOVING_DELTA); }, this);
         // addWidget(0, 0, bottomButton_);
 
@@ -167,9 +116,9 @@ protected:
         assert(topButton);
         // assert(thumbButton);
 
+        if (event.Apply(*thumbButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         if (event.Apply(*bottomButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         if (event.Apply(*topButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        // if (event.Apply(*thumbButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
 
         return hui::EventResult::UNHANDLED;
     }
@@ -182,7 +131,7 @@ private:
     void layout() {
         assert(bottomButton);
         assert(topButton);
-        // assert(thumbButton);
+        assert(thumbButton);
 
         double buttonHeight = std::fmax(1, BUTTON_LAYOUT_SHARE_ * GetSize().y);
         double buttonWidth  = std::fmax(1, GetSize().x);
@@ -192,9 +141,15 @@ private:
 
         topButton->SetPos({0, static_cast<float>(GetSize().y - buttonHeight)});
         topButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
+
+        dr4::Rect2f thumbMovingArea;
+        thumbMovingArea.pos = bottomButton->GetPos() + dr4::Vec2f(0, static_cast<float>(buttonHeight));
+        thumbMovingArea.size = dr4::Vec2f(GetSize().x, GetSize().y - 2 * buttonHeight);
+        std::cout << thumbMovingArea << "\n";
+
+        thumbButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
+        thumbButton->SetPos({0, static_cast<float>(thumbMovingArea.pos.y + thumbMovingArea.size.y * percentage)});
     }
-
-
 
     // gm_dot<int, 2> getThumbPos(double percentage) {
     //     percentage = std::clamp(percentage, 0.0, 100.0);
@@ -240,7 +195,7 @@ protected:
         GetTexture().Clear({100, 0, 0, 255});
         bottomButton->DrawOn(GetTexture());
         topButton->DrawOn(GetTexture());
-    
+        thumbButton->DrawOn(GetTexture());
     }
 
     // bool updateSelfAction() override {
