@@ -13,151 +13,14 @@
 #include "BasicWidgets.hpp"
 #include "MainWindow.hpp"
 #include "ScrollBar.hpp"
+#include "TextWidgets.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
 namespace roa
 {
 
-class UI : public hui::UI {
-    dr4::Font *defaultFont = nullptr;
 
-public:
-    UI(dr4::Window *window, const std::string &defaultFontPath): hui::UI(window) {
-        assert(window);
-
-        try {
-            defaultFont = window->CreateFont();        
-            if (defaultFont)
-                defaultFont->LoadFromFile(defaultFontPath);
-        } catch (std::runtime_error &e) {
-            delete defaultFont;
-            std::cerr << "roa::UI create defaultFont failed : " << e.what() << "\n";
-            throw;
-        }
-    }
-    ~UI() { if (defaultFont) delete defaultFont; }
-
-    dr4::Font *GetDefaultFont() { return defaultFont; }
-};
-
-
-
-class TextWidget : public hui::Widget {
-protected:
-    std::unique_ptr<dr4::Text> text;
-    dr4::Color backColor = WHITE;
-
-public:
-    TextWidget(hui::UI *ui): hui::Widget(ui), text(GetUI()->GetWindow()->CreateText()) { 
-        assert(ui); 
-        text->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
-    }
-
-    void SetFont(dr4::Font *font) {
-        assert(font);
-
-        text->SetFont(font);
-        ForceRedraw();
-    }
-
-    void SetText(const std::string &content) {
-        text->SetText(content);
-        ForceRedraw();
-    }
-
-protected:
-
-    void Redraw() const override {
-        GetTexture().Clear(backColor);
-        text->DrawOn(GetTexture());
-    }
-};
-
-
-
-// class TextInputWidget : public TextWidget {
-//     std::function<void(const std::string&)> onEnter_;
-//     bool needOnEnterCall_ = false;
-// public:
-//     TextInputWidget
-//     (
-//         const std::size_t width, const std::size_t height,
-//         const std::string &text,
-//         TTF_Font *font,
-//         std::function<void(const std::string)> onEnter=nullptr,
-//         Widget *parent=nullptr
-//     ):  
-//         TextWidget(width, height, text, font, parent),
-//         onEnter_(onEnter) {}
-
-//     bool updateSelfAction() {
-//         if (needOnEnterCall_) {
-//             if (onEnter_) onEnter_(text_);
-//             needOnEnterCall_ = false;
-//             return true;
-//         }
-
-//         return false;
-//     }
-
-//     bool onKeyDownSelfAction(const KeyEvent &event) override {
-//         if (event.sym == SDLK_BACKSPACE && !text_.empty()) {
-//             text_.pop_back();
-//             setRerenderFlag();
-//             return CONSUME;
-//         }
-
-//         if (event.sym >= SDLK_0 && event.sym <= SDLK_9) {
-//             text_.push_back(static_cast<char>('0' + (event.sym - SDLK_0)));
-//             setRerenderFlag();
-//             return CONSUME;
-//         }
-
-//         if (event.sym >= SDLK_a && event.sym <= SDLK_z) {
-//             bool shift = (event.keymod & KMOD_SHIFT);
-//             char c = static_cast<char>(shift ? ('A' + (event.sym - SDLK_a))
-//                                              : ('a' + (event.sym - SDLK_a)));
-//             text_.push_back(c);
-//             setRerenderFlag();
-//             return CONSUME;
-//         }
-
-//         if (event.sym == SDLK_MINUS) {
-//             text_.push_back('-');
-//             setRerenderFlag();
-//             return CONSUME;
-//         }
-
-//         if (event.sym == SDLK_SPACE) {
-//             text_.push_back(' ');
-//             setRerenderFlag();
-//             return CONSUME;
-//         }
-
-//         if (event.sym == SDLK_PERIOD) {
-//             text_.push_back('.');
-//             setRerenderFlag();
-//             return CONSUME;
-//         }
-
-//         if (event.sym == SDLK_COMMA) {
-//             text_.push_back(',');
-//             setRerenderFlag();
-//             return CONSUME;
-//         }
-
-//         if (event.sym == SDLK_KP_ENTER || event.sym == SDLK_RETURN) {
-//             setRerenderFlag();
-//             needOnEnterCall_ = true;
-//             return CONSUME;
-//         }
-
-//         return PROPAGATE;
-//     }
-
-//     void setOnEnter( std::function<void(const std::string &)> onEnter) { onEnter_ = onEnter; }
-// };
 
 // class ClickableTextWidget : public Button {
 //     static constexpr SDL_Color PRESSED_BACK_COLOR = {128, 128, 128, 255};
@@ -238,7 +101,7 @@ void runUI(roa::UI &ui) {
         if (ui.GetTexture()) ui.GetWindow()->Draw(*ui.GetTexture());
         ui.GetWindow()->Display();
 
-        // ui.GetWindow()->Sleep(0.1);
+        ui.GetWindow()->Sleep(frameDelaySecs_);
     }
 }
 
@@ -274,19 +137,27 @@ int main(int argc, const char *argv[]) {
     roa::TextWidget *textField = new roa::TextWidget(&ui);
     textField->SetPos({300, 300});
     textField->SetSize({200, 30});
-    
+
+    roa::TextWidget *textMirror = new roa::TextWidget(&ui);
+    textMirror->SetPos({300, 400});
+    textMirror->SetSize({200, 30});
+
+
 
     roa::VerticalScrollBar *vScrollBar = new roa::VerticalScrollBar(&ui);  
     vScrollBar->SetPos({200, 200});
     vScrollBar->SetSize({20, 300});
-    vScrollBar->SetOnScrollAction([textField](double percantage) {textField->SetText(std::to_string(percantage)); });
+    vScrollBar->SetOnScrollAction([textField](double percentage) {textField->SetText(std::to_string(percentage)); });
     
-    
-
-
+    roa::TextInputWidget *textInput = new roa::TextInputWidget(&ui);
+    textInput->SetPos({300, 350});
+    textInput->SetSize({200, 30});
+    textInput->setOnEnterAction([textMirror](const std::string &content) {textMirror->SetText(content); });
 
     mainWindow->addWidget(vScrollBar);
     mainWindow->addWidget(textField);
+    mainWindow->addWidget(textInput);
+    mainWindow->addWidget(textMirror);
 
     
     runUI(ui);
