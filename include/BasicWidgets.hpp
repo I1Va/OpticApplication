@@ -1,205 +1,125 @@
 #pragma once
 
-#include <utility>
-#include <chrono>
-#include <dlfcn.h>
-#include <cstdint>
-#include <functional>
-#include <chrono>
-#include <thread>
-
-#include "hui/ui.hpp"
-#include "dr4/event.hpp"
-#include "dr4/mouse_buttons.hpp"
-
-#include "cum/manager.hpp"
-#include "cum/plugin.hpp"
-#include "cum/ifc/dr4.hpp"
-
-#include "hui/container.hpp"
-#include "hui/event.hpp"
+#include "hui/widget.hpp"
+#include "ROACommon.hpp"
 
 namespace roa
 {
 
 
-template <typename T>
-concept WidgetPtr =
-    std::is_pointer_v<T> &&
-    std::is_base_of_v<hui::Widget, std::remove_pointer_t<T>>;
+class Button : public hui::Widget {
+    enum class Mode {
+        HOVER,
+        FOCUSED,
+        CAPTURED,
+    };
 
-template <typename T> 
-class ZContainer : public hui::Container {
-public:
-    ZContainer(hui::UI *ui): hui::Container(ui) {}
-    virtual ~ZContainer() = default;
-    virtual void BringToFront(T widget) = 0;
-};
-
-template <WidgetPtr T>
-class ListContainer : public ZContainer<T> {
 protected:
-    std::list<T> children;
+    std::function<void()> onClickAction = nullptr;
+
+    bool pressed        = false;
+    bool actived        = false;
+    Mode mode           = Mode::FOCUSED;
+
 public:
-    ListContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    ~ListContainer() {
-        for (T child : children) {
-            delete child;
-        }
-    }
+    using hui::Widget::Widget;
+    ~Button() = default;
 
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto it = children.rbegin(); it != children.rend(); it++) {
-            if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
-        return hui::EventResult::UNHANDLED;
-    }
+    void SetOnClickAction(std::function<void()> action) { onClickAction = action; }
+    bool IsPressed() const { return pressed; }
 
-    void addWidget(T widget) {
-        BecomeParentOf(widget);
-        children.push_front(widget);
-    }
-    
-    void BringToFront(T widget) override {
-        assert(widget);
-    
-        auto it = std::find(children.begin(), children.end(), widget);
-        if(it != children.end()) {
-            children.erase(it);
-            children.push_back(widget);
-        }
-    }
+    void SetHoverMode()         { mode = Mode::HOVER; }
+    void SetFocusedMode()       { mode = Mode::FOCUSED; }
+    void SetCapturedMode()      { mode = Mode::CAPTURED; }
 
-};
-
-template <WidgetPtr T>
-class LinContainer : public ZContainer<T> {
 protected:
-    std::vector<T> children; 
-public:
-    LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    ~LinContainer() {
-        for (T child : children) {
-            delete child;
-        }
-    }
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
+        if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
+        if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
+        if (!event.pressed) return hui::EventResult::UNHANDLED; 
 
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto it = children.rbegin(); it != children.rend(); it++) {
-            if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
-        return hui::EventResult::UNHANDLED;
-    }
-
-    void addWidget(T widget) {
-        hui::Container::BecomeParentOf(widget);
-        children.push_back(widget);
-    }
-
-    void BringToFront(T widget) override {
-        auto it = std::find(children.begin(), children.end(), widget);
-        if(it != children.end()) {
-            children.erase(it);       
-            children.push_back(widget);   
-        }
-    }
-};
-
-
-class FocusButton : public hui::Widget {
-public:
-    FocusButton(hui::UI *ui): hui::Widget(ui) {}
-    
-    hui::EventResult OnIdle(hui::IdleEvent &) override {    
-        ForceRedraw();
-
+        pressed = true;
+        GetUI()->ReportFocus(this);
+        if (onClickAction) onClickAction();
         return hui::EventResult::HANDLED;
     }
-    
-    void Redraw() const override { 
-        dr4::Color color = {0, 0, 0, 255};
 
-        if (GetUI()->GetFocused() == this) {
-            color = {255, 0, 0, 255};
-        }        
-        GetTexture().Clear(color);
-    }
-    
-};
-
-
-class HoverButton : public hui::Widget {
-public:
-    HoverButton(hui::UI *ui): hui::Widget(ui) {}
-    
-    hui::EventResult OnIdle(hui::IdleEvent &) override {   
-        ForceRedraw();
-
+    hui::EventResult OnMouseUp (hui::MouseButtonEvent &) override { 
+        pressed = false;
         return hui::EventResult::HANDLED;
     }
-    
-    void Redraw() const override { 
-        dr4::Color color = {0, 0, 0, 255};
 
-        if (GetUI()->GetHovered() == this) {
-            color = {0, 255, 0, 255};
-        }        
-        GetTexture().Clear(color);
+    hui::EventResult OnIdle(hui::IdleEvent &) override {
+        bool newActiveState = actived;
+        
+        switch (mode) {
+        case Mode::HOVER:
+            newActiveState = (GetUI()->GetFocused() == this);
+            break;
+        case Mode::FOCUSED:
+            newActiveState = (GetUI()->GetHovered() == this);
+            break;
+        case Mode::CAPTURED:
+            newActiveState = pressed;
+            break;
+        default:
+            break;
+        }
+
+        // std::cout << "pressed : " << pressed << "\n";
+        if (actived != newActiveState) ForceRedraw();
+        actived = newActiveState;
+        // pressed = false;
+
+        return hui::EventResult::UNHANDLED;
     }
 };
 
-class MainWindow : public ZContainer<hui::Widget *> {
-    std::vector<Widget *> modals;
-    std::vector<Widget *> widgets;
-
+class SimpButton : public Button {
+    dr4::Color pressedColor     = dr4::Color(0, 0, 0, 255);
+    dr4::Color unpressedColor   = dr4::Color(255, 255, 255, 255);;
 public:
-    MainWindow(hui::UI *ui): ZContainer<hui::Widget *>(ui) {}
-    ~MainWindow() {
-        for (Widget *child : modals)  delete child;
-        for (Widget *child : widgets) delete child;
-    }
+    using Button::Button;
+    ~SimpButton() = default;
 
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (Widget *child : modals) {
-            if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
-        for (Widget *child : widgets) {
-            if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
-    
-        return hui::EventResult::UNHANDLED;
-    }
-
-    void addWidget(Widget *widget) {
-        BecomeParentOf(widget);
-        widgets.push_back(widget);
-    }
-
-    void addModal(Widget *widget) {
-        BecomeParentOf(widget);
-        modals.push_back(widget);
-    }
-
-    void BringToFront(Widget *widget) override {
-        auto widgetsIt = std::find(widgets.begin(), widgets.end(), widget);
-        if(widgetsIt != widgets.end()) {
-            widgets.erase(widgetsIt);       
-            widgets.push_back(widget);   
-        }
-
-        auto modalsIt = std::find(modals.begin(), modals.end(), widget);
-        if(modalsIt != modals.end()) {
-            modals.erase(modalsIt);       
-            modals.push_back(widget);   
-        }   
-    }
+    void SetPressedColor(const dr4::Color color) { pressedColor = color; } 
+    void SetUnpressedColor(const dr4::Color color) { pressedColor = color; }
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear({50, 50, 50, 255});
-        for (Widget * widget : widgets) widget->DrawOn(GetTexture());
-        for (Widget * modal : modals) modal->DrawOn(GetTexture());
+        if (pressed) GetTexture().Clear(pressedColor);
+        else GetTexture().Clear(unpressedColor);
     }
+};
+
+class TextureButton : public Button { 
+    const dr4::Texture *pressedTexture = nullptr;
+    const dr4::Texture *unpressedTexture = nullptr;
+public:
+    using Button::Button;
+    ~TextureButton() = default;
+
+    void SetPressedTexture(const dr4::Texture *texture) { 
+        assert(texture);
+        pressedTexture = texture; 
+    } 
+
+    void SetUnpressedTexture(const dr4::Texture *texture) { 
+        assert(texture);
+        unpressedTexture = texture; 
+    }
+protected:
+    void Redraw() const override {
+        if (pressed) {
+            if (pressedTexture) pressedTexture->DrawOn(GetTexture());
+            else GetTexture().Clear(BLACK);
+            return;
+        }
+
+        if (unpressedTexture) unpressedTexture->DrawOn(GetTexture());
+        else GetTexture().Clear(WHITE);
+    }
+
 };
 
 }

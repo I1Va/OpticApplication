@@ -3,7 +3,14 @@
 #include <cassert>
 #include <list>
 #include <cmath>
+
+#include "hui/ui.hpp"
+#include "cum/manager.hpp"
+#include "cum/plugin.hpp"
+#include "cum/ifc/dr4.hpp"
+
 #include "BasicWidgets.hpp"
+#include "MainWindow.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -15,7 +22,7 @@ class UI : public hui::UI {
     dr4::Font *defaultFont = nullptr;
 
 public:
-    UI(dr4::Window *window, const std::string defaultFontPath): hui::UI(window) {
+    UI(dr4::Window *window, const std::string &defaultFontPath): hui::UI(window) {
         assert(window);
 
         try {
@@ -25,7 +32,7 @@ public:
         } catch (std::runtime_error &e) {
             delete defaultFont;
             std::cerr << "roa::UI create defaultFont failed : " << e.what() << "\n";
-            throw e;
+            throw;
         }
     }
     ~UI() { if (defaultFont) delete defaultFont; }
@@ -33,184 +40,267 @@ public:
     dr4::Font *GetDefaultFont() { return defaultFont; }
 };
 
-class Button : public hui::Widget {
-    constexpr static int DEFAULT_FONT_SIZE = 18;
 
-    std::string labelContent;
-    int fontSize;
-    dr4::Text *label = nullptr;
 
-    std::function<void()> onClickAction = nullptr;
 
-    bool pressed = false;
-    bool needRelayout = true;
+
+
+
+
+
+
+
+
+
+
+
+
+// class ThumbButton : public SimpButton {
+//     gm_dot<int, 2> accumulatedRel_ = {};
+
+//     bool replaced_ = false;
+
+//     SDL_Rect movingArea_ = {};
+
+// public:
+//     ThumbButton
+//     (
+//         int width, int height,
+//         SDL_Rect movingArea,
+//         const ButtonTexturePath texturePath,
+//         std::function<void()> onClickFunction=nullptr, Widget *parent=nullptr
+//     ): SimpButton(width, height, texturePath.unpressed, texturePath.pressed, onClickFunction, parent),
+//        movingArea_(movingArea) {};
+
+//     bool onMouseMoveSelfAction(const MouseMotionEvent &event) {
+//         if (this == UIManager_->mouseActived() && event.button == SDL_BUTTON_LEFT) {
+//             accumulatedRel_ += event.rel;
+//             replaced_ = true;
+//             return true;
+//         }
+
+//         return false;
+//     }
+
+    
+
+//     void clampPos() {
+//         rect_.x = std::clamp(rect_.x, movingArea_.x, movingArea_.x + movingArea_.w);
+//         rect_.y = std::clamp(rect_.y, movingArea_.y, movingArea_.y + movingArea_.h);
+//     }
+
+//     bool updateSelfAction() {
+//         if (replaced_) {
+//             rect_.x += accumulatedRel_.x;
+//             rect_.y += accumulatedRel_.y;
+
+//             clampPos();
+            
+//             accumulatedRel_ = {0, 0};
+//             replaced_ = false;
+//             if (parent_) parent_->invalidate();
+//             return true;
+//         }
+        
+//         return false;
+//     }
+// };
+
+class VerticalScrollBar : public ZContainer<hui::Widget *> {
+    static constexpr double BUTTON_LAYOUT_SHARE_ = 0.1; 
+    static constexpr double THUMB_MOVING_DELTA = 0.05;
+
+    std::function<void(double)> onScroll_=nullptr;
+
+    // gm_dot<int, 2> startThumbPos_;
+    // double percentage_ = 0; 
+    // bool isHorizontal_;
+
+    // gm_dot<int, 2> buttonSize_ = {};
+
+    // SDL_Rect thumbMovingArea_ = {};
+
+    std::unique_ptr<SimpButton>  bottomButton = nullptr;
+    std::unique_ptr<SimpButton>  topButton    = nullptr;
+    // std::unique_ptr<ThumbButton> thumbButton  = nullptr;
 
 public:
-    Button(hui::UI *ui, const std::string &lbl, const int fontSize=DEFAULT_FONT_SIZE, std::function<void()> onClickAction=nullptr)
-    : hui::Widget(ui), labelContent(lbl), fontSize(fontSize), onClickAction(onClickAction) 
-    {
-        assert(ui);
-    
-        label = GetUI()->GetWindow()->CreateText();
-        label->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
-        label->SetText(labelContent);
-        label->SetFontSize(fontSize);
+    VerticalScrollBar(hui::UI *ui): ZContainer(ui) {
 
+        bottomButton = std::make_unique<SimpButton>(ui);
+        topButton    = std::make_unique<SimpButton>(ui);
+
+        bottomButton->SetCapturedMode();
+        topButton->SetCapturedMode();
+        
+        BecomeParentOf(bottomButton.get());
+        BecomeParentOf(topButton.get());
+
+        layout();
+
+        // topButton_ = new SimpButton(buttonSize_.x, buttonSize_.y, scrollBarTopBtnPath.unpressed, scrollBarTopBtnPath.pressed, 
+        //     [this] { move(THUMB_MOVING_DELTA); }, this);
+        // addWidget(( isHorizontal ? rect_.w - buttonSize_.x : 0), (!isHorizontal ? rect_.h - buttonSize_.y : 0), topButton_);
+
+        // bottomButton_ = new SimpButton(buttonSize_.x, buttonSize_.y, scrollBarBottomBtnPath.unpressed, scrollBarBottomBtnPath.pressed, 
+        //     [this] { move(-THUMB_MOVING_DELTA); }, this);
+        // addWidget(0, 0, bottomButton_);
+
+        // thumbMovingArea_.x = (isHorizontal ? buttonSize_.x : 0);
+        // thumbMovingArea_.y = (!isHorizontal ? buttonSize_.y : 0);
+        // thumbMovingArea_.w = (isHorizontal ? rect_.w - 3 * buttonSize_.x : 0);
+        // thumbMovingArea_.h = (!isHorizontal ? rect_.h - 3 * buttonSize_.y : 0);
+
+        // startThumbPos_ = getThumbPos(percentage_);
+        
+        // thumbButton_ = new ThumbButton(buttonSize_.x, buttonSize_.y, thumbMovingArea_, scrollThumbBtnPath, nullptr, this);
+        // addWidget(startThumbPos_.x, startThumbPos_.y, thumbButton_);
+    }
+
+    ~VerticalScrollBar() = default;
+
+    void BringToFront(hui::Widget *) override {}
+
+protected:
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        assert(bottomButton);
+        assert(topButton);
+        // assert(thumbButton);
+
+        if (event.Apply(*bottomButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        if (event.Apply(*topButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        // if (event.Apply(*thumbButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+
+        return hui::EventResult::UNHANDLED;
+    }
+
+    void OnSizeChanged() override { 
         layout();
     }
 
-    ~Button() { delete label; }
-
-    void SetOnClickAction(std::function<void()> action) { onClickAction = action; }
-    
-    bool IsPressed() const { return pressed; }
-    void SetPressed(bool flag) { pressed = flag; ForceRedraw(); }
-    
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
-        if (event.pressed == false                     ||
-            event.button != dr4::MouseButtonType::LEFT || 
-              !GetRect().Contains(event.pos)) 
-            return hui::EventResult::UNHANDLED;
-    
-        GetUI()->ReportFocus(this);
-        if (onClickAction) onClickAction();
-    
-        ForceRedraw();
-
-        return hui::EventResult::HANDLED;
-    }
-
-private:
-
-    hui::EventResult OnIdle(hui::IdleEvent &) override {
-        if (needRelayout) layout();
-
-        return hui::EventResult::UNHANDLED;
-    }
-
-    void Redraw() const override { 
-        dr4::Color color = (pressed ? dr4::Color{0, 0, 255, 255} : dr4::Color{255, 255, 255, 255});
-        GetTexture().Clear(color); 
-        label->DrawOn(GetTexture());
-    }
-
-    void layout() {
-        // label->SetVAlign(dr4::Text::VAlign::MIDDLE);
-        SetSize({label->GetBounds().x, label->GetBounds().y});
-        needRelayout = false;
-    }
-
-};
-
-class DropDownMenu : public ListContainer<Button *> {
-    bool visible = false;
-public:
-    DropDownMenu(hui::UI *ui): ListContainer(ui) {}
-
-    bool IsVisible() const { return visible; }
-
-    void Redraw() const override { 
-        if (!visible) { // full transparent
-            GetTexture().Clear({0, 0, 0, 0});
-            return;
-        }
-
-        GetTexture().Clear({0, 0, 0, 255});
-        for (Button *child : children) {
-            child->GetFreshTexture().DrawOn(GetTexture());
-        }
-    }
-
-    void Hide() {
-        visible = false;
-        ForceRedraw();
-    }
-
-    // anchor is the widget that dropdown menu is positioned relative to.
-    void Show(dr4::Vec2f showPos) {
-        visible = true;
-        
-        SetPos(showPos);
-
-        // layoutChildren();
-        
-        if (GetParent()) static_cast<ZContainer<Widget*>*>(GetParent())->BringToFront(this);
-
-        ForceRedraw();
-    }
-};
-
-class MenuBar : public LinContainer<Button *> {
-    bool needRelayout = true;
-
-    Button *currentlyActiveButton = nullptr;
-    DropDownMenu *currentlyActiveMenu = nullptr;
-
-public:
-    MenuBar(UI *ui): LinContainer(ui) {}
-
-    hui::EventResult OnIdle(hui::IdleEvent &) override {
-        if (needRelayout) layout();
-
-        return hui::EventResult::UNHANDLED;
-    }
-
-    void Redraw() const override {    
-        GetTexture().Clear({255, 0, 0, 255});
-        for (Button *button : children) {
-            button->DrawOn(GetTexture());
-        }
-    }
-
-    void addMenuItem(const std::string &label, DropDownMenu *dropDownMenu) {
-        assert(dropDownMenu);
-    
-        Button *newButton = new Button(GetUI(), label);
-
-        newButton->SetOnClickAction
-        (
-            [this, newButton, dropDownMenu]() 
-            {       
-                if (newButton->IsPressed()) {
-                    newButton->SetPressed(false);
-                    dropDownMenu->Hide();
-                    currentlyActiveButton = nullptr;
-                    return;
-                }
-            
-                if (currentlyActiveButton) {
-                    currentlyActiveButton->SetPressed(false);
-                    currentlyActiveMenu->Hide();
-                }
-
-                newButton->SetPressed(true);
-                dropDownMenu->Show(newButton->GetPos() + dr4::Vec2f(0, newButton->GetSize().y));
-                currentlyActiveButton = newButton;
-                currentlyActiveMenu  = dropDownMenu;
-            }
-        );
-    
-        addWidget(newButton);
-
-        needRelayout = true;
-    }
 private:
     void layout() {
-        float curBtnX = 0;
-        float maxButtonHeight = 0;
-        for (Button *button : children) {
-            button->SetPos({curBtnX, 0});
-            curBtnX += button->GetSize().x;
-            maxButtonHeight = std::fmax(maxButtonHeight, button->GetSize().y);
-        }
-        if (curBtnX > 0 && maxButtonHeight > 0) {
-            SetSize({curBtnX, maxButtonHeight});
-            ForceRedraw();
-        }
+        assert(bottomButton);
+        assert(topButton);
+        // assert(thumbButton);
 
-        needRelayout = false;
+        double buttonHeight = std::fmax(1, BUTTON_LAYOUT_SHARE_ * GetSize().y);
+        double buttonWidth  = std::fmax(1, GetSize().x);
+
+        bottomButton->SetPos({0, 0});
+        bottomButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
+
+        topButton->SetPos({0, static_cast<float>(GetSize().y - buttonHeight)});
+        topButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
     }
+
+
+
+    // gm_dot<int, 2> getThumbPos(double percentage) {
+    //     percentage = std::clamp(percentage, 0.0, 100.0);
+    
+    //     double len = (isHorizontal_? rect_.w - 3 * buttonSize_.x : rect_.h - 3 * buttonSize_.y);
+    //     double x = (isHorizontal_? buttonSize_.x + percentage * len : 0);
+    //     double y = (!isHorizontal_? buttonSize_.y + percentage * len : 0);
+    //     return {(int) x, (int) y};
+    // }
+
+    // void move(double deltaPercent) {
+    //     const double newPercentage = std::clamp(percentage_ + deltaPercent, 0.0, 1.0);
+    //     const double realDelta = newPercentage - percentage_;
+
+    //     if (onScroll_) onScroll_(newPercentage);
+
+    //     gm_dot<int, 2> thumbPos = getThumbPos(percentage_);
+        
+    //     int relX = (isHorizontal_ ? realDelta : 0) * (rect_.w - 3 * buttonSize_.x);
+    //     int relY = (!isHorizontal_ ? realDelta : 0) * (rect_.h - 3 * buttonSize_.y);
+
+    //     thumbButton_->setPosition(thumbPos.x + relX, thumbPos.y + relY);
+    //     thumbButton_->clampPos();
+
+    //     percentage_ = newPercentage;
+    // }
+
+    // double getPercentFromRelativePos(int x, int y) {
+    //     // std::cout << "val : " << x << " " << rect_.w - 3 * buttonSize_.x << "\n";
+    //     if (isHorizontal_) return ((double) x) / (rect_.w - 3 * buttonSize_.x);
+    //     return ((double) y) / (rect_.h - 3 * buttonSize_.y);
+    // }
+
+
+
+
+
+protected:
+    void Redraw() const override {
+        assert(bottomButton);
+        assert(topButton);
+
+        GetTexture().Clear({100, 0, 0, 255});
+        bottomButton->DrawOn(GetTexture());
+        topButton->DrawOn(GetTexture());
+    
+    }
+
+    // bool updateSelfAction() override {
+    //     bool updated = false;
+
+    //     int dx = thumbButton_->rect().x - startThumbPos_.x;
+    //     int dy = thumbButton_->rect().y - startThumbPos_.y;
+    //     double newPercentage = getPercentFromRelativePos(dx, dy);
+
+    //     if (newPercentage != percentage_) {
+    //         percentage_ = newPercentage;
+    //         setRerenderFlag();
+    //         if (onScroll_) onScroll_(percentage_);
+    //         updated = true;
+    //     }
+    
+    //     return updated;
+    // }
+
+    // void renderSelfAction(SDL_Renderer* renderer) override {
+    //     assert(renderer);
+
+    //     SDL_Rect widgetRect = {0, 0, rect_.w, rect_.h};
+    //     SDL_SetRenderDrawColor(renderer, DEFAULT_WINDOW_COLOR.r, DEFAULT_WINDOW_COLOR.g, DEFAULT_WINDOW_COLOR.b, DEFAULT_WINDOW_COLOR.a);
+    //     SDL_RenderFillRect(renderer, &widgetRect);
+    // }
+
+    // bool onMouseDownSelfAction(const MouseButtonEvent &event) override {
+    //     // hitting a free area
+    //     return true;
+    // }
+
+
+
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
@@ -240,7 +330,7 @@ void runUI(roa::UI &ui) {
         if (ui.GetTexture()) ui.GetWindow()->Draw(*ui.GetTexture());
         ui.GetWindow()->Display();
 
-        // ui.GetWindow()->Sleep();
+        // ui.GetWindow()->Sleep(0.1);
     }
 }
 
@@ -266,30 +356,14 @@ int main(int argc, const char *argv[]) {
     mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
     ui.SetRoot(mainWindow);
 
-    
 
 
+    roa::VerticalScrollBar *vScrollBar = new roa::VerticalScrollBar(&ui);  
+    vScrollBar->SetPos({200, 200});
+    vScrollBar->SetSize({20, 300});
 
 
-    roa::DropDownMenu *fileDropDownMenu = new roa::DropDownMenu(&ui);
-    roa::DropDownMenu *pluginDropDownMenu = new roa::DropDownMenu(&ui);
-    roa::DropDownMenu *testDropDownMenu = new roa::DropDownMenu(&ui);
-    mainWindow->addWidget(fileDropDownMenu);
-    mainWindow->addWidget(pluginDropDownMenu);
-    mainWindow->addWidget(testDropDownMenu);
-
-    roa::MenuBar *menuBar = new roa::MenuBar(&ui);
-    menuBar->SetPos({0, 0});
-    menuBar->SetSize({100, 30});
-
-    menuBar->addMenuItem("file", fileDropDownMenu);
-    menuBar->addMenuItem("plugin", pluginDropDownMenu);
-    menuBar->addMenuItem("test", testDropDownMenu);
-
-
-
-    mainWindow->addWidget(menuBar);
-
+    mainWindow->addWidget(vScrollBar);
 
 
     
