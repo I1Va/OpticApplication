@@ -125,11 +125,13 @@ protected:
 };
 
 class ThumbButton : public SimpButton  {
-    dr4::Vec2f accumulatedRel = {};
+    dr4::Rect2f movingArea = {};
 
+    dr4::Vec2f accumulatedRel = {};
     bool replaced = false;
 
-    dr4::Rect2f movingArea = {};
+    std::function<void()> onReplaceAction = nullptr;
+
 public:
     ThumbButton(hui::UI *ui): SimpButton(ui) {
         assert(ui);
@@ -141,18 +143,18 @@ public:
         movingArea = rect;
     }
 
+    void SetOnReplaceAction(std::function<void()> action) {
+        onReplaceAction = action;
+    }
+
 protected:
     hui::EventResult OnIdle(hui::IdleEvent &) override {
         if (replaced) {
-            dr4::Rect2f realMovingArea = movingArea;
-            realMovingArea.size.x = std::fmax(0, realMovingArea.size.x - GetSize().x);
-            realMovingArea.size.y = std::fmax(0, realMovingArea.size.y - GetSize().y);
-        
-            dr4::Vec2f pos = getClampedDotInRect(GetPos() + accumulatedRel, realMovingArea);
-            SetPos(pos);
-          
+            SetPos(GetPos() + accumulatedRel);
+            clampPos();
             accumulatedRel = {0, 0};
             replaced = false;
+            if (onReplaceAction) onReplaceAction();
             ForceRedraw();
             return hui::EventResult::HANDLED;
         }
@@ -190,6 +192,20 @@ protected:
         }
 
         return hui::EventResult::UNHANDLED;
+    }
+
+    void OnPosChanged() {
+        replaced = true;
+    }
+
+private:
+    void clampPos() {
+        dr4::Rect2f realMovingArea = movingArea;
+        realMovingArea.size.x = std::fmax(0, realMovingArea.size.x - GetSize().x);
+        realMovingArea.size.y = std::fmax(0, realMovingArea.size.y - GetSize().y);
+        
+        dr4::Vec2f pos = getClampedDotInRect(GetPos(), realMovingArea);
+        SetPos(pos);
     }
 };
 

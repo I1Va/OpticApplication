@@ -3,6 +3,7 @@
 #include <cassert>
 #include <list>
 #include <cmath>
+#include <algorithm>
 
 #include "hui/ui.hpp"
 #include "cum/manager.hpp"
@@ -11,6 +12,7 @@
 
 #include "BasicWidgets.hpp"
 #include "MainWindow.hpp"
+#include "hui/event.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -47,22 +49,11 @@ public:
 
 
 
-
-
-
-
-
-
-
-
-
-
 class VerticalScrollBar : public ZContainer<hui::Widget *> {
     static constexpr double BUTTON_LAYOUT_SHARE_ = 0.1; 
     static constexpr double THUMB_MOVING_DELTA = 0.05;
 
-    std::function<void(double)> onScroll=nullptr;
-    double percentage = 0; 
+    std::function<void(double)> onScrollAction=nullptr;
 
     std::unique_ptr<TextureButton>  bottomButton = nullptr;
     std::unique_ptr<TextureButton>  topButton    = nullptr;
@@ -85,37 +76,27 @@ public:
         BecomeParentOf(topButton.get());
         BecomeParentOf(thumbButton.get());
 
-        layout();
+        initLayout();
 
-        // topButton_ = new TextureButton(buttonSize_.x, buttonSize_.y, scrollBarTopBtnPath.unpressed, scrollBarTopBtnPath.pressed, 
-        //     [this] { move(THUMB_MOVING_DELTA); }, this);
-        // addWidget(( isHorizontal ? rect_.w - buttonSize_.x : 0), (!isHorizontal ? rect_.h - buttonSize_.y : 0), topButton_);
-
-        // bottomButton_ = new TextureButton(buttonSize_.x, buttonSize_.y, scrollBarBottomBtnPath.unpressed, scrollBarBottomBtnPath.pressed, 
-        //     [this] { move(-THUMB_MOVING_DELTA); }, this);
-        // addWidget(0, 0, bottomButton_);
-
-        // thumbMovingArea_.x = (isHorizontal ? buttonSize_.x : 0);
-        // thumbMovingArea_.y = (!isHorizontal ? buttonSize_.y : 0);
-        // thumbMovingArea_.w = (isHorizontal ? rect_.w - 3 * buttonSize_.x : 0);
-        // thumbMovingArea_.h = (!isHorizontal ? rect_.h - 3 * buttonSize_.y : 0);
-
-        // startThumbPos_ = getThumbPos(percentage_);
-        
-        // thumbButton_ = new ThumbButton(buttonSize_.x, buttonSize_.y, thumbMovingArea_, scrollThumbBtnPath, nullptr, this);
-        // addWidget(startThumbPos_.x, startThumbPos_.y, thumbButton_);
+        topButton->SetOnClickAction([this] { moveThumb(THUMB_MOVING_DELTA); });
+        bottomButton->SetOnClickAction([this] { moveThumb(-THUMB_MOVING_DELTA); });
+        thumbButton->SetOnReplaceAction([this] { percantageChanged(); });
     }
 
     ~VerticalScrollBar() = default;
 
     void BringToFront(hui::Widget *) override {}
 
+    void SetOnScrollAction(std::function<void(double)> action) {
+        onScrollAction = action;
+    }
+
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
         assert(bottomButton);
         assert(topButton);
-        // assert(thumbButton);
-
+        assert(thumbButton);
+    
         if (event.Apply(*thumbButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         if (event.Apply(*bottomButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         if (event.Apply(*topButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
@@ -123,69 +104,7 @@ protected:
         return hui::EventResult::UNHANDLED;
     }
 
-    void OnSizeChanged() override { 
-        layout();
-    }
-
-private:
-    void layout() {
-        assert(bottomButton);
-        assert(topButton);
-        assert(thumbButton);
-
-        double buttonHeight = std::fmax(1, BUTTON_LAYOUT_SHARE_ * GetSize().y);
-        double buttonWidth  = std::fmax(1, GetSize().x);
-
-        bottomButton->SetPos({0, 0});
-        bottomButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
-
-        topButton->SetPos({0, static_cast<float>(GetSize().y - buttonHeight)});
-        topButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
-
-        dr4::Rect2f thumbMovingArea;
-        thumbMovingArea.pos = bottomButton->GetPos() + dr4::Vec2f(0, static_cast<float>(buttonHeight));
-        thumbMovingArea.size = dr4::Vec2f(GetSize().x, GetSize().y - 2 * buttonHeight);
-        
-        thumbButton->SetSize({static_cast<float>(buttonWidth), static_cast<float>(buttonHeight)});
-        thumbButton->SetPos({0, static_cast<float>(thumbMovingArea.pos.y + thumbMovingArea.size.y * percentage)});
-        thumbButton->SetMovingArea(thumbMovingArea);
-    }
-
-    // gm_dot<int, 2> getThumbPos(double percentage) {
-    //     percentage = std::clamp(percentage, 0.0, 100.0);
-    
-    //     double len = (isHorizontal_? rect_.w - 3 * buttonSize_.x : rect_.h - 3 * buttonSize_.y);
-    //     double x = (isHorizontal_? buttonSize_.x + percentage * len : 0);
-    //     double y = (!isHorizontal_? buttonSize_.y + percentage * len : 0);
-    //     return {(int) x, (int) y};
-    // }
-
-    // void move(double deltaPercent) {
-    //     const double newPercentage = std::clamp(percentage_ + deltaPercent, 0.0, 1.0);
-    //     const double realDelta = newPercentage - percentage_;
-
-    //     if (onScroll_) onScroll_(newPercentage);
-
-    //     gm_dot<int, 2> thumbPos = getThumbPos(percentage_);
-        
-    //     int relX = (isHorizontal_ ? realDelta : 0) * (rect_.w - 3 * buttonSize_.x);
-    //     int relY = (!isHorizontal_ ? realDelta : 0) * (rect_.h - 3 * buttonSize_.y);
-
-    //     thumbButton_->setPosition(thumbPos.x + relX, thumbPos.y + relY);
-    //     thumbButton_->clampPos();
-
-    //     percentage_ = newPercentage;
-    // }
-
-    // double getPercentFromRelativePos(int x, int y) {
-    //     // std::cout << "val : " << x << " " << rect_.w - 3 * buttonSize_.x << "\n";
-    //     if (isHorizontal_) return ((double) x) / (rect_.w - 3 * buttonSize_.x);
-    //     return ((double) y) / (rect_.h - 3 * buttonSize_.y);
-    // }
-
-
-
-
+    void OnSizeChanged() override { reLayout(); }
 
 protected:
     void Redraw() const override {
@@ -198,59 +117,109 @@ protected:
         thumbButton->DrawOn(GetTexture());
     }
 
-    // bool updateSelfAction() override {
-    //     bool updated = false;
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
+        if (GetRect().Contains(event.pos)) {
+            event.pos -= GetPos();
+            if (PropagateToChildren(event) == hui::EventResult::HANDLED) {
+                event.pos += GetPos();
+                return hui::EventResult::HANDLED;
+            }
 
-    //     int dx = thumbButton_->rect().x - startThumbPos_.x;
-    //     int dy = thumbButton_->rect().y - startThumbPos_.y;
-    //     double newPercentage = getPercentFromRelativePos(dx, dy);
+            bool handled = false;
+            if (calculateThumbMovingArea().Contains(event.pos)) {
+                thumbButton->SetPos(event.pos);
+                handled = true;
+                ForceRedraw();
+            }
 
-    //     if (newPercentage != percentage_) {
-    //         percentage_ = newPercentage;
-    //         setRerenderFlag();
-    //         if (onScroll_) onScroll_(percentage_);
-    //         updated = true;
-    //     }
+            event.pos += GetPos();
+            return handled ? hui::EventResult::HANDLED : hui::EventResult::UNHANDLED;
+        }
+        return hui::EventResult::UNHANDLED;
+    }
+
+private:
+    dr4::Vec2f calculateButtonSize() { 
+        double buttonHeight = std::fmax(1, BUTTON_LAYOUT_SHARE_ * GetSize().y);
+        double buttonWidth  = std::fmax(1, GetSize().x);
+        return dr4::Vec2f(static_cast<float>(buttonWidth), static_cast<float>(buttonHeight));
+    }
+
+    dr4::Rect2f calculateThumbMovingArea() {
+        dr4::Vec2f buttonSize = calculateButtonSize();
     
-    //     return updated;
-    // }
+        dr4::Rect2f thumbMovingArea;
+        thumbMovingArea.pos = bottomButton->GetPos() + dr4::Vec2f(0, buttonSize.y);
+        thumbMovingArea.size = dr4::Vec2f(GetSize().x, GetSize().y - 2 * buttonSize.y);
 
-    // void renderSelfAction(SDL_Renderer* renderer) override {
-    //     assert(renderer);
+        return thumbMovingArea;
+    }
 
-    //     SDL_Rect widgetRect = {0, 0, rect_.w, rect_.h};
-    //     SDL_SetRenderDrawColor(renderer, DEFAULT_WINDOW_COLOR.r, DEFAULT_WINDOW_COLOR.g, DEFAULT_WINDOW_COLOR.b, DEFAULT_WINDOW_COLOR.a);
-    //     SDL_RenderFillRect(renderer, &widgetRect);
-    // }
+    dr4::Vec2f calculateThumbPos(double percentage) {
+        percentage = std::clamp(percentage, 0.0, 1.0);
 
-    // bool onMouseDownSelfAction(const MouseButtonEvent &event) override {
-    //     // hitting a free area
-    //     return true;
-    // }
+        dr4::Vec2f buttonSize = calculateButtonSize();
+        double len = calculateThumbMovingArea().size.y - buttonSize.y;
+        double y = buttonSize.y + len * percentage;
 
+        return dr4::Vec2f(0, y);
+    }
 
+    double calculateThumbPercentage() {
+        dr4::Vec2f buttonSize = calculateButtonSize();
+        
+        double y = thumbButton->GetPos().y - buttonSize.y; // - buttom button height
+        double len = calculateThumbMovingArea().size.y - buttonSize.y; // - thumb button height
+
+        return y / len;
+    }
+
+    void initLayout() {
+        assert(bottomButton);
+        assert(topButton);
+        assert(thumbButton);
+
+        dr4::Vec2f buttonSize = calculateButtonSize();
+        dr4::Rect2f thumbMovingArea = calculateThumbMovingArea();
+
+        bottomButton->SetPos({0, 0});
+        bottomButton->SetSize(buttonSize);
+        topButton->SetPos({0, GetSize().y - buttonSize.y});
+        topButton->SetSize(buttonSize);
+        
+        thumbButton->SetSize(buttonSize);
+        thumbButton->SetPos({0, buttonSize.y});
+        thumbButton->SetMovingArea(thumbMovingArea);
+    }
+    
+    void reLayout() {
+        assert(bottomButton);
+        assert(topButton);
+        assert(thumbButton);
+
+        initLayout();
+    
+        double percentage = calculateThumbPercentage();
+        dr4::Rect2f thumbMovingArea = calculateThumbMovingArea();
+        thumbButton->SetPos({0, static_cast<float>(thumbMovingArea.pos.y + thumbMovingArea.size.y * percentage)});
+    }
+
+    void moveThumb(double deltaPercent) {
+        double percentage = calculateThumbPercentage();
+        double newPercentage = std::clamp(percentage + deltaPercent, 0.0, 1.0);
+
+        if (onScrollAction) onScrollAction(newPercentage);
+
+        dr4::Vec2f newThumbPos = calculateThumbPos(newPercentage);
+        thumbButton->SetPos(newThumbPos);
+        percentage = newPercentage;
+    }
+
+    void percantageChanged() {
+        if (onScrollAction) onScrollAction(calculateThumbPercentage());
+    }
 
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -289,6 +258,11 @@ void runUI(roa::UI &ui) {
     }
 }
 
+
+void printPercentage(double val) {
+    std::cout << "Percentage : " << val << "%\n";
+}
+
 int main(int argc, const char *argv[]) {
     if (argc != 2) {
         std::cerr << "Expected one argument: dr4 backend path\n";
@@ -314,8 +288,16 @@ int main(int argc, const char *argv[]) {
 
 
     roa::VerticalScrollBar *vScrollBar = new roa::VerticalScrollBar(&ui);  
-    vScrollBar->SetPos({200, 200});
+    // vScrollBar->SetPos({200, 200});
     vScrollBar->SetSize({20, 300});
+    vScrollBar->SetOnScrollAction(printPercentage);
+
+    hui::MouseButtonEvent e;
+    e.pressed = true;
+    e.button = dr4::MouseButtonType::LEFT;
+    e.pos = {0, 100};
+
+    e.Apply(*vScrollBar);
 
 
     mainWindow->addWidget(vScrollBar);
