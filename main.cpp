@@ -57,19 +57,23 @@ void printPercentage(double val) {
     std::cout << "Percentage : " << val << "%\n";
 }
 
-roa::SceneWidget *createSceneWidget(hui::UI *ui) {
-    assert(ui);
 
-    RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0}); 
-    RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
-    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
-    RTMaterial *glassMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.50);
-    RTMaterial *sunMaterial = new RTEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
 
-    roa::SceneWidget *scene = new roa::SceneWidget(ui);
 
-    SphereObject *sun = new SphereObject(1, sunMaterial, &scene->GetSceneManager());
+void createSceneObjects
+(
+    SceneManager &sceneManager,
+    RTMaterialManager &materialManager,
+    std::vector<Primitives *> &primitives,
+    std::vector<Light *> &lights 
+) {
+    RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0}); 
+    RTMaterial *midSphereMaterial   = materialManager.MakeLambertian({0.1, 0.2, 0.5});
+    RTMaterial *rightSphereMaterial = materialManager.MakeMetal({0.8, 0.8, 0.8}, 0.3);
+    RTMaterial *glassMaterial       = materialManager.MakeDielectric({1.0, 1.0, 1.0}, 1.50);
+    RTMaterial *sunMaterial         = materialManager.MakeEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
 
+    SphereObject *sun = new SphereObject(1, sunMaterial, &sceneManager);
     Light *light = new Light
     (
         /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
@@ -78,24 +82,27 @@ roa::SceneWidget *createSceneWidget(hui::UI *ui) {
         /* viewLightPow      */  15.0
     );
 
-    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &scene->GetSceneManager());
-    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &scene->GetSceneManager());
-  
-    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &scene->GetSceneManager());
-
-    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &scene->GetSceneManager());
+    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &sceneManager);
+    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &sceneManager);
+    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &sceneManager);
+    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &sceneManager);
 
 
-    scene->AddObject({0, 0, -100}, ground);
-    scene->AddObject({0, 0, 1}, glassSphere);
-    // GetSceneManager.AddObject({-2, 0, 1}, leftBubbleSphere);
-    scene->AddObject({0, 4, 3}, midSphere);
-    scene->AddObject({2, 0, 1}, rightSphere);
+    ground->setPosition({0, 0, -100});
+    glassSphere->setPosition({0, 0, 1});
+    midSphere->setPosition({0, 4, 3});
+    rightSphere->setPosition({2, 0, 1});
+    sun->setPosition({-2, 0, 4});
 
-    scene->AddLight({0, 0, 10}, light);
-    scene->AddObject({-2, 0, 4}, sun);
+    light->setPosition({0, 0, 10});
 
-    return scene;
+    primitives.push_back(ground);
+    primitives.push_back(glassSphere);
+    primitives.push_back(midSphere);
+    primitives.push_back(sun);
+    primitives.push_back(rightSphere);
+
+    lights.push_back(light);
 }
 
 int main(int argc, const char *argv[]) {
@@ -142,11 +149,18 @@ int main(int argc, const char *argv[]) {
     textInput->setOnEnterAction([textMirror](const std::string &content) {textMirror->SetText(content); });
 
 
-    roa::SceneWidget *scene = createSceneWidget(&ui);
+    RTMaterialManager materialManager;
+    roa::SceneWidget *scene = new roa::SceneWidget(&ui);
     scene->SetSize({100, 100});
 
+    createSceneObjects(scene->GetSceneManager(), materialManager, scene->Primitives(), scene->Lights());
+
+
+    roa::ObjectPanel<roa::RTPrimPanelObject*> *panel = new roa::ObjectPanel<roa::RTPrimPanelObject*>(&ui);
+    panel->SetSize(100, 500);
     
 
+    
 
 
     vScrollBar->SetPos({200, 200}); mainWindow->addWidget(vScrollBar);
@@ -155,7 +169,7 @@ int main(int argc, const char *argv[]) {
     textMirror->SetPos({300, 400}); mainWindow->addWidget(textMirror);
     textButton->SetPos({300, 450}); mainWindow->addWidget(textButton);
     scene->SetPos({0, 0});          mainWindow->addWidget(scene);
-
+    panel->SetPos({600, 100});      mainWindow->addWidget(panel);
 
     runUI(ui);
     

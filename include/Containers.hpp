@@ -70,7 +70,6 @@ public:
     }
 
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        std::cout << "73";
         for (auto it = children.rbegin(); it != children.rend(); it++) {
             if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }

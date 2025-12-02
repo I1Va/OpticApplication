@@ -20,97 +20,99 @@ namespace roa
 //     }
 // }
 
+class IPanelObject {
+public:
+    virtual ~IPanelObject() {};
+    virtual const std::string &GetName() = 0;
+    virtual void OnSelect() = 0;
+    virtual void OnUnSelect() = 0;
+};
 
-// class ObjectListComponent : public Container {
-//     static constexpr int BORDER_THIKNESS = 3;
-//     static constexpr SDL_Color BORDER_COLOR = BLACK_SDL_COLOR;
-//     static constexpr SDL_Color BACK_COLOR = WHITE_SDL_COLOR;
+template<typename P>
+concept PointerToPanelObject =
+    std::is_pointer_v<P> &&
+    std::derived_from<std::remove_pointer_t<P>, IPanelObject>;
 
-//     static constexpr SDL_Color TEXT_COLOR = BLACK_SDL_COLOR;
-//     static constexpr std::size_t OBJECT_RECORD_HEIGHT = 20;
-//     TTF_Font* font_ = nullptr;
+class RTPrimPanelObject : public IPanelObject {
+    Primitives *object;
+public:
+    RTPrimPanelObject(Primitives *obj): object(obj) { assert(obj); }
+    ~RTPrimPanelObject() = default;
+    void OnSelect() override { object->setSelectFlag(true); }
+    void OnUnSelect() override { object->setSelectFlag(false); }   
+};
 
-//     std::vector<Primitives *> objects_{};
 
+template <PointerToPanelObject T>
+class ObjectPanel : public LinContainer<TextButton *> {
+    static constexpr double RECORD_HW_LAYOUT_SHARE = 0.3; 
 
-//     std::function<void(Primitives *)> onSelect_;
-//     std::function<void(Primitives *)> onUnSelect_;
+    T currentSelected = nullptr; 
+public:
+    using LinContainer::LinContainer;
 
-//     Primitives *selectedObject_ = nullptr;
-
-//     bool objectListChanged = true;
-
-// public:
-//     ObjectListComponent(int width, int height, TTF_Font* font,
-//         std::function<void(Primitives *)> onSelect=nullptr,
-//         std::function<void(Primitives *)> onUnSelect=nullptr,
-//         Widget *parent=nullptr
-//     ):
-//         Container(width, height, parent), font_(font),
-//         onSelect_(onSelect), onUnSelect_(onUnSelect)
-//     {}
+    void AddObject(T object) {
+        TextButton *record = new TextButton(GetUI());
+        record->SetText(object->GetName());
     
-//     void setObjects(const std::vector<Primitives *> objects) { objects_ = objects; }
+        record->SetOnClickAction([this, object]() 
+            { 
+                object->OnSelect(); 
+                currentSelected = object; 
+            } 
+        );
 
-//     void unselectObject(Primitives *primitive) {
-//         primitive->setSelectFlag(false);
-//         if (onUnSelect_) onUnSelect_(primitive);
-//     }
+        record->SetOnUnpressAction([this, object]() 
+            { 
+                object->OnUnSelect(); 
+                if (currentSelected == object) currentSelected = nullptr;
+            } 
+        );
 
-//     void selectObject(Primitives *primitive) {
+        addWidget(record);
+    }
 
-//         selectedObject_ = primitive;
-//         selectedObject_->setSelectFlag(true);
-//         if (onSelect_) onSelect_(primitive);
-//     }
-
-//     void updateRecords() {
-//          for (Widget *child : children_) {
-//             assert(child);
-        
-//             if (UIManager_->hovered() == child) UIManager_->setHovered(nullptr);
-//             if (UIManager_->mouseActived() == child) UIManager_->setMouseActived(nullptr);
-            
-//             delete child;
-//         }
-//         children_.clear();
-
-//         for (size_t i = 0; i < objects_.size(); i++) {
-//             Primitives *primitive = objects_[i];
-        
-//             std::string recordName = primitive->typeString() + " " + std::to_string(i);
-            
-//             ClickableTextWidget *objectRecord = new ClickableTextWidget(rect_.w - 2 * BORDER_THIKNESS, OBJECT_RECORD_HEIGHT, recordName, font_, 
-//                                                                         [this, primitive]() { selectObject(primitive); },
-//                                                                         [this, primitive]() { unselectObject(primitive); },
-//                                                                         this);
-                                                                    
-//             addWidget(BORDER_THIKNESS, BORDER_THIKNESS + i * OBJECT_RECORD_HEIGHT, objectRecord);
-//         }
-
-//         setRerenderFlag();
-//         objectListChanged = false;
-//     }
-
-//     bool updateSelfAction() override {
-//         if (objectListChanged) updateRecords();       
-
-//         return true; 
-//     }
-
-//     void renderSelfAction(SDL_Renderer* renderer) override { 
-
-//         SDL_Rect frame = {0, 0, rect_.w, rect_.h};
-//         SDL_SetRenderDrawColor(renderer, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, BORDER_COLOR.a);
-//         SDL_RenderFillRect(renderer, &frame);
+    T GetSelected() { return currentSelected; }
+ 
+protected:
+    void Redraw() const override {
+        GetTexture().Clear({255, 132, 0, 255});
+        for (TextButton *record : children) {
+            record->DrawOn(GetTexture());
+        }        
+    }
     
-//         SDL_SetRenderDrawColor(renderer, BACK_COLOR.r, BACK_COLOR.g, BACK_COLOR.b, BACK_COLOR.a);
-//         SDL_Rect interior = {BORDER_THIKNESS, BORDER_THIKNESS, rect_.w - 2 * BORDER_THIKNESS, rect_.h - 2 * BORDER_THIKNESS};
-//         SDL_RenderFillRect(renderer, &interior);                
-//     }
+    void OnSizeChanged() { relayout(); }
 
-//     Primitives *selectedObject() { return selectedObject_; }
-// };
+private:
+    void relayout() {
+        float recordHeight = RECORD_HW_LAYOUT_SHARE * GetSize().x;
+        float recordWidth = GetSize().x;
+        
+        dr4::Vec2f curRecordPos = dr4::Vec2f(0, 0);
+        for (TextButton *record : children) {
+            record->SetPos(curRecordPos);
+            record->SetSize({recordWidth, recordHeight});
+            curRecordPos += dr4::Vec2f(0, recordHeight);
+        }
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // class ObjectPropertiesComponent : public Container {
 //     static constexpr int BORDER_THIKNESS = 3;
@@ -334,6 +336,9 @@ public:
 
     void AddObject(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
     void AddLight(gm::IPoint3 position, Light *light) { sceneManager.addLight(position, light); }
+
+    std::vector<::Primitives *> &Primitives() { return sceneManager.primitives(); }
+    std::vector<::Light *> &Lights() { return sceneManager.lights(); }
 
     int GetScreenResolutionWidth()  const { return sceneImage->GetWidth();  }
     int GetScreenResolutionHeight() const { return sceneImage->GetHeight(); }

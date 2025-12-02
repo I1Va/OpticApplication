@@ -17,6 +17,7 @@ public:
 
 protected:
     std::function<void()> onClickAction = nullptr;
+    std::function<void()> onUnpressAction = nullptr;
 
     bool pressed        = false;
     bool actived        = false;
@@ -27,6 +28,7 @@ public:
     ~Button() = default;
 
     void SetOnClickAction(std::function<void()> action) { onClickAction = action; }
+    void SetOnUnpressAction(std::function<void()> action) { onUnpressAction = action; }
     bool IsPressed() const { return pressed; }
 
     void SetHoverMode()         { mode = Mode::HOVER; }
@@ -51,6 +53,8 @@ protected:
 
         GetUI()->SetCaptured(nullptr);
         pressed = false;
+        if (onUnpressAction) onUnpressAction();
+    
         return hui::EventResult::HANDLED;
     }
 
