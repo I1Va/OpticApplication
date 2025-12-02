@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <cstring>
 
 #include "hui/widget.hpp"
 
@@ -14,6 +15,7 @@ protected:
     std::unique_ptr<dr4::Text> text;
 
     std::unique_ptr<dr4::Line> caret;
+    int caretPos = 0;
     bool drawCaret = false;
     
     dr4::Color backColor = WHITE;
@@ -41,17 +43,20 @@ public:
         ForceRedraw();
     }
 
+    void SetCaretPos(const int pos) { 
+        caretPos = pos; 
+        relayoutCaret();
+    }
+
     void ShowCaret() { 
         drawCaret = true; 
         ForceRedraw();
     }
-
     void HideCaret() { 
         drawCaret = false; 
         ForceRedraw();
-    }
-    
-    void SwitchCaret() {
+    }  
+    void BlinkCaret() {
         if (drawCaret) HideCaret();
         else ShowCaret();
     }
@@ -68,13 +73,20 @@ protected:
     void OnSizeChanged() override { relayoutCaret(); }
 
     void relayoutCaret() {
-        dr4::Vec2f start = text->GetPos() + dr4::Vec2f(text->GetBounds().x, 0);
-        dr4::Vec2f end   = text->GetPos() + text->GetBounds();
+        caretPos = std::clamp(caretPos, 0, static_cast<int>(text->GetText().size()));
+        std::string prevText = text->GetText();
+        std::string caretSubstr = prevText.substr(0, caretPos);
+
+        text->SetText(caretSubstr);
+        dr4::Vec2f caretTextBounds = text->GetBounds();
+        text->SetText(prevText);
+
+        dr4::Vec2f start = text->GetPos() + dr4::Vec2f(caretTextBounds.x, 0);
+        dr4::Vec2f end   = text->GetPos() + caretTextBounds;
 
         caret->SetStart(start);
         caret->SetEnd(end);
     }
-
 };
 
 class TextInputWidget : public TextWidget {
@@ -82,6 +94,7 @@ class TextInputWidget : public TextWidget {
     
     double curCaretBlinkDeltaSecs = CARET_BLINK_DELTA_SECS; 
     bool caretBlinkState = false;
+    int caretPos = 0;
 
     std::function<void(const std::string&)> onEnterAction = nullptr;
     
@@ -107,12 +120,12 @@ protected:
 
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
         caretBlinkState = (GetUI()->GetFocused() == this);
-    
+        SetCaretPos(caretPos);
         curCaretBlinkDeltaSecs -= event.deltaTime;
         if (curCaretBlinkDeltaSecs <= 0) {
             curCaretBlinkDeltaSecs = CARET_BLINK_DELTA_SECS;
             if (!caretBlinkState) HideCaret();
-            else SwitchCaret();
+            else BlinkCaret();
         }
 
         if (needOnEnterCall_) {
@@ -125,22 +138,42 @@ protected:
     }
 
     hui::EventResult OnText(hui::TextEvent &event) { 
-        textBufer += std::string(event.text);
+        if (GetUI()->GetFocused() != this) return hui::EventResult::UNHANDLED;
+    
+        int prevSize = static_cast<int>(textBufer.size());
+        textBufer.insert(caretPos, event.text);
+        caretPos += static_cast<int>(textBufer.size()) -  prevSize;
         SetText(textBufer);
         ForceRedraw();
         return hui::EventResult::HANDLED;
     }
 
     hui::EventResult OnKeyDown(hui::KeyEvent &event) override {
+        if (GetUI()->GetFocused() != this) return hui::EventResult::UNHANDLED;
+    
         if (event.key == dr4::KeyCode::KEYCODE_BACKSPACE && !textBufer.empty()) {
-            textBufer.pop_back();
-            SetText(textBufer);
-            ForceRedraw();
+            if (caretPos > 0) {
+                textBufer.erase(caretPos - 1, 1);
+                caretPos--;
+                SetText(textBufer);
+                ForceRedraw();
+            }
             return hui::EventResult::HANDLED;
         }
 
         if (event.key == dr4::KeyCode::KEYCODE_ENTER) {
             needOnEnterCall_ = true;
+            ForceRedraw();
+            return hui::EventResult::HANDLED;
+        }
+
+        if (event.key == dr4::KeyCode::KEYCODE_LEFT) {
+            caretPos = std::max(0, caretPos - 1);
+            ForceRedraw();
+            return hui::EventResult::HANDLED;
+        }
+        if (event.key == dr4::KeyCode::KEYCODE_RIGHT) {
+            caretPos = std::min(static_cast<int>(textBufer.size()), caretPos + 1);
             ForceRedraw();
             return hui::EventResult::HANDLED;
         }
