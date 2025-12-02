@@ -20,7 +20,7 @@ endif()
 
 set(GEOMLIB_BUILD_TESTS OFF CACHE BOOL "Disable GeomLib tests")
 add_subdirectory(external/GeomLib)
-# add_subdirectory(external/RayTracer)
+add_subdirectory(external/RayTracer)
 
 add_executable(${PROJECT_NAME} 
     ${CMAKE_CURRENT_SOURCE_DIR}/source/ROACommon.cpp    
@@ -35,12 +35,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     hui
     pp
     GeomLib
-    #RayTracer
+    RayTracer
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/external/gui-interface/include
-    #${CMAKE_SOURCE_DIR}/external/RayTracer/inc
+    ${CMAKE_SOURCE_DIR}/external/RayTracer/inc
     ${CMAKE_SOURCE_DIR}/external/GeomLib/inc
     ${CMAKE_SOURCE_DIR}/include    
 )

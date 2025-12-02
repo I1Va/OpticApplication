@@ -14,6 +14,7 @@
 #include "MainWindow.hpp"
 #include "ScrollBar.hpp"
 #include "TextWidgets.hpp"
+#include "SceneWidgets.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -52,9 +53,49 @@ void runUI(roa::UI &ui) {
     }
 }
 
-
 void printPercentage(double val) {
     std::cout << "Percentage : " << val << "%\n";
+}
+
+roa::SceneWidget *createSceneWidget(hui::UI *ui) {
+    assert(ui);
+
+    RTMaterial *groundMaterial = new RTLambertian({0.8, 0.8, 0.0}); 
+    RTMaterial *midSphereMaterial = new RTLambertian({0.1, 0.2, 0.5});
+    RTMaterial *rightSphereMaterial = new RTMetal({0.8, 0.8, 0.8}, 0.3);
+    RTMaterial *glassMaterial = new RTDielectric({1.0, 1.0, 1.0}, 1.50);
+    RTMaterial *sunMaterial = new RTEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
+
+    roa::SceneWidget *scene = new roa::SceneWidget(ui);
+
+    SphereObject *sun = new SphereObject(1, sunMaterial, &scene->getSceneManager());
+
+    Light *light = new Light
+    (
+        /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
+        /* defuseIntensity   */  gm::IVec3f(0.8, 0.7, 0.6),
+        /* specularIntensity */  gm::IVec3f(0.7, 0.7, 0),
+        /* viewLightPow      */  15.0
+    );
+
+    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &scene->getSceneManager());
+    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &scene->getSceneManager());
+  
+    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &scene->getSceneManager());
+
+    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &scene->getSceneManager());
+
+
+    scene->addObject({0, 0, -100}, ground);
+    scene->addObject({0, 0, 1}, glassSphere);
+    // // getSceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
+    scene->addObject({0, 4, 3}, midSphere);
+    scene->addObject({2, 0, 1}, rightSphere);
+
+    scene->addLight({0, 0, 10}, light);
+    scene->addObject({-2, 0, 4}, sun);
+
+    return scene;
 }
 
 int main(int argc, const char *argv[]) {
@@ -82,39 +123,40 @@ int main(int argc, const char *argv[]) {
 
 
     roa::TextWidget *textField = new roa::TextWidget(&ui);
-    textField->SetPos({300, 300});
     textField->SetSize({200, 30});
 
     roa::TextWidget *textMirror = new roa::TextWidget(&ui);
-    textMirror->SetPos({300, 400});
     textMirror->SetSize({200, 30});
 
     roa::TextButton *textButton = new roa::TextButton(&ui);
     textButton->SetText("I am button");
-    textButton->SetPos({300, 450});
     textButton->SetSize({200, 30});
 
 
     roa::VerticalScrollBar *vScrollBar = new roa::VerticalScrollBar(&ui);  
-    vScrollBar->SetPos({200, 200});
     vScrollBar->SetSize({20, 300});
     vScrollBar->SetOnScrollAction([textField](double percentage) {textField->SetText(std::to_string(percentage)); });
     
     roa::TextInputWidget *textInput = new roa::TextInputWidget(&ui);
-    textInput->SetPos({300, 350});
     textInput->SetSize({200, 30});
     textInput->setOnEnterAction([textMirror](const std::string &content) {textMirror->SetText(content); });
 
 
-
-
-    mainWindow->addWidget(vScrollBar);
-    mainWindow->addWidget(textField);
-    mainWindow->addWidget(textInput);
-    mainWindow->addWidget(textMirror);
-    mainWindow->addWidget(textButton);
+    roa::SceneWidget *scene = createSceneWidget(&ui);
+    scene->SetSize({200, 200});
 
     
+
+
+
+    vScrollBar->SetPos({200, 200}); mainWindow->addWidget(vScrollBar);
+    textField->SetPos({300, 300});  mainWindow->addWidget(textField);
+    textInput->SetPos({300, 350});  mainWindow->addWidget(textInput);
+    textMirror->SetPos({300, 400}); mainWindow->addWidget(textMirror);
+    textButton->SetPos({300, 450}); mainWindow->addWidget(textButton);
+    scene->SetPos({0, 0});          mainWindow->addWidget(scene);
+
+
     runUI(ui);
     
     delete window;
