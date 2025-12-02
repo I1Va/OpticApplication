@@ -70,7 +70,12 @@ protected:
         }
     }
     
-    void OnSizeChanged() override { relayoutCaret(); }
+    void OnSizeChanged() override { 
+        relayoutCaret(); 
+        relayoutText();
+    }
+
+    void relayoutText() { text->SetFontSize(GetSize().y); }
 
     void relayoutCaret() {
         caretPos = std::clamp(caretPos, 0, static_cast<int>(text->GetText().size()));

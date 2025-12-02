@@ -2,6 +2,7 @@
 
 #include "hui/widget.hpp"
 #include "ROACommon.hpp"
+#include "ROAUI.hpp"
 
 namespace roa
 {
@@ -19,7 +20,7 @@ protected:
 
     bool pressed        = false;
     bool actived        = false;
-    Mode mode           = Mode::FOCUSED;
+    Mode mode           = Mode::CAPTURED;
 
 public:
     using hui::Widget::Widget;
@@ -78,7 +79,8 @@ protected:
 };
 
 class SimpButton : public Button {
-    dr4::Color pressedColor     = BLACK;
+protected:
+    dr4::Color pressedColor     = GRAY;
     dr4::Color unpressedColor   = WHITE;
 public:
     using Button::Button;
@@ -95,6 +97,7 @@ protected:
 };
 
 class TextureButton : public Button { 
+protected:
     const dr4::Texture *pressedTexture = nullptr;
     const dr4::Texture *unpressedTexture = nullptr;
 public:
@@ -114,7 +117,7 @@ protected:
     void Redraw() const override {
         if (actived) {
             if (pressedTexture) pressedTexture->DrawOn(GetTexture());
-            else GetTexture().Clear(BLACK);
+            else GetTexture().Clear(GRAY);
             return;
         }
 
@@ -124,90 +127,41 @@ protected:
 
 };
 
-class ThumbButton : public SimpButton  {
-    dr4::Rect2f movingArea = {};
-
-    dr4::Vec2f accumulatedRel = {};
-    bool replaced = false;
-
-    std::function<void()> onReplaceAction = nullptr;
-
+class TextButton : public SimpButton {
+protected:
+    std::unique_ptr<dr4::Text> text;
 public:
-    ThumbButton(hui::UI *ui): SimpButton(ui) {
+    TextButton(hui::UI *ui) : SimpButton(ui), text(GetUI()->GetWindow()->CreateText()) {
         assert(ui);
+
+        text->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
     }
 
-    ~ThumbButton() = default;
+    ~TextButton() = default;
 
-    void SetMovingArea(const dr4::Rect2f rect) { 
-        movingArea = rect;
+    void SetText(const std::string &content) {
+        text->SetText(content);
     }
 
-    void SetOnReplaceAction(std::function<void()> action) {
-        onReplaceAction = action;
+    void SetFont(dr4::Font *font) {
+        assert(font);
+
+        text->SetFont(font);
+        ForceRedraw();
     }
 
 protected:
-    hui::EventResult OnIdle(hui::IdleEvent &) override {
-        if (replaced) {
-            SetPos(GetPos() + accumulatedRel);
-            clampPos();
-            accumulatedRel = {0, 0};
-            replaced = false;
-            if (onReplaceAction) onReplaceAction();
-            ForceRedraw();
-            return hui::EventResult::HANDLED;
-        }
 
-        bool newActiveState = actived;
-        
-        switch (mode) {
-        case Mode::HOVER:
-            newActiveState = (GetUI()->GetHovered() == this);
-            break;
-        case Mode::FOCUSED:
-            newActiveState = (GetUI()->GetFocused() == this);
-            break;
-        case Mode::CAPTURED:
-            newActiveState = pressed;
-            break;
-        default:
-            break;
-        }
+    void Redraw() const override {
+        if (actived) GetTexture().Clear(pressedColor);
+        else GetTexture().Clear(unpressedColor);
+        text->DrawOn(GetTexture());
+    }   
 
-        if (actived != newActiveState) ForceRedraw();
-        actived = newActiveState;
+    void OnSizeChanged() override { relayout(); }
 
-        return hui::EventResult::UNHANDLED;
-
-    }
-
-    hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) override {
-        if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
-
-        if (GetUI()->GetFocused() == this && actived) {
-            accumulatedRel += event.rel;
-            replaced = true;
-            return hui::EventResult::HANDLED;
-        }
-
-        return hui::EventResult::UNHANDLED;
-    }
-
-    void OnPosChanged() {
-        replaced = true;
-    }
-
-private:
-    void clampPos() {
-        dr4::Rect2f realMovingArea = movingArea;
-        realMovingArea.size.x = std::fmax(0, realMovingArea.size.x - GetSize().x);
-        realMovingArea.size.y = std::fmax(0, realMovingArea.size.y - GetSize().y);
-        
-        dr4::Vec2f pos = getClampedDotInRect(GetPos(), realMovingArea);
-        SetPos(pos);
-    }
+private: 
+    void relayout() { text->SetFontSize(GetSize().y); }    
 };
-
 
 }

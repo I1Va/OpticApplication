@@ -13,6 +13,7 @@ template <typename T>
 concept EventDerived = std::is_base_of_v<hui::Event, T>;
 
 const dr4::Color BLACK = dr4::Color{0, 0, 0, 255};
+const dr4::Color GRAY = dr4::Color{60, 60, 60, 255};
 const dr4::Color WHITE = dr4::Color{255, 255, 255, 255};
 
 dr4::Vec2f getClampedDotInRect(const dr4::Vec2f dot, const dr4::Rect2f rect);

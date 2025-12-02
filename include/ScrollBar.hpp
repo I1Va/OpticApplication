@@ -9,6 +9,92 @@
 namespace roa
 {
 
+class ThumbButton : public SimpButton  {
+    dr4::Rect2f movingArea = {};
+
+    dr4::Vec2f accumulatedRel = {};
+    bool replaced = false;
+
+    std::function<void()> onReplaceAction = nullptr;
+
+public:
+    ThumbButton(hui::UI *ui): SimpButton(ui) {
+        assert(ui);
+    }
+
+    ~ThumbButton() = default;
+
+    void SetMovingArea(const dr4::Rect2f rect) { 
+        movingArea = rect;
+    }
+
+    void SetOnReplaceAction(std::function<void()> action) {
+        onReplaceAction = action;
+    }
+
+protected:
+    hui::EventResult OnIdle(hui::IdleEvent &) override {
+        if (replaced) {
+            SetPos(GetPos() + accumulatedRel);
+            clampPos();
+            accumulatedRel = {0, 0};
+            replaced = false;
+            if (onReplaceAction) onReplaceAction();
+            ForceRedraw();
+            return hui::EventResult::HANDLED;
+        }
+
+        bool newActiveState = actived;
+        
+        switch (mode) {
+        case Mode::HOVER:
+            newActiveState = (GetUI()->GetHovered() == this);
+            break;
+        case Mode::FOCUSED:
+            newActiveState = (GetUI()->GetFocused() == this);
+            break;
+        case Mode::CAPTURED:
+            newActiveState = pressed;
+            break;
+        default:
+            break;
+        }
+
+        if (actived != newActiveState) ForceRedraw();
+        actived = newActiveState;
+
+        return hui::EventResult::UNHANDLED;
+
+    }
+
+    hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) override {
+        if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
+
+        if (GetUI()->GetFocused() == this && actived) {
+            accumulatedRel += event.rel;
+            replaced = true;
+            return hui::EventResult::HANDLED;
+        }
+
+        return hui::EventResult::UNHANDLED;
+    }
+
+    void OnPosChanged() {
+        replaced = true;
+    }
+
+private:
+    void clampPos() {
+        dr4::Rect2f realMovingArea = movingArea;
+        realMovingArea.size.x = std::fmax(0, realMovingArea.size.x - GetSize().x);
+        realMovingArea.size.y = std::fmax(0, realMovingArea.size.y - GetSize().y);
+        
+        dr4::Vec2f pos = getClampedDotInRect(GetPos(), realMovingArea);
+        SetPos(pos);
+    }
+};
+
+
 class VerticalScrollBar : public ZContainer<hui::Widget *> {
     static constexpr double BUTTON_LAYOUT_SHARE_ = 0.1; 
     static constexpr double THUMB_MOVING_DELTA = 0.05;
@@ -25,10 +111,6 @@ public:
         bottomButton = std::make_unique<TextureButton>(ui);
         topButton    = std::make_unique<TextureButton>(ui);
         thumbButton  = std::make_unique<ThumbButton>(ui);
-
-        bottomButton->SetCapturedMode();
-        topButton->SetCapturedMode();
-        thumbButton->SetCapturedMode();
 
         thumbButton->SetUnpressedColor({255, 0, 255, 255});
         
