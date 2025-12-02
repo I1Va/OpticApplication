@@ -68,7 +68,7 @@ roa::SceneWidget *createSceneWidget(hui::UI *ui) {
 
     roa::SceneWidget *scene = new roa::SceneWidget(ui);
 
-    SphereObject *sun = new SphereObject(1, sunMaterial, &scene->getSceneManager());
+    SphereObject *sun = new SphereObject(1, sunMaterial, &scene->GetSceneManager());
 
     Light *light = new Light
     (
@@ -78,22 +78,22 @@ roa::SceneWidget *createSceneWidget(hui::UI *ui) {
         /* viewLightPow      */  15.0
     );
 
-    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &scene->getSceneManager());
-    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &scene->getSceneManager());
+    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &scene->GetSceneManager());
+    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &scene->GetSceneManager());
   
-    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &scene->getSceneManager());
+    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &scene->GetSceneManager());
 
-    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &scene->getSceneManager());
+    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &scene->GetSceneManager());
 
 
-    scene->addObject({0, 0, -100}, ground);
-    scene->addObject({0, 0, 1}, glassSphere);
-    // // getSceneManager.addObject({-2, 0, 1}, leftBubbleSphere);
-    scene->addObject({0, 4, 3}, midSphere);
-    scene->addObject({2, 0, 1}, rightSphere);
+    scene->AddObject({0, 0, -100}, ground);
+    scene->AddObject({0, 0, 1}, glassSphere);
+    // GetSceneManager.AddObject({-2, 0, 1}, leftBubbleSphere);
+    scene->AddObject({0, 4, 3}, midSphere);
+    scene->AddObject({2, 0, 1}, rightSphere);
 
-    scene->addLight({0, 0, 10}, light);
-    scene->addObject({-2, 0, 4}, sun);
+    scene->AddLight({0, 0, 10}, light);
+    scene->AddObject({-2, 0, 4}, sun);
 
     return scene;
 }
@@ -143,7 +143,7 @@ int main(int argc, const char *argv[]) {
 
 
     roa::SceneWidget *scene = createSceneWidget(&ui);
-    scene->SetSize({200, 200});
+    scene->SetSize({100, 100});
 
     
 
