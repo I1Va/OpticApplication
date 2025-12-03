@@ -7,24 +7,19 @@
 namespace roa
 {
 
-template <typename T>
-concept WidgetPtr =
-    std::is_pointer_v<T> &&
-    std::is_base_of_v<hui::Widget, std::remove_pointer_t<T>>;
 
-
-template <typename T> 
+template <WidgetDerived T> 
 class ZContainer : public hui::Container {
 public:
     ZContainer(hui::UI *ui): hui::Container(ui) {}
     virtual ~ZContainer() = default;
-    virtual void BringToFront(T widget) = 0;
+    virtual void BringToFront(T *widget) = 0;
 };
 
-template <WidgetPtr T>
+template <WidgetDerived T>
 class ListContainer : public ZContainer<T> {
 protected:
-    std::list<T> children;
+    std::list<std::unique_ptr<T>> children;
 
     hui::EventResult PropagateToChildren(hui::Event &event) override {
         for (auto it = children.rbegin(); it != children.rend(); it++) {
@@ -34,39 +29,31 @@ protected:
     }
 public:
     ListContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    virtual ~ListContainer() {
-        for (T child : children) {
-            delete child;
-        }
-    }
+    virtual ~ListContainer() = default;
 
-    void addWidget(T widget) {
+    void addWidget(T  *widget) {
         BecomeParentOf(widget);
-        children.push_front(widget);
+        children.emplace_front(widget);
     }
     
-    void BringToFront(T widget) override {
+    void BringToFront(T *widget) override {
         assert(widget);
     
         auto it = std::find(children.begin(), children.end(), widget);
         if(it != children.end()) {
             children.erase(it);
-            children.push_back(widget);
+            children.emplace_front(widget);
         }
     }
 };
 
-template <WidgetPtr T>
+template <WidgetDerived T>
 class LinContainer : public ZContainer<T> {
 protected:
-    std::vector<T> children; 
+    std::vector<std::unique_ptr<T>> children; 
 public:
     LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    virtual ~LinContainer() {
-        for (T child : children) {
-            delete child;
-        }
-    }
+    virtual ~LinContainer() = default;
 
     hui::EventResult PropagateToChildren(hui::Event &event) override {
         for (auto it = children.rbegin(); it != children.rend(); it++) {
@@ -75,16 +62,16 @@ public:
         return hui::EventResult::UNHANDLED;
     }
 
-    void addWidget(T widget) {
+    void addWidget(T *widget) {
         hui::Container::BecomeParentOf(widget);
-        children.push_back(widget);
+        children.emplace(children.begin(), widget);
     }
 
-    void BringToFront(T widget) override {
+    void BringToFront(T *widget) override {
         auto it = std::find(children.begin(), children.end(), widget);
         if(it != children.end()) {
             children.erase(it);       
-            children.push_back(widget);   
+            children.emplace(children.begin(), widget);   
         }
     }
 };

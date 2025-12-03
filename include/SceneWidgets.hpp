@@ -10,17 +10,6 @@
 namespace roa
 {
 
-// inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
-
-// inline void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
-//     char* end = nullptr;
-//     float val = std::strtof(inp.c_str(), &end);
-//     if (*end == '\0' && end != inp.c_str()) {
-//         setter(val);
-//     }
-// }
-
-
 class SceneWidget : public hui::Widget {
     static inline constexpr int CAMERA_KEY_CONTROL_DELTA = 10;
     static inline constexpr int CAMERA_MOUSE_RELOCATION_SCALE = 2;
@@ -256,6 +245,4 @@ protected:
     }
 };
 
-
-
-}
+} // namespace roa

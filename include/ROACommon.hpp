@@ -9,8 +9,15 @@
 namespace roa
 {
 
+// template<typename T, typename B>
+// concept DerivedFrom = std::is_base_of_v<B, T>;
+
 template <typename T>
 concept EventDerived = std::is_base_of_v<hui::Event, T>;
+
+template <typename T>
+concept WidgetDerived = std::is_base_of_v<hui::Widget, T>;
+
 
 const dr4::Color BLACK = dr4::Color{0, 0, 0, 255};
 const dr4::Color GRAY = dr4::Color{60, 60, 60, 255};

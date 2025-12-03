@@ -94,7 +94,7 @@ private:
     }
 };
 
-class VerticalScrollBar : public ZContainer<hui::Widget *> {
+class VerticalScrollBar : public ZContainer<hui::Widget> {
     static constexpr double MOUSEWHEEL_THUMB_MOVE_COEF = 0.05;
     static constexpr double BUTTON_LAYOUT_SHARE_ = 0.1; 
     static constexpr double THUMB_MOVING_DELTA = 0.05;

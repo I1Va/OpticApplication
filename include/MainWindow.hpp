@@ -4,22 +4,19 @@
 namespace roa
 {
 
-class MainWindow : public ZContainer<hui::Widget *> {
-    std::vector<hui::Widget *> modals;
-    std::vector<hui::Widget *> widgets;
+class MainWindow final : public ZContainer<hui::Widget> {
+    std::vector<std::unique_ptr<hui::Widget>> modals;
+    std::vector<std::unique_ptr<hui::Widget>> widgets;
 
 public:
-    MainWindow(hui::UI *ui): ZContainer<hui::Widget *>(ui) {}
-    ~MainWindow() {
-        for (hui::Widget *child : modals)  delete child;
-        for (hui::Widget *child : widgets) delete child;
-    }
+    MainWindow(hui::UI *ui): ZContainer<hui::Widget>(ui) {}
+    ~MainWindow() = default;
 
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (hui::Widget *child : modals) {
+        for (auto &child : modals) {
             if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }
-        for (hui::Widget *child : widgets) {
+        for (auto &child : widgets) {
             if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }
     
@@ -28,33 +25,33 @@ public:
 
     void addWidget(hui::Widget *widget) {
         BecomeParentOf(widget);
-        widgets.push_back(widget);
+        widgets.emplace(widgets.begin(), widget);
     }
 
     void addModal(hui::Widget *widget) {
         BecomeParentOf(widget);
-        modals.push_back(widget);
+        modals.emplace(modals.begin(), widget);
     }
 
     void BringToFront(hui::Widget *widget) override {
-        auto widgetsIt = std::find(widgets.begin(), widgets.end(), widget);
+        auto widgetsIt = std::find_if(widgets.begin(), widgets.end(), [widget](const auto &w){ return w.get() == widget; } );
         if(widgetsIt != widgets.end()) {
             widgets.erase(widgetsIt);       
-            widgets.push_back(widget);   
+            widgets.emplace(widgets.begin(), widget);
         }
 
-        auto modalsIt = std::find(modals.begin(), modals.end(), widget);
+        auto modalsIt = std::find_if(modals.begin(), modals.end(), [widget](const auto &w){ return w.get() == widget; });
         if(modalsIt != modals.end()) {
             modals.erase(modalsIt);       
-            modals.push_back(widget);   
+            modals.emplace(widgets.begin(), widget);   
         }   
     }
 
 protected:
     void Redraw() const override {
         GetTexture().Clear({50, 50, 50, 255});
-        for (hui::Widget * widget : widgets) widget->DrawOn(GetTexture());
-        for (hui::Widget * modal : modals) modal->DrawOn(GetTexture());
+        for (auto &widget : widgets) widget->DrawOn(GetTexture());
+        for (auto &modal : modals) modal->DrawOn(GetTexture());
     }
 };
 
