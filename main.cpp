@@ -25,6 +25,14 @@ namespace roa
 
 }
 
+inline void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
+    char* end = nullptr;
+    float val = std::strtof(inp.c_str(), &end);
+    if (*end == '\0' && end != inp.c_str()) {
+        setter(val);
+    }
+}
+
 void runUI(roa::UI &ui) {
     double frameDelaySecs_ = 0.032;
     while (ui.GetWindow()->IsOpen()) {
@@ -191,8 +199,21 @@ int main(int argc, const char *argv[]) {
         );
     }
 
+    roa::PropertiesPanel *properties = new roa::PropertiesPanel(&ui);
+    properties->SetSize(200, 200);
 
-
+    Primitives *selectedPrim = scene->Primitives()[4];
+    properties->AddProperty(
+        "X : ", std::to_string(selectedPrim->position().x()),
+        [selectedPrim](const std::string &newXCord)
+        {
+            setIfStringConvertedToFloat(newXCord, [selectedPrim](float val){
+                auto pos = selectedPrim->position();
+                pos.setX(val);
+                selectedPrim->setPosition(pos);
+            });
+        }
+    );
 
 
     vScrollBar->SetPos({200, 200}); mainWindow->addWidget(vScrollBar);
@@ -204,6 +225,7 @@ int main(int argc, const char *argv[]) {
 
     scene->SetPos({0, 0});          mainWindow->addWidget(scene);
     panel->SetPos({600, 100});      mainWindow->addWidget(panel);
+    properties->SetPos({600, 300}); mainWindow->addWidget(properties);
 
 
 

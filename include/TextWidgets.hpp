@@ -119,6 +119,12 @@ public:
     void SetOnEnterAction(std::function<void(const std::string&)> action) {
         onEnterAction = action;
     }
+
+    void SetText(const std::string &content) {
+        textBufer = content;
+        TextWidget::SetText(content);
+    }
+
 protected:
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
         caretBlinkState = (GetUI()->GetFocused() == this);
@@ -182,7 +188,6 @@ protected:
 
         return hui::EventResult::UNHANDLED;
     }
-
 };
 
 class TextInputField : public ZContainer<hui::Widget> {
@@ -205,7 +210,9 @@ public:
 
     void SetLabel(const std::string &content) {
         label->SetText(content);
-        ForceRedraw();
+    }
+    void SetText(const std::string &content) {
+        inputField->SetText(content);
     }
 
     void SetOnEnterAction(std::function<void(const std::string &)> action) { inputField->SetOnEnterAction(action); }
@@ -226,9 +233,11 @@ protected:
         float inputFieldWidthHeight = GetSize().y;
 
         label->SetSize({labelWIdth, labelHeight});
-        inputField->SetSize({inputFieldWidth, inputFieldWidthHeight});
-
+        inputField->SetSize({inputFieldWidth, inputFieldWidthHeight});    
         inputField->SetPos({labelWIdth, 0});
+
+        inputField->ForceRedraw();
+        label->ForceRedraw();
     }
     
     void Redraw() const override {

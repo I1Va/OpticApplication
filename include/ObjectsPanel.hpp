@@ -11,13 +11,7 @@ namespace roa
 
 // inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
 
-// inline void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
-//     char* end = nullptr;
-//     float val = std::strtof(inp.c_str(), &end);
-//     if (*end == '\0' && end != inp.c_str()) {
-//         setter(val);
-//     }
-// }
+
 
 
 template<typename T>
@@ -47,7 +41,7 @@ public:
 
     virtual ~RecordsPanel() = default;
 
-    void BringToFront(TextButton *) override {}
+    void BringToFront(T *) override {}
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
@@ -75,7 +69,7 @@ protected:
 
         double scrollPerccentage = scrollBar->GetPercentage();
         float hBias = std::fmax(0, scrollPerccentage * (records.size() * recordHeight - this->GetSize().y));
-        
+
         for (auto &record : records) {
             record->SetPos(curRecordPos - dr4::Vec2f(0, hBias));
             record->SetSize({recordWidth, recordHeight});
@@ -149,49 +143,32 @@ public:
 
 };
 
-template <IsPointer T>
-class PropertiesPanel final : public RecordsPanel<TextButton> {
-    T currentSelected = nullptr;
-    std::function<void()> currentSelectedOnUnSelect = nullptr;
+class PropertiesPanel final : public RecordsPanel<TextInputField> {
 public:
     using RecordsPanel::RecordsPanel;
     ~PropertiesPanel() = default;
 
-    T GetSelected() { return currentSelected; }
-
-    void AddObject
+    void AddProperty
     (
-        T object,
-        const std::string &name,
-        std::function<void()> onSelect,
-        std::function<void()> onUnSelect
+        const std::string &label, const std::string &value,
+        std::function<void(const std::string&)> setPropertyVal
     ) {
-        auto record = std::make_unique<TextButton>(GetUI());
-        record->SetText(name);
-        record->SetFocusedMode();
+        auto record = std::make_unique<TextInputField>(GetUI());
+        record->SetLabel(label);
+        record->SetText(value);
+        record->SetOnEnterAction(setPropertyVal);
 
-        record->SetOnClickAction([this, object, onSelect, onUnSelect]()
-            {
-                if (onSelect) onSelect();
-                if (currentSelected != object && currentSelectedOnUnSelect)
-                    currentSelectedOnUnSelect();
-                currentSelected = object;
-                currentSelectedOnUnSelect = onUnSelect;
-            }
-        );
-
-        record->SetOnUnpressAction([this, object, onUnSelect]()
-            {
-                if (onUnSelect) onUnSelect();
-                if (currentSelected == object) currentSelected = nullptr;
-            }
-        );
-
-        TextButton* ptr = record.get();
+        TextInputField* ptr = record.get();
         records.emplace_back(std::move(record));
         BecomeParentOf(ptr);
-
         relayout();
+    }
+
+    hui::EventResult OnIdle(hui::IdleEvent &event) {
+        PropagateToChildren(event);
+
+
+        return hui::EventResult::UNHANDLED;
     }
 
 };
