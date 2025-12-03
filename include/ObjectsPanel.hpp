@@ -5,6 +5,7 @@
 #include "Containers.hpp"
 #include "RayTracer.h"
 #include "ScrollBar.hpp"
+#include "TextWidgets.hpp"
 
 namespace roa
 {
@@ -21,14 +22,17 @@ template <WidgetDerived T>
 class RecordsPanel : public ZContainer<T> {
 protected:
     static constexpr double RECORD_HEIGHT = 20;
+    static constexpr double TITLE_HEIGHT = 20;
     static constexpr double SCROLLBAR_LAYOUT_SHARE = 0.2;
 
-    std::vector<std::unique_ptr<T>> records;
+    std::unique_ptr<TextWidget> title;
     std::unique_ptr<VerticalScrollBar> scrollBar; 
+    std::vector<std::unique_ptr<T>> records;
 
 public:
     RecordsPanel(hui::UI *ui): 
         ZContainer<T>(ui), 
+        title(new TextWidget(ui)),
         scrollBar(new VerticalScrollBar(ui)) 
     { 
         assert(ui);
@@ -42,6 +46,14 @@ public:
     virtual ~RecordsPanel() = default;
 
     void BringToFront(T *) override {}
+
+    void SetTitle(const std::string &titleContent) {
+        title->SetText(titleContent);
+    }
+
+    void ClearRecords() {
+        records.clear();   
+    }
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
@@ -58,6 +70,7 @@ protected:
             record->DrawOn(this->GetTexture());
         }
         scrollBar->DrawOn(this->GetTexture());
+        title->DrawOn(this->GetTexture());
     }
 
     void OnSizeChanged() override { relayout(); }
@@ -65,7 +78,7 @@ protected:
     void relayoutRecords() {
         float recordHeight = RECORD_HEIGHT;
         float recordWidth = this->GetSize().x - scrollBar->GetSize().x;
-        dr4::Vec2f curRecordPos = dr4::Vec2f(0, 0);
+        dr4::Vec2f curRecordPos = dr4::Vec2f(0, TITLE_HEIGHT);
 
         double scrollPerccentage = scrollBar->GetPercentage();
         float hBias = std::fmax(0, scrollPerccentage * (records.size() * recordHeight - this->GetSize().y));
@@ -81,30 +94,38 @@ protected:
     }
 
     void relayoutScrollBar() {
-        float scrollBarHeight = this->GetSize().y;
+        float scrollBarHeight = this->GetSize().y - TITLE_HEIGHT;
         float scrollBarWidth = this->GetSize().x * SCROLLBAR_LAYOUT_SHARE;
 
         scrollBar->SetSize({scrollBarWidth, scrollBarHeight});
-        scrollBar->SetPos({this->GetSize().x - scrollBarWidth, 0});
+        scrollBar->SetPos({this->GetSize().x - scrollBarWidth, TITLE_HEIGHT});
     
         this->ForceRedraw();
+    }
+
+    void relayoutTitle() {
+        title->SetSize({this->GetSize().x, TITLE_HEIGHT});
     }
 
     void relayout() {
         relayoutRecords();
         relayoutScrollBar();
+        relayoutTitle();
     }
 };
 
 template <IsPointer T>
 class ObjectsPanel final : public RecordsPanel<TextButton> {
     T currentSelected = nullptr;
+    std::function<void()> onSelectedAction = nullptr;
     std::function<void()> currentSelectedOnUnSelect = nullptr;
 public:
     using RecordsPanel::RecordsPanel;
     ~ObjectsPanel() = default;
 
     T GetSelected() { return currentSelected; }
+
+    void SetOnSelectedAction(std::function<void()> action) { onSelectedAction = action; }
 
     void AddObject
     (
@@ -120,8 +141,11 @@ public:
         record->SetOnClickAction([this, object, onSelect, onUnSelect]()
             {
                 if (onSelect) onSelect();
-                if (currentSelected != object && currentSelectedOnUnSelect)
+                if (currentSelected != object && currentSelectedOnUnSelect) {
                     currentSelectedOnUnSelect();
+                    if (onSelectedAction) onSelectedAction();
+                }
+                    
                 currentSelected = object;
                 currentSelectedOnUnSelect = onUnSelect;
             }
@@ -172,6 +196,7 @@ public:
     }
 
 };
+
 
 
 } // namespace roa

@@ -45,11 +45,13 @@ public:
         camera.renderProperties.maxRayDepth = 5;
     }
 
+    void AddObject(Primitives *object) { sceneManager.addObject(object); }
+    void AddLight(Light *light) { sceneManager.addLight(light); }
     void AddObject(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
     void AddLight(gm::IPoint3 position, Light *light) { sceneManager.addLight(position, light); }
 
-    std::vector<::Primitives *> &Primitives() { return sceneManager.primitives(); }
-    std::vector<::Light *>      &Lights()     { return sceneManager.lights(); }
+    std::vector<::Primitives *> &GetPrimitives() { return sceneManager.primitives(); }
+    std::vector<::Light *>      &GetLights()     { return sceneManager.lights(); }
 
     int GetScreenResolutionWidth()  const { return sceneImage->GetWidth();  }
     int GetScreenResolutionHeight() const { return sceneImage->GetHeight(); }

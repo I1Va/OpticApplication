@@ -1,29 +1,189 @@
 #pragma once
-
 #include "Containers.hpp"
+#include "ObjectsPanel.hpp"
 #include "SceneWidgets.hpp"
 
 namespace roa 
 {
-    
-class EditorWidget : public ZContainer<hui::Widget *> {
-    SceneWidget *scene = nullptr;
-    ObjectsPanel<RTPrimPanelObject *> objectsPanel = nullptr;
+ 
+inline void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
+    char* end = nullptr;
+    float val = std::strtof(inp.c_str(), &end);
+    if (*end == '\0' && end != inp.c_str()) {
+        setter(val);
+    }
+}
+
+class EditorWidget final : public ZContainer<hui::Widget> {
+    static constexpr double PANEL_LAYOUT_SHARE = 0.4; 
+    std::unique_ptr<SceneWidget> scene = nullptr;
+
+    std::unique_ptr<ObjectsPanel<Primitives *>> objectsPanel = nullptr;
+    std::unique_ptr<PropertiesPanel> propertiesPanel = nullptr;
+
+    bool recordsNeedChange = true;
 
 public:
-    void AddObject(gm::IPoint3 position, Primitives *object) {
-        assert(object);
-        scene->AddObject(position, object);
+    EditorWidget(hui::UI *ui): 
+        ZContainer(ui),
+        scene(new SceneWidget(ui)),
+        objectsPanel(new ObjectsPanel<::Primitives *>(ui)),
+        propertiesPanel(new PropertiesPanel(ui))
+    {
+        assert(ui);
+    
+        objectsPanel->SetOnSelectedAction([this](){ recordsNeedChange = true; });
 
-        std::unique_ptr<RTPrimPanelObject *object = new 
-        objectsPanel->AddObject();
-
+        BecomeParentOf(scene.get());
+        BecomeParentOf(objectsPanel.get());
+        BecomeParentOf(propertiesPanel.get());
     }
 
-    void AddLight(gm::IPoint3 position, Light *light) {
+    ~EditorWidget() = default;
+
+    void AddObject(::Primitives *object) {
+        assert(object);
+    
+        static size_t AddObjectIter = 0; AddObjectIter++;
+    
+        scene->AddObject(object);
+        
+        objectsPanel->AddObject(
+            object, object->typeString() + std::to_string(AddObjectIter),
+            [object](){ object->setSelectFlag(true); },
+            [object](){ object->setSelectFlag(false); }    
+        );
+    }
+    void AddLight(::Light *light) {
+        assert(light);
+        scene->AddLight(light);
+    }
+
+    void AddObject(gm::IPoint3 position, ::Primitives *object) {
+        assert(object);
+    
+        static size_t AddObjectIter = 0; AddObjectIter++;
+    
+        scene->AddObject(position, object);
+        
+        objectsPanel->AddObject(
+            object, object->typeString() + std::to_string(AddObjectIter),
+            [object](){ object->setSelectFlag(true); },
+            [object](){ object->setSelectFlag(false); }    
+        );
+    }
+    void AddLight(gm::IPoint3 position, ::Light *light) {
         assert(light);
         scene->AddLight(position, light);
     }
+
+    std::vector<::Primitives *> &GetPrimitives() { return scene->GetPrimitives(); }
+    std::vector<::Light *>      &GetLights()     { return scene->GetLights(); }
+
+    SceneManager &GetSceneManager() { return scene->GetSceneManager(); }
+
+    void BringToFront(hui::Widget *) override {}
+
+protected:
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        if (event.Apply(*scene) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        if (event.Apply(*objectsPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        if (event.Apply(*propertiesPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        return hui::EventResult::UNHANDLED;
+    }
+
+    hui::EventResult OnIdle(hui::IdleEvent &event) override {
+        if (recordsNeedChange) updateRecords();
+        event.Apply(*scene);
+        event.Apply(*objectsPanel);
+        event.Apply(*propertiesPanel);
+
+        return hui::EventResult::UNHANDLED;
+    }
+
+    void OnSizeChanged() override { layout(); }
+
+    void Redraw() const override {
+        GetTexture().Clear({0, 0, 0, 0});
+        scene->DrawOn(GetTexture());
+        objectsPanel->DrawOn(GetTexture());
+        propertiesPanel->DrawOn(GetTexture());
+    }
+
+private:
+    void layout() {
+        float panelWidth = GetSize().x * PANEL_LAYOUT_SHARE;
+        float panelHeight = GetSize().y / 2;
+    
+        float sceneWidth = GetSize().x - panelWidth;
+        float sceneHeight = GetSize().y;
+        
+        scene->SetSize({sceneWidth, sceneHeight});
+        objectsPanel->SetSize({panelWidth, panelHeight});
+        propertiesPanel->SetSize({panelWidth, panelHeight});
+
+        objectsPanel->SetPos({sceneWidth, 0});
+        propertiesPanel->SetPos({sceneWidth, panelHeight});
+    }
+
+    void updateRecords() {
+        ::Primitives *selectedObject = objectsPanel->GetSelected();
+        propertiesPanel->ClearRecords();
+        addCordsPoperties(selectedObject);
+        recordsNeedChange = false;
+        propertiesPanel->ForceRedraw();
+    }
+
+    void addCordsPoperties(::Primitives *selectedObject) {
+        std::string XContent = (selectedObject ? std::to_string(selectedObject->position().x()) : "");
+        std::string YContent = (selectedObject ? std::to_string(selectedObject->position().y()) : "");
+        std::string ZContent = (selectedObject ? std::to_string(selectedObject->position().z()) : "");
+    
+        propertiesPanel->AddProperty
+            (
+                "X", XContent,
+                [selectedObject](const std::string &newCord)
+                {
+                    setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
+                        if (selectedObject) {
+                            auto pos = selectedObject->position();
+                            pos.setX(val);
+                            selectedObject->setPosition(pos);
+                        }
+                    });
+                }
+            );
+        propertiesPanel->AddProperty
+            (
+                "Y", YContent,
+                [selectedObject](const std::string &newCord)
+                {
+                    setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
+                        if (selectedObject) {
+                            auto pos = selectedObject->position();
+                            pos.setY(val);
+                            selectedObject->setPosition(pos);
+                        }
+                    });
+                }
+            );
+        propertiesPanel->AddProperty
+        (
+            "Z", ZContent,
+            [selectedObject](const std::string &newCord)
+            {
+                setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
+                    if (selectedObject) {
+                        auto pos = selectedObject->position();
+                        pos.setZ(val);
+                        selectedObject->setPosition(pos);
+                    }
+                });
+            }
+        );
+    }
+
+
 };
 
 } // namespace roa

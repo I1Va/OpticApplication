@@ -16,6 +16,7 @@
 #include "TextWidgets.hpp"
 #include "SceneWidgets.hpp"
 #include "ObjectsPanel.hpp"
+#include "EditorWidget.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -25,13 +26,6 @@ namespace roa
 
 }
 
-inline void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
-    char* end = nullptr;
-    float val = std::strtof(inp.c_str(), &end);
-    if (*end == '\0' && end != inp.c_str()) {
-        setter(val);
-    }
-}
 
 void runUI(roa::UI &ui) {
     double frameDelaySecs_ = 0.032;
@@ -138,96 +132,36 @@ int main(int argc, const char *argv[]) {
 
 
 
-    roa::TextWidget *textField = new roa::TextWidget(&ui);
-    textField->SetSize({200, 30});
-
-    roa::TextWidget *textMirror = new roa::TextWidget(&ui);
-    textMirror->SetSize({200, 30});
-
-    roa::TextButton *textButton = new roa::TextButton(&ui);
-    textButton->SetText("I am button");
-    textButton->SetSize({200, 30});
-
-
-    roa::VerticalScrollBar *vScrollBar = new roa::VerticalScrollBar(&ui);  
-    vScrollBar->SetSize({20, 300});
-    vScrollBar->SetOnScrollAction([textField](double percentage) {textField->SetText(std::to_string(percentage)); });
     
-    roa::TextInputWidget *textInput = new roa::TextInputWidget(&ui);
-    textInput->SetSize({200, 30});
-    textInput->SetOnEnterAction([textMirror](const std::string &content) {textMirror->SetText(content); });
-
-
-    roa::TextInputField *inputField = new roa::TextInputField(&ui);
-    inputField->SetLabel("X : ");
-    inputField->SetSize({200, 30});
-    inputField->SetOnEnterAction([](const std::string &val) { std::cout << val << std::endl; });
-
-
-
-
-
-
-
 
     RTMaterialManager materialManager;
-    roa::SceneWidget *scene = new roa::SceneWidget(&ui);
-    scene->SetSize({100, 100});
-
-    createSceneObjects(scene->GetSceneManager(), materialManager, scene->Primitives(), scene->Lights());
-
-
-    
 
 
 
+    roa::EditorWidget *editor = new roa::EditorWidget(&ui);
+    std::vector<Primitives *> primitives;
+    std::vector<Light *> lights;
 
+    createSceneObjects(editor->GetSceneManager(), materialManager, primitives, lights);
 
-
-
-
-
-    
-    roa::ObjectsPanel<Primitives *> *panel = new roa::ObjectsPanel<Primitives *>(&ui);
-    panel->SetSize(100, 100); 
-    
-    for (Primitives *prim : scene->Primitives()) {
-        panel->AddObject(
-            prim, prim->typeString(), 
-            [prim](){ prim->setSelectFlag(true); },
-            [prim](){ prim->setSelectFlag(false); }    
-        );
+    for (auto prim : primitives) {
+        editor->AddObject(prim);
     }
-
-    roa::PropertiesPanel *properties = new roa::PropertiesPanel(&ui);
-    properties->SetSize(200, 200);
-
-    Primitives *selectedPrim = scene->Primitives()[4];
-    properties->AddProperty(
-        "X : ", std::to_string(selectedPrim->position().x()),
-        [selectedPrim](const std::string &newXCord)
-        {
-            setIfStringConvertedToFloat(newXCord, [selectedPrim](float val){
-                auto pos = selectedPrim->position();
-                pos.setX(val);
-                selectedPrim->setPosition(pos);
-            });
-        }
-    );
+    for (auto light : lights) {
+        editor->AddLight(light);
+    }
+    
+    editor->SetSize({700, 500});
 
 
-    vScrollBar->SetPos({200, 200}); mainWindow->addWidget(vScrollBar);
-    textField->SetPos({300, 300});  mainWindow->addWidget(textField);
-    textInput->SetPos({300, 350});  mainWindow->addWidget(textInput);
-    textMirror->SetPos({300, 400}); mainWindow->addWidget(textMirror);
-    textButton->SetPos({300, 450}); mainWindow->addWidget(textButton);
-    inputField->SetPos({300, 500}); mainWindow->addWidget(inputField);
+    // vScrollBar->SetPos({200, 200}); mainWindow->addWidget(vScrollBar);
+    // textField->SetPos({300, 300});  mainWindow->addWidget(textField);
+    // textInput->SetPos({300, 350});  mainWindow->addWidget(textInput);
+    // textMirror->SetPos({300, 400}); mainWindow->addWidget(textMirror);
+    // textButton->SetPos({300, 450}); mainWindow->addWidget(textButton);
+    // inputField->SetPos({300, 500}); mainWindow->addWidget(inputField);
 
-    scene->SetPos({0, 0});          mainWindow->addWidget(scene);
-    panel->SetPos({600, 100});      mainWindow->addWidget(panel);
-    properties->SetPos({600, 300}); mainWindow->addWidget(properties);
-
-
+    editor->SetPos({100, 100});     mainWindow->addWidget(editor);
 
 
     double frameDelaySecs_ = 0.032;
