@@ -147,7 +147,19 @@ int main(int argc, const char *argv[]) {
     
     roa::TextInputWidget *textInput = new roa::TextInputWidget(&ui);
     textInput->SetSize({200, 30});
-    textInput->setOnEnterAction([textMirror](const std::string &content) {textMirror->SetText(content); });
+    textInput->SetOnEnterAction([textMirror](const std::string &content) {textMirror->SetText(content); });
+
+
+    roa::TextInputField *inputField = new roa::TextInputField(&ui);
+    inputField->SetLabel("X : ");
+    inputField->SetSize({200, 30});
+    inputField->SetOnEnterAction([](const std::string &val) { std::cout << val << std::endl; });
+
+
+
+
+
+
 
 
     RTMaterialManager materialManager;
@@ -155,6 +167,9 @@ int main(int argc, const char *argv[]) {
     scene->SetSize({100, 100});
 
     createSceneObjects(scene->GetSceneManager(), materialManager, scene->Primitives(), scene->Lights());
+
+
+    
 
 
 
@@ -185,6 +200,8 @@ int main(int argc, const char *argv[]) {
     textInput->SetPos({300, 350});  mainWindow->addWidget(textInput);
     textMirror->SetPos({300, 400}); mainWindow->addWidget(textMirror);
     textButton->SetPos({300, 450}); mainWindow->addWidget(textButton);
+    inputField->SetPos({300, 500}); mainWindow->addWidget(inputField);
+
     scene->SetPos({0, 0});          mainWindow->addWidget(scene);
     panel->SetPos({600, 100});      mainWindow->addWidget(panel);
 

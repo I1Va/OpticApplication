@@ -149,4 +149,52 @@ public:
 
 };
 
+template <IsPointer T>
+class PropertiesPanel final : public RecordsPanel<TextButton> {
+    T currentSelected = nullptr;
+    std::function<void()> currentSelectedOnUnSelect = nullptr;
+public:
+    using RecordsPanel::RecordsPanel;
+    ~PropertiesPanel() = default;
+
+    T GetSelected() { return currentSelected; }
+
+    void AddObject
+    (
+        T object,
+        const std::string &name,
+        std::function<void()> onSelect,
+        std::function<void()> onUnSelect
+    ) {
+        auto record = std::make_unique<TextButton>(GetUI());
+        record->SetText(name);
+        record->SetFocusedMode();
+
+        record->SetOnClickAction([this, object, onSelect, onUnSelect]()
+            {
+                if (onSelect) onSelect();
+                if (currentSelected != object && currentSelectedOnUnSelect)
+                    currentSelectedOnUnSelect();
+                currentSelected = object;
+                currentSelectedOnUnSelect = onUnSelect;
+            }
+        );
+
+        record->SetOnUnpressAction([this, object, onUnSelect]()
+            {
+                if (onUnSelect) onUnSelect();
+                if (currentSelected == object) currentSelected = nullptr;
+            }
+        );
+
+        TextButton* ptr = record.get();
+        records.emplace_back(std::move(record));
+        BecomeParentOf(ptr);
+
+        relayout();
+    }
+
+};
+
+
 } // namespace roa

@@ -116,13 +116,10 @@ public:
 
     ~TextInputWidget() = default;
 
-    void setOnEnterAction(std::function<void(const std::string&)> action) {
+    void SetOnEnterAction(std::function<void(const std::string&)> action) {
         onEnterAction = action;
     }
-
 protected:
-    void setOnEnter( std::function<void(const std::string &)> onEnter) { onEnterAction = onEnter; }
-
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
         caretBlinkState = (GetUI()->GetFocused() == this);
         SetCaretPos(caretPos);
@@ -188,5 +185,56 @@ protected:
 
 };
 
+class TextInputField : public ZContainer<hui::Widget> {
+    std::unique_ptr<TextWidget> label;
+    std::unique_ptr<TextInputWidget> inputField;
+
+public:
+    TextInputField(hui::UI *ui) : ZContainer(ui), label(new TextWidget(ui)), inputField(new TextInputWidget(ui)) { 
+        assert(ui); 
+        BecomeParentOf(label.get());
+        BecomeParentOf(inputField.get());
+    }
+    ~TextInputField() = default;
+
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        if (event.Apply(*inputField) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+
+        return hui::EventResult::UNHANDLED;
+    }
+
+    void SetLabel(const std::string &content) {
+        label->SetText(content);
+        ForceRedraw();
+    }
+
+    void SetOnEnterAction(std::function<void(const std::string &)> action) { inputField->SetOnEnterAction(action); }
+
+    void BringToFront(hui::Widget *) override {}
+
+protected:
+
+    void OnSizeChanged() override {
+        relayout();
+    }
+
+    void relayout() {
+        float labelWIdth = GetSize().x / 2;
+        float labelHeight = GetSize().y;
+    
+        float inputFieldWidth = labelWIdth;
+        float inputFieldWidthHeight = GetSize().y;
+
+        label->SetSize({labelWIdth, labelHeight});
+        inputField->SetSize({inputFieldWidth, inputFieldWidthHeight});
+
+        inputField->SetPos({labelWIdth, 0});
+    }
+    
+    void Redraw() const override {
+        label->DrawOn(GetTexture());
+        inputField->DrawOn(GetTexture());
+    }
+};
 
 }
