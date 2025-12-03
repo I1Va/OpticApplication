@@ -95,6 +95,7 @@ private:
 };
 
 class VerticalScrollBar : public ZContainer<hui::Widget *> {
+    static constexpr double MOUSEWHEEL_THUMB_MOVE_COEF = 0.05;
     static constexpr double BUTTON_LAYOUT_SHARE_ = 0.1; 
     static constexpr double THUMB_MOVING_DELTA = 0.05;
 
@@ -160,6 +161,13 @@ protected:
         thumbButton->DrawOn(GetTexture());
     }
 
+    hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
+        if (GetUI()->GetHovered() != this) return hui::EventResult::UNHANDLED;
+        moveThumb(-event.delta.y * MOUSEWHEEL_THUMB_MOVE_COEF);
+
+        return hui::EventResult::HANDLED; 
+    }
+
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
         if (GetRect().Contains(event.pos)) {
             event.pos -= GetPos();
@@ -168,15 +176,14 @@ protected:
                 return hui::EventResult::HANDLED;
             }
 
-            bool handled = false;
             if (calculateThumbMovingArea().Contains(event.pos)) {
                 thumbButton->SetPos(event.pos);
-                handled = true;
                 ForceRedraw();
             }
 
             event.pos += GetPos();
-            return handled ? hui::EventResult::HANDLED : hui::EventResult::UNHANDLED;
+            GetUI()->ReportFocus(this);
+            return hui::EventResult::HANDLED;
         }
         return hui::EventResult::UNHANDLED;
     }
