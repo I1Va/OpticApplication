@@ -53,7 +53,6 @@ protected:
 
         GetUI()->SetCaptured(nullptr);
         pressed = false;
-        if (onUnpressAction) onUnpressAction();
     
         return hui::EventResult::HANDLED;
     }
@@ -77,6 +76,8 @@ protected:
 
         if (actived != newActiveState) ForceRedraw();
         actived = newActiveState;
+        if (!actived && onUnpressAction) onUnpressAction();
+        
 
         return hui::EventResult::UNHANDLED;
     }

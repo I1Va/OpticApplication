@@ -1,6 +1,7 @@
 .vscode/
 build/
 notes/
-run.sh
+release.sh
+debug.sh
 
 lsan.supp

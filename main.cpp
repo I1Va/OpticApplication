@@ -15,6 +15,7 @@
 #include "ScrollBar.hpp"
 #include "TextWidgets.hpp"
 #include "SceneWidgets.hpp"
+#include "ObjectsPanel.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -52,13 +53,6 @@ void runUI(roa::UI &ui) {
         ui.GetWindow()->Sleep(frameDelaySecs_);
     }
 }
-
-void printPercentage(double val) {
-    std::cout << "Percentage : " << val << "%\n";
-}
-
-
-
 
 void createSceneObjects
 (
@@ -156,11 +150,27 @@ int main(int argc, const char *argv[]) {
     createSceneObjects(scene->GetSceneManager(), materialManager, scene->Primitives(), scene->Lights());
 
 
-    roa::ObjectPanel<roa::RTPrimPanelObject*> *panel = new roa::ObjectPanel<roa::RTPrimPanelObject*>(&ui);
-    panel->SetSize(100, 500);
-    
+
+
+
+
+
+
 
     
+    roa::ObjectsPanel<Primitives *> *panel = new roa::ObjectsPanel<Primitives *>(&ui);
+    panel->SetSize(100, 500); 
+    
+    for (Primitives *prim : scene->Primitives()) {
+        panel->AddObject(
+            prim, prim->typeString(), 
+            [prim](){ prim->setSelectFlag(true); },
+            [prim](){ prim->setSelectFlag(false); }    
+        );
+    }
+
+
+
 
 
     vScrollBar->SetPos({200, 200}); mainWindow->addWidget(vScrollBar);
@@ -171,7 +181,38 @@ int main(int argc, const char *argv[]) {
     scene->SetPos({0, 0});          mainWindow->addWidget(scene);
     panel->SetPos({600, 100});      mainWindow->addWidget(panel);
 
-    runUI(ui);
+
+
+
+    double frameDelaySecs_ = 0.032;
+    while (ui.GetWindow()->IsOpen()) {
+        while (true) {
+            auto evt = ui.GetWindow()->PollEvent();
+            if (!evt.has_value()) break; 
+
+            if (evt->type == dr4::Event::Type::QUIT ||
+            (evt->type == dr4::Event::Type::KEY_DOWN && evt->key.sym == dr4::KeyCode::KEYCODE_ESCAPE)) {
+                ui.GetWindow()->Close();
+                break;
+            }
+            ui.ProcessEvent(evt.value());
+        }
+
+        double frameStartSecs = ui.GetWindow()->GetTime();
+        hui::IdleEvent idleEvent;
+        idleEvent.absTime = frameStartSecs;
+        idleEvent.deltaTime = frameDelaySecs_;
+        ui.OnIdle(idleEvent);
+
+        ui.GetWindow()->Clear({50,50,50,255});
+        if (ui.GetTexture()) ui.GetWindow()->Draw(*ui.GetTexture());
+        ui.GetWindow()->Display();
+
+        ui.GetWindow()->Sleep(frameDelaySecs_);
+    }
+
+
+    // runUI(ui);
     
     delete window;
 }
