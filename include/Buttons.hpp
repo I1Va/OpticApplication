@@ -13,6 +13,7 @@ public:
         HOVER,
         FOCUSED,
         CAPTURED,
+        STICKING
     };
 
 protected:
@@ -20,6 +21,7 @@ protected:
     std::function<void()> onUnpressAction = nullptr;
 
     bool pressed        = false;
+    bool sticked        = false;
     bool actived        = false;
     Mode mode           = Mode::CAPTURED;
 
@@ -31,9 +33,7 @@ public:
     void SetOnUnpressAction(std::function<void()> action) { onUnpressAction = action; }
     bool IsPressed() const { return pressed; }
 
-    void SetHoverMode()         { mode = Mode::HOVER; }
-    void SetFocusedMode()       { mode = Mode::FOCUSED; }
-    void SetCapturedMode()      { mode = Mode::CAPTURED; }
+    void SetMode(const Mode m) { mode = m; }
 
 protected:
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
@@ -41,6 +41,8 @@ protected:
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
 
         pressed = true;
+        sticked = !sticked;
+    
         GetUI()->ReportFocus(this);
         GetUI()->SetCaptured(this);
         if (onClickAction) onClickAction();
@@ -70,15 +72,18 @@ protected:
         case Mode::CAPTURED:
             newActiveState = pressed;
             break;
+        case Mode::STICKING:
+            newActiveState = sticked;
+            break;
         default:
             break;
         }
 
         if (actived != newActiveState) ForceRedraw();
+        if (actived && !newActiveState && onUnpressAction) onUnpressAction();
         actived = newActiveState;
-        if (!actived && onUnpressAction) onUnpressAction();
         
-
+        
         return hui::EventResult::UNHANDLED;
     }
 };

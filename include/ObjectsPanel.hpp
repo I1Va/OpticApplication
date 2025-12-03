@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <optional>
 
 #include "hui/widget.hpp"
 #include "Containers.hpp"
@@ -49,10 +50,12 @@ public:
 
     void SetTitle(const std::string &titleContent) {
         title->SetText(titleContent);
+        title->ForceRedraw();
     }
 
     void ClearRecords() {
-        records.clear();   
+        records.clear();
+        this->ForceRedraw();
     }
 
 protected:
@@ -100,11 +103,12 @@ protected:
         scrollBar->SetSize({scrollBarWidth, scrollBarHeight});
         scrollBar->SetPos({this->GetSize().x - scrollBarWidth, TITLE_HEIGHT});
     
-        this->ForceRedraw();
+        scrollBar->ForceRedraw();
     }
 
     void relayoutTitle() {
         title->SetSize({this->GetSize().x, TITLE_HEIGHT});
+        title->ForceRedraw();
     }
 
     void relayout() {
@@ -116,16 +120,15 @@ protected:
 
 template <IsPointer T>
 class ObjectsPanel final : public RecordsPanel<TextButton> {
-    T currentSelected = nullptr;
-    std::function<void()> onSelectedAction = nullptr;
-    std::function<void()> currentSelectedOnUnSelect = nullptr;
+    std::optional<std::pair<std::string, T>> currentSelected;
+    std::function<void()> onSelectChangedAction = nullptr;
 public:
     using RecordsPanel::RecordsPanel;
     ~ObjectsPanel() = default;
 
-    T GetSelected() { return currentSelected; }
+    std::optional<std::pair<std::string, T>> GetSelected() { return currentSelected; }
 
-    void SetOnSelectedAction(std::function<void()> action) { onSelectedAction = action; }
+    void SetOnSelectChangedAction(std::function<void()> action) { onSelectChangedAction = action; }
 
     void AddObject
     (
@@ -136,25 +139,25 @@ public:
     ) {
         auto record = std::make_unique<TextButton>(GetUI());
         record->SetText(name);
-        record->SetFocusedMode();
+        record->SetMode(Button::Mode::STICKING);
 
-        record->SetOnClickAction([this, object, onSelect, onUnSelect]()
+        record->SetOnClickAction([this, name, object, onSelect, onUnSelect]()
             {
                 if (onSelect) onSelect();
-                if (currentSelected != object && currentSelectedOnUnSelect) {
-                    currentSelectedOnUnSelect();
-                    if (onSelectedAction) onSelectedAction();
+                if (!currentSelected.has_value() || currentSelected.value().second != object) {
+                    currentSelected = std::pair<std::string, T>(name, object);
+                    if (onSelectChangedAction) onSelectChangedAction();
                 }
-                    
-                currentSelected = object;
-                currentSelectedOnUnSelect = onUnSelect;
             }
         );
 
         record->SetOnUnpressAction([this, object, onUnSelect]()
             {
                 if (onUnSelect) onUnSelect();
-                if (currentSelected == object) currentSelected = nullptr;
+                if (currentSelected.has_value() && currentSelected.value().second == object) {
+                    currentSelected.reset();
+                    if (onSelectChangedAction) onSelectChangedAction();
+                }
             }
         );
 
@@ -186,6 +189,8 @@ public:
         records.emplace_back(std::move(record));
         BecomeParentOf(ptr);
         relayout();
+
+        ptr->ForceRedraw();
     }
 
     hui::EventResult OnIdle(hui::IdleEvent &event) {

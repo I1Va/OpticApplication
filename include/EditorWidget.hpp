@@ -32,7 +32,9 @@ public:
     {
         assert(ui);
     
-        objectsPanel->SetOnSelectedAction([this](){ recordsNeedChange = true; });
+        objectsPanel->SetOnSelectChangedAction([this](){ recordsNeedChange = true; });
+
+        objectsPanel->SetTitle("Objects");
 
         BecomeParentOf(scene.get());
         BecomeParentOf(objectsPanel.get());
@@ -127,17 +129,25 @@ private:
     }
 
     void updateRecords() {
-        ::Primitives *selectedObject = objectsPanel->GetSelected();
+        std::optional<std::pair<std::string, ::Primitives *>> selectedObject = objectsPanel->GetSelected();
         propertiesPanel->ClearRecords();
-        addCordsPoperties(selectedObject);
+        
+        if (selectedObject.has_value()) {
+            addCordsPoperties(selectedObject.value().second);
+            propertiesPanel->SetTitle(selectedObject.value().first);
+        } else {
+            propertiesPanel->SetTitle("");
+        }
+        
         recordsNeedChange = false;
-        propertiesPanel->ForceRedraw();
     }
 
     void addCordsPoperties(::Primitives *selectedObject) {
-        std::string XContent = (selectedObject ? std::to_string(selectedObject->position().x()) : "");
-        std::string YContent = (selectedObject ? std::to_string(selectedObject->position().y()) : "");
-        std::string ZContent = (selectedObject ? std::to_string(selectedObject->position().z()) : "");
+        assert(selectedObject);
+    
+        std::string XContent = std::to_string(selectedObject->position().x());
+        std::string YContent = std::to_string(selectedObject->position().y());
+        std::string ZContent = std::to_string(selectedObject->position().z());
     
         propertiesPanel->AddProperty
             (
@@ -145,11 +155,9 @@ private:
                 [selectedObject](const std::string &newCord)
                 {
                     setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
-                        if (selectedObject) {
-                            auto pos = selectedObject->position();
-                            pos.setX(val);
-                            selectedObject->setPosition(pos);
-                        }
+                        auto pos = selectedObject->position();
+                        pos.setX(val);
+                        selectedObject->setPosition(pos);
                     });
                 }
             );
@@ -159,11 +167,9 @@ private:
                 [selectedObject](const std::string &newCord)
                 {
                     setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
-                        if (selectedObject) {
-                            auto pos = selectedObject->position();
-                            pos.setY(val);
-                            selectedObject->setPosition(pos);
-                        }
+                        auto pos = selectedObject->position();
+                        pos.setY(val);
+                        selectedObject->setPosition(pos);
                     });
                 }
             );
@@ -173,11 +179,9 @@ private:
             [selectedObject](const std::string &newCord)
             {
                 setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
-                    if (selectedObject) {
-                        auto pos = selectedObject->position();
-                        pos.setZ(val);
-                        selectedObject->setPosition(pos);
-                    }
+                    auto pos = selectedObject->position();
+                    pos.setZ(val);
+                    selectedObject->setPosition(pos);
                 });
             }
         );
