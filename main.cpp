@@ -82,6 +82,13 @@ void createSceneObjects
     SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &sceneManager);
 
 
+    for (int i = 0; i < 10; i++) {
+        SphereObject *sphere = new SphereObject(1, midSphereMaterial, &sceneManager);
+        sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
+        primitives.push_back(sphere);
+    }
+
+
     ground->setPosition({0, 0, -100});
     glassSphere->setPosition({0, 0, 1});
     midSphere->setPosition({0, 4, 3});
@@ -159,7 +166,7 @@ int main(int argc, const char *argv[]) {
 
     
     roa::ObjectsPanel<Primitives *> *panel = new roa::ObjectsPanel<Primitives *>(&ui);
-    panel->SetSize(100, 500); 
+    panel->SetSize(100, 100); 
     
     for (Primitives *prim : scene->Primitives()) {
         panel->AddObject(

@@ -94,7 +94,6 @@ private:
     }
 };
 
-
 class VerticalScrollBar : public ZContainer<hui::Widget *> {
     static constexpr double BUTTON_LAYOUT_SHARE_ = 0.1; 
     static constexpr double THUMB_MOVING_DELTA = 0.05;
@@ -132,6 +131,8 @@ public:
     void SetOnScrollAction(std::function<void(double)> action) {
         onScrollAction = action;
     }
+
+    double GetPercentage() { return calculateThumbPercentage(); }
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {

@@ -27,7 +27,6 @@ protected:
     std::list<T> children;
 
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        std::cout << "30";
         for (auto it = children.rbegin(); it != children.rend(); it++) {
             if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }
@@ -35,7 +34,7 @@ protected:
     }
 public:
     ListContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    ~ListContainer() {
+    virtual ~ListContainer() {
         for (T child : children) {
             delete child;
         }
@@ -63,7 +62,7 @@ protected:
     std::vector<T> children; 
 public:
     LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    ~LinContainer() {
+    virtual ~LinContainer() {
         for (T child : children) {
             delete child;
         }

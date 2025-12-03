@@ -212,6 +212,8 @@ protected:
     }
 
     hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
+        if (GetUI()->GetFocused() != this) return hui::EventResult::UNHANDLED;
+
         accumulatedCameraZoom += event.delta.y;
         cameraNeedZoom = true;
         return hui::EventResult::HANDLED;

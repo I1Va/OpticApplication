@@ -25,7 +25,7 @@ protected:
 
 public:
     using hui::Widget::Widget;
-    ~Button() = default;
+    virtual ~Button() = default;
 
     void SetOnClickAction(std::function<void()> action) { onClickAction = action; }
     void SetOnUnpressAction(std::function<void()> action) { onUnpressAction = action; }
@@ -89,7 +89,7 @@ protected:
     dr4::Color unpressedColor   = WHITE;
 public:
     using Button::Button;
-    ~SimpButton() = default;
+    virtual ~SimpButton() = default;
 
     void SetPressedColor(const dr4::Color color) { pressedColor = color; } 
     void SetUnpressedColor(const dr4::Color color) { unpressedColor = color; }
@@ -107,7 +107,7 @@ protected:
     const dr4::Texture *unpressedTexture = nullptr;
 public:
     using Button::Button;
-    ~TextureButton() = default;
+    virtual ~TextureButton() = default;
 
     void SetPressedTexture(const dr4::Texture *texture) { 
         assert(texture);
@@ -142,7 +142,7 @@ public:
         text->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
     }
 
-    ~TextButton() = default;
+    virtual ~TextButton() = default;
 
     void SetText(const std::string &content) {
         text->SetText(content);

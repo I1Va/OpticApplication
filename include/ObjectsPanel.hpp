@@ -3,6 +3,7 @@
 
 #include "Containers.hpp"
 #include "RayTracer.h"
+#include "ScrollBar.hpp"
 
 namespace roa
 {
@@ -34,14 +35,31 @@ template<typename T>
 concept IsPointer = std::is_pointer_v<T>;
 
 template <IsPointer T>
-class ObjectsPanel : public LinContainer<TextButton *> {
+class ObjectsPanel : public ZContainer<TextButton *> {
     static constexpr double RECORD_HEIGHT = 20;
+    static constexpr double SCROLLBAR_LAYOUT_SHARE = 0.2;
 
     T currentSelected = nullptr;
     std::function<void()> currentSelectedOnUnSelect = nullptr;
 
+    std::vector<std::unique_ptr<TextButton>> records;
+
+    std::unique_ptr<VerticalScrollBar> scrollBar; 
+
 public:
-    using LinContainer::LinContainer;
+    ObjectsPanel(hui::UI *ui): 
+        ZContainer(ui), 
+        scrollBar(new VerticalScrollBar(ui)) 
+    { 
+        assert(ui);
+        SetSize({100, 100});
+        BecomeParentOf(scrollBar.get());
+
+        scrollBar->SetOnScrollAction([this](double) { relayoutRecords(); });
+        relayout();
+    }
+
+    ~ObjectsPanel() = default;
 
     void AddObject
     (
@@ -71,34 +89,67 @@ public:
             }
         );
 
-        addWidget(record);
+        records.emplace_back(record);
+        BecomeParentOf(record);
 
         relayout();
     }
 
     T GetSelected() { return currentSelected; }
 
+    void BringToFront(TextButton *) override {}
+
+
 protected:
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        for (auto it = records.rbegin(); it != records.rend(); it++) {
+            if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        }
+        if (event.Apply(*scrollBar) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        return hui::EventResult::UNHANDLED;
+    }
+    
     void Redraw() const override {
         GetTexture().Clear({255, 132, 0, 255});
-        for (TextButton *record : children) {
+        for (const auto &record : records) {
             record->DrawOn(GetTexture());
         }
+        scrollBar->DrawOn(GetTexture());
     }
 
     void OnSizeChanged() { relayout(); }
 
 private:
-    void relayout() {
+    void relayoutRecords() {
         float recordHeight = RECORD_HEIGHT;
-        float recordWidth = GetSize().x;
-
+        float recordWidth = GetSize().x - scrollBar->GetSize().x;
         dr4::Vec2f curRecordPos = dr4::Vec2f(0, 0);
-        for (TextButton *record : children) {
-            record->SetPos(curRecordPos);
+
+        double scrollPercentage = scrollBar->GetPercentage();
+        float hBias = scrollPercentage * (records.size() * recordHeight - GetSize().y);
+        for (auto &record : records) {
+            record->SetPos(curRecordPos - dr4::Vec2f(0, hBias));
             record->SetSize({recordWidth, recordHeight});
+            record->ForceRedraw();
             curRecordPos += dr4::Vec2f(0, recordHeight);
         }
+
+        ForceRedraw();
+    }
+
+    void relayoutScrollBar() {
+        float scrollBarHeight = GetSize().y;
+        float scrollBarWidth = GetSize().x * SCROLLBAR_LAYOUT_SHARE;
+
+        scrollBar->SetSize({scrollBarWidth, scrollBarHeight});
+        scrollBar->SetPos({GetSize().x - scrollBarWidth, 0});
+    
+        ForceRedraw();
+    }
+
+    void relayout() {
+        relayoutRecords();
+        relayoutScrollBar();
     }
 };
 
