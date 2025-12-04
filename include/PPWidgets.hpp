@@ -14,11 +14,11 @@ namespace roa
 
 
 class PPToolButton final : public TextButton {
-    pp::Tool* const tool;
-    pp::Tool* selectedTool = nullptr;
+    pp::Tool *const tool;
+    pp::Tool **selectedToolSlot = nullptr;
 
 public:
-    PPToolButton(hui::UI *ui, pp::Tool* const inpTool): TextButton(ui), tool(inpTool) {
+    PPToolButton(hui::UI *ui, pp::Tool* const inpTool, pp::Tool **inpSelectedToolSlot): TextButton(ui), tool(inpTool), selectedToolSlot(inpSelectedToolSlot) {
         assert(ui);
         SetText(std::string(inpTool->Icon()));
     }
@@ -26,19 +26,17 @@ public:
 
 protected:
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
-        if (TextButton::OnMouseDown(event) == hui::EventResult::UNHANDLED) return hui::EventResult::UNHANDLED;
+        if (*selectedToolSlot) (*selectedToolSlot)->OnEnd();
+        else *selectedToolSlot = nullptr;      
 
-        if (selectedTool) selectedTool->OnEnd();
-        if (!pressed) selectedTool = tool;
-        else selectedTool = nullptr;      
-        
-        
-        return hui::EventResult::HANDLED;
+        if (!pressed) *selectedToolSlot = tool;
+    
+        return TextButton::OnMouseDown(event);
     }
 
     hui::EventResult OnKeyDown(hui::KeyEvent &event) override {
-        if (event.key == dr4::KeyCode::KEYCODE_ESCAPE && selectedTool == tool && tool->IsCurrentlyDrawing()) {
-            selectedTool->OnBreak();
+        if (event.key == dr4::KeyCode::KEYCODE_ESCAPE && *selectedToolSlot == tool && tool->IsCurrentlyDrawing()) {
+            (*selectedToolSlot)->OnBreak();
             return hui::EventResult::HANDLED;
         }
         return TextButton::OnKeyDown(event);
@@ -47,19 +45,19 @@ protected:
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
         TextButton::OnIdle(event);
 
-        if (selectedTool == tool) {
-            if (!pressed) {
-                ForceRedraw();
-                if (onPressAction) onPressAction();
-            }
-            pressed = true;    
-        } else {
-            if (pressed) {
-                ForceRedraw();
-                if (onUnpressAction) onUnpressAction();
-            }
-            pressed = false;    
-        }
+        // if (*selectedToolSlot == tool) {
+        //     if (!pressed) {
+        //         ForceRedraw();
+        //         if (onPressAction) onPressAction();
+        //     }
+        //     pressed = true;    
+        // } else {
+        //     if (pressed) {
+        //         ForceRedraw();
+        //         if (onUnpressAction) onUnpressAction();
+        //     }
+        //     pressed = false;    
+        // }
 
         return hui::EventResult::UNHANDLED;
     }
@@ -95,7 +93,8 @@ public:
 
         for (auto &tool : tools) {
             // crete buttons
-            roa::PPToolButton *toolButton = new roa::PPToolButton(ui, tool.get());
+            roa::PPToolButton *toolButton = new roa::PPToolButton(ui, tool.get(), &selectedTool);
+            toolButton->SetMode(Button::Mode::STICKING);
             
             addWidget(toolButton);
         }
@@ -114,7 +113,10 @@ protected:
         for (auto &child : children) {
             child->DrawOn(GetTexture());
         }
-       
+    
+        for (const auto& shape : shapes) {
+            shape.second->DrawOn(GetTexture());
+        }   
     }
 
 
@@ -158,11 +160,17 @@ protected:
             } else {
                 dr4::Event::MouseMove dr4ChildEvent(event.pos, event.rel);
                 if (selectedTool) {
-                    if (selectedTool->OnMouseMove(dr4ChildEvent)) return hui::EventResult::HANDLED;
+                    if (selectedTool->OnMouseMove(dr4ChildEvent)) {
+                        ForceRedraw();
+                        return hui::EventResult::HANDLED;
+                    }
                 }
 
                 for (auto& shape : shapes) {
-                    if (shape.second->OnMouseMove(dr4ChildEvent)) return hui::EventResult::HANDLED;
+                    if (shape.second->OnMouseMove(dr4ChildEvent)) {
+                        ForceRedraw();
+                        return hui::EventResult::HANDLED;
+                    }
                 }
 
                 return Widget::OnMouseMove(event);
@@ -181,11 +189,17 @@ protected:
                 dr4::Event::MouseButton dr4ChildEvent(event.button, event.pos);
 
                 if (selectedTool) {
-                    if (selectedTool->OnMouseDown(dr4ChildEvent)) return hui::EventResult::HANDLED;
+                    if (selectedTool->OnMouseDown(dr4ChildEvent)) {
+                        ForceRedraw();
+                        return hui::EventResult::HANDLED;
+                    }
                 }
 
                 for (auto& shape : shapes) {
-                    if (shape.second->OnMouseDown(dr4ChildEvent)) return hui::EventResult::HANDLED;
+                    if (shape.second->OnMouseDown(dr4ChildEvent)) {
+                        ForceRedraw();
+                        return hui::EventResult::HANDLED;
+                    }
                 }
 
                 if (dr4ChildEvent.button == dr4::MouseButtonType::LEFT) {
@@ -208,11 +222,17 @@ protected:
             dr4::Event::MouseButton dr4ChildEvent(event.button, event.pos);
 
             if (selectedTool) {
-                if (selectedTool->OnMouseUp(dr4ChildEvent)) return hui::EventResult::HANDLED;
+                if (selectedTool->OnMouseUp(dr4ChildEvent)) {
+                    ForceRedraw();
+                    return hui::EventResult::HANDLED;
+                }
             }
 
             for (auto& shape : shapes) {
-                if (shape.second->OnMouseUp(dr4ChildEvent)) return hui::EventResult::HANDLED;
+                if (shape.second->OnMouseUp(dr4ChildEvent)) {
+                    ForceRedraw();
+                    return hui::EventResult::HANDLED;
+                }
             }
 
             return Widget::OnMouseUp(event);
@@ -228,11 +248,17 @@ protected:
         dr4::Event::KeyEvent dr4ChildEvent(event.key, event.mods);
 
         if (selectedTool) {
-            if (selectedTool->OnKeyDown(dr4ChildEvent)) return hui::EventResult::HANDLED;
+            if (selectedTool->OnKeyDown(dr4ChildEvent)) {
+                ForceRedraw();
+                return hui::EventResult::HANDLED;
+            }
         }
 
         for (auto& shape : shapes) {
-            if (shape.second->OnKeyDown(dr4ChildEvent)) return hui::EventResult::HANDLED;            
+            if (shape.second->OnKeyDown(dr4ChildEvent)) {
+                ForceRedraw();
+                return hui::EventResult::HANDLED;
+            }
         }
     
         return Widget::OnKeyDown(event);
@@ -245,11 +271,17 @@ protected:
         dr4::Event::KeyEvent dr4ChildEvent(event.key, event.mods);
 
         if (selectedTool) {
-            if (selectedTool->OnKeyUp(dr4ChildEvent)) return hui::EventResult::HANDLED;
+            if (selectedTool->OnKeyUp(dr4ChildEvent)) {
+                ForceRedraw();
+                return hui::EventResult::HANDLED;
+            }
         }
 
         for (auto& shape : shapes) {
-            if (shape.second->OnKeyUp(dr4ChildEvent)) return hui::EventResult::HANDLED;
+            if (shape.second->OnKeyUp(dr4ChildEvent)) {
+                ForceRedraw();
+                return hui::EventResult::HANDLED;
+            }
         }
 
         return Widget::OnKeyUp(event);
@@ -263,11 +295,17 @@ protected:
         dr4::Event::TextEvent dr4ChildEvent(event.text);
 
         if (selectedTool) {
-            if (selectedTool->OnText(dr4ChildEvent)) return hui::EventResult::HANDLED;
+            if (selectedTool->OnText(dr4ChildEvent)) {
+                ForceRedraw();
+                return hui::EventResult::HANDLED;
+            }
         }
 
         for (auto& shape : shapes) {
-            if (shape.second->OnText(dr4ChildEvent)) return hui::EventResult::HANDLED;
+            if (shape.second->OnText(dr4ChildEvent)) {
+                ForceRedraw();
+                return hui::EventResult::HANDLED;
+            }
         }
 
         return Widget::OnText(event);
