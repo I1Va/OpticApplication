@@ -9,6 +9,7 @@
 #include "cum/manager.hpp"
 #include "cum/plugin.hpp"
 #include "cum/ifc/dr4.hpp"
+#include "cum/ifc/pp.hpp"
 
 #include "Buttons.hpp"
 #include "MainWindow.hpp"
@@ -17,37 +18,10 @@
 #include "SceneWidgets.hpp"
 #include "ObjectsPanel.hpp"
 #include "EditorWidget.hpp"
+// #include "PPWidgets.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
-void runUI(roa::UI &ui) {
-    double frameDelaySecs_ = 0.032;
-    while (ui.GetWindow()->IsOpen()) {
-        while (true) {
-            auto evt = ui.GetWindow()->PollEvent();
-            if (!evt.has_value()) break; 
-
-            if (evt->type == dr4::Event::Type::QUIT ||
-            (evt->type == dr4::Event::Type::KEY_DOWN && evt->key.sym == dr4::KeyCode::KEYCODE_ESCAPE)) {
-                ui.GetWindow()->Close();
-                break;
-            }
-            ui.ProcessEvent(evt.value());
-        }
-
-        double frameStartSecs = ui.GetWindow()->GetTime();
-        hui::IdleEvent idleEvent;
-        idleEvent.absTime = frameStartSecs;
-        idleEvent.deltaTime = frameDelaySecs_;
-        ui.OnIdle(idleEvent);
-
-        ui.GetWindow()->Clear({50,50,50,255});
-        if (ui.GetTexture()) ui.GetWindow()->Draw(*ui.GetTexture());
-        ui.GetWindow()->Display();
-
-        ui.GetWindow()->Sleep(frameDelaySecs_);
-    }
-}
 
 void createSceneObjects
 (
@@ -122,16 +96,41 @@ int main(int argc, const char *argv[]) {
     mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
     ui.SetRoot(mainWindow);
 
+
+// SETUP PP PLUGIN
+    std::vector<cum::PPToolPlugin*> ppPlugins = {};
+
+    ppPlugins.push_back(dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/libIAGraphicsPlugin.so")));
+    // push other plugins
+
+    // roa::    PPCanvasWidget *canvas = new roa::PPCanvasWidget(&ui, ppPlugins);
+
+    // TODO : add shortCuts
+    // TODO : add hide option
+    // mainWindow->addModal(canvas);
+
+
  // SETUP SCENE OBJECTS
     RTMaterialManager materialManager;
     roa::EditorWidget *editor = new roa::EditorWidget(&ui);
     createSceneObjects(materialManager, editor);
     editor->SetSize({300, 300});
     editor->SetPos({100, 100});     
-    mainWindow->addWidget(editor);
+    mainWindow->AddWidget(editor);
+
+// MODALS
+
+    roa::TextButton *modalButton = new roa::TextButton(&ui);
+    modalButton->SetText("Я модальный, мне похуй");
+    modalButton->SetSize({200, 200});
+
+    mainWindow->SetModal(modalButton);
+    ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [mainWindow](){mainWindow->SwitchModalActiveFlag(); });
 
 // MAIN LOOP
-    runUI(ui);
+
+
+    ui.Run();
 
 // CLEANUP
     delete window;

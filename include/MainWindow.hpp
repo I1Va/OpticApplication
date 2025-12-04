@@ -1,11 +1,15 @@
 #pragma once
+#include <iostream>
+
 #include "Containers.hpp"
 
 namespace roa
 {
 
 class MainWindow final : public ZContainer<hui::Widget> {
-    std::vector<std::unique_ptr<hui::Widget>> modals;
+    std::unique_ptr<hui::Widget> modal;
+    bool modalActivated = false;
+
     std::vector<std::unique_ptr<hui::Widget>> widgets;
 
 public:
@@ -13,9 +17,9 @@ public:
     ~MainWindow() = default;
 
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto &child : modals) {
-            if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
+        if (modal && modalActivated) return event.Apply(*modal);
+        
+
         for (auto &child : widgets) {
             if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }
@@ -23,14 +27,32 @@ public:
         return hui::EventResult::UNHANDLED;
     }
 
-    void addWidget(hui::Widget *widget) {
+    void AddWidget(hui::Widget *widget) {
         BecomeParentOf(widget);
         widgets.emplace(widgets.begin(), widget);
     }
 
-    void addModal(hui::Widget *widget) {
+    void SetModal(hui::Widget *widget) {
+        if (modal) {
+            std::cerr << "modal widget has been already set\n";
+            return;
+        }
+    
         BecomeParentOf(widget);
-        modals.emplace(modals.begin(), widget);
+        modal.reset(widget);
+    }
+
+    void ActivateModal() { 
+        modalActivated = true;
+        ForceRedraw(); 
+    }
+    void DeactivateModal() {
+        modalActivated = false; 
+        ForceRedraw(); 
+    }
+    void SwitchModalActiveFlag() {
+        modalActivated = !modalActivated;
+        ForceRedraw(); 
     }
 
     void BringToFront(hui::Widget *widget) override {
@@ -39,19 +61,16 @@ public:
             widgets.erase(widgetsIt);       
             widgets.emplace(widgets.begin(), widget);
         }
-
-        auto modalsIt = std::find_if(modals.begin(), modals.end(), [widget](const auto &w){ return w.get() == widget; });
-        if(modalsIt != modals.end()) {
-            modals.erase(modalsIt);       
-            modals.emplace(widgets.begin(), widget);   
-        }   
     }
 
 protected:
     void Redraw() const override {
         GetTexture().Clear({50, 50, 50, 255});
         for (auto &widget : widgets) widget->DrawOn(GetTexture());
-        for (auto &modal : modals) modal->DrawOn(GetTexture());
+
+        if (modal && modalActivated) {
+            modal->DrawOn(GetTexture());
+        }
     }
 };
 
