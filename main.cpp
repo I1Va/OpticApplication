@@ -18,7 +18,7 @@
 #include "SceneWidgets.hpp"
 #include "ObjectsPanel.hpp"
 #include "EditorWidget.hpp"
-// #include "PPWidgets.hpp"
+#include "PPWidgets.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -99,8 +99,9 @@ int main(int argc, const char *argv[]) {
 
 // SETUP PP PLUGIN
     std::vector<cum::PPToolPlugin*> ppPlugins = {};
-
-    ppPlugins.push_back(dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/libIAGraphicsPlugin.so")));
+    
+    auto ppPlugin1 = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/libIADorisovkaPlugin.so")); assert(ppPlugin1);
+    ppPlugins.push_back(ppPlugin1);
     // push other plugins
 
     // roa::    PPCanvasWidget *canvas = new roa::PPCanvasWidget(&ui, ppPlugins);
@@ -120,11 +121,9 @@ int main(int argc, const char *argv[]) {
 
 // MODALS
 
-    roa::TextButton *modalButton = new roa::TextButton(&ui);
-    modalButton->SetText("Я модальный, мне похуй");
-    modalButton->SetSize({200, 200});
+    roa::PPCanvasWidget *ppCanvas = new roa::PPCanvasWidget(&ui, ppPlugins);
 
-    mainWindow->SetModal(modalButton);
+    mainWindow->SetModal(ppCanvas);
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [mainWindow](){mainWindow->SwitchModalActiveFlag(); });
 
 // MAIN LOOP

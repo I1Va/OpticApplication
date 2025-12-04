@@ -68,12 +68,14 @@ public:
     }
 
     void BringToFront(T *widget) override {
-        auto it = std::find(children.begin(), children.end(), widget);
-        if(it != children.end()) {
-            children.erase(it);       
-            children.emplace(children.begin(), widget);   
+        auto it = std::find_if(children.begin(), children.end(), [widget](const auto &ptr){ return ptr.get() == widget; });
+        if (it != children.end()) {
+            auto uptr = std::move(*it);
+            children.erase(it);
+            children.insert(children.begin(), std::move(uptr));
         }
     }
+
 };
 
 
