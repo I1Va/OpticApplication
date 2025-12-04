@@ -241,6 +241,8 @@ protected:
     }
     
     void Redraw() const override {
+        GetTexture().Clear(FULL_TRANSPARENT);
+        
         label->DrawOn(GetTexture());
         inputField->DrawOn(GetTexture());
     }

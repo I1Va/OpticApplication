@@ -69,6 +69,7 @@ protected:
     
     void Redraw() const override {
         this->GetTexture().Clear({255, 132, 0, 255});
+    
         for (const auto &record : records) {
             record->DrawOn(this->GetTexture());
         }
@@ -141,7 +142,7 @@ public:
         record->SetText(name);
         record->SetMode(Button::Mode::STICKING);
 
-        record->SetOnClickAction([this, name, object, onSelect, onUnSelect]()
+        record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {
                 if (onSelect) onSelect();
                 if (!currentSelected.has_value() || currentSelected.value().second != object) {

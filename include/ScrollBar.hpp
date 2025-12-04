@@ -44,7 +44,7 @@ protected:
             return hui::EventResult::HANDLED;
         }
 
-        bool newActiveState = actived;
+        bool newActiveState = pressed;
         
         switch (mode) {
         case Mode::HOVER:
@@ -60,8 +60,8 @@ protected:
             break;
         }
 
-        if (actived != newActiveState) ForceRedraw();
-        actived = newActiveState;
+        if (pressed != newActiveState) ForceRedraw();
+        pressed = newActiveState;
 
         return hui::EventResult::UNHANDLED;
 
@@ -70,7 +70,7 @@ protected:
     hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) override {
         if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
 
-        if (GetUI()->GetFocused() == this && actived) {
+        if (GetUI()->GetFocused() == this && pressed) {
             accumulatedRel += event.rel;
             replaced = true;
             return hui::EventResult::HANDLED;
@@ -120,8 +120,8 @@ public:
 
         initLayout();
 
-        topButton->SetOnClickAction([this] { moveThumb(THUMB_MOVING_DELTA); });
-        bottomButton->SetOnClickAction([this] { moveThumb(-THUMB_MOVING_DELTA); });
+        topButton->SetOnPressAction([this] { moveThumb(THUMB_MOVING_DELTA); });
+        bottomButton->SetOnPressAction([this] { moveThumb(-THUMB_MOVING_DELTA); });
         thumbButton->SetOnReplaceAction([this] { percantageChanged(); });
     }
 

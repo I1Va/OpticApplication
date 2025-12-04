@@ -17,20 +17,19 @@ public:
     };
 
 protected:
-    std::function<void()> onClickAction = nullptr;
+    std::function<void()> onPressAction = nullptr;
     std::function<void()> onUnpressAction = nullptr;
 
-    bool pressed        = false;
-    bool sticked        = false;
-    bool actived        = false;
-    Mode mode           = Mode::CAPTURED;
+    bool pressed = false;
+    Mode mode = Mode::CAPTURED;
 
 public:
     using hui::Widget::Widget;
     virtual ~Button() = default;
 
-    void SetOnClickAction(std::function<void()> action) { onClickAction = action; }
+    void SetOnPressAction(std::function<void()> action) { onPressAction = action; }
     void SetOnUnpressAction(std::function<void()> action) { onUnpressAction = action; }
+
     bool IsPressed() const { return pressed; }
 
     void SetMode(const Mode m) { mode = m; }
@@ -39,50 +38,81 @@ protected:
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
         if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
-
-        pressed = true;
-        sticked = !sticked;
     
         GetUI()->ReportFocus(this);
         GetUI()->SetCaptured(this);
-        if (onClickAction) onClickAction();
+
+        switch (mode) {
+            case Mode::HOVER: break;
+            case Mode::FOCUSED: break;
+            case Mode::CAPTURED:
+                ForceRedraw(); 
+                pressed = true; 
+                if (onPressAction) onPressAction();
+                break;
+            case Mode::STICKING: 
+                pressed = !pressed; 
+                ForceRedraw();
+                if (pressed && onPressAction) onPressAction();
+                if (!pressed && onUnpressAction) onUnpressAction();
+                break;
+            default: assert(0); break;
+        }
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnMouseUp (hui::MouseButtonEvent &event) override { 
+    hui::EventResult OnMouseUp(hui::MouseButtonEvent &event) override { 
         if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
 
         GetUI()->SetCaptured(nullptr);
-        pressed = false;
+    
+        switch (mode) {
+            case Mode::HOVER: break;
+            case Mode::FOCUSED: break;
+            case Mode::CAPTURED: 
+                ForceRedraw();
+                pressed = false; 
+                if (onUnpressAction) onUnpressAction();
+                break;
+            case Mode::STICKING: 
+                break;
+            default: assert(0); break;
+        }
     
         return hui::EventResult::HANDLED;
     }
 
     hui::EventResult OnIdle(hui::IdleEvent &) override {
-        bool newActiveState = actived;
-        
         switch (mode) {
-        case Mode::HOVER:
-            newActiveState = (GetUI()->GetHovered() == this);
-            break;
-        case Mode::FOCUSED:
-            newActiveState = (GetUI()->GetFocused() == this);
-            break;
-        case Mode::CAPTURED:
-            newActiveState = pressed;
-            break;
-        case Mode::STICKING:
-            newActiveState = sticked;
-            break;
-        default:
-            break;
+            case Mode::HOVER:
+                {
+                    bool newPressed = (GetUI()->GetHovered() == this);
+                    if (pressed != newPressed) {
+                        if (newPressed && onPressAction) onPressAction();
+                        if (!newPressed && onUnpressAction) onUnpressAction();
+                        ForceRedraw();
+                    } 
+                    pressed = newPressed;
+                    break;
+                }
+            case Mode::FOCUSED: 
+                {
+                    bool newPressed = (GetUI()->GetCaptured() == this);
+                    if (pressed != newPressed) {
+                        if (newPressed && onPressAction) onPressAction();
+                        if (!newPressed && onUnpressAction) onUnpressAction();
+                        ForceRedraw();
+                    } 
+                    pressed = newPressed;
+                    break;
+                }
+            case Mode::CAPTURED: 
+                break;
+            case Mode::STICKING: 
+                break;
+            default: assert(0); break;
         }
-
-        if (actived != newActiveState) ForceRedraw();
-        if (actived && !newActiveState && onUnpressAction) onUnpressAction();
-        actived = newActiveState;
-        
         
         return hui::EventResult::UNHANDLED;
     }
@@ -101,7 +131,8 @@ public:
 
 protected:
     void Redraw() const override {
-        if (actived) GetTexture().Clear(pressedColor);
+
+        if (pressed) GetTexture().Clear(pressedColor);
         else GetTexture().Clear(unpressedColor);
     }
 };
@@ -114,7 +145,7 @@ public:
     using Button::Button;
     virtual ~TextureButton() = default;
 
-    void SetPressedTexture(const dr4::Texture *texture) { 
+    void SetpressedTexture(const dr4::Texture *texture) { 
         assert(texture);
         pressedTexture = texture; 
     } 
@@ -125,7 +156,9 @@ public:
     }
 protected:
     void Redraw() const override {
-        if (actived) {
+        GetTexture().Clear(FULL_TRANSPARENT);
+    
+        if (pressed) {
             if (pressedTexture) pressedTexture->DrawOn(GetTexture());
             else GetTexture().Clear(GRAY);
             return;
@@ -163,7 +196,9 @@ public:
 protected:
 
     void Redraw() const override {
-        if (actived) GetTexture().Clear(pressedColor);
+        GetTexture().Clear(FULL_TRANSPARENT);
+
+        if (pressed) GetTexture().Clear(pressedColor);
         else GetTexture().Clear(unpressedColor);
         text->DrawOn(GetTexture());
     }   
