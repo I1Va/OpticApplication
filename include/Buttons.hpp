@@ -38,7 +38,7 @@ protected:
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
         if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
-    
+        
         GetUI()->ReportFocus(this);
         GetUI()->SetCaptured(this);
 
