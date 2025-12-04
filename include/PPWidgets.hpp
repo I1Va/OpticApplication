@@ -25,13 +25,15 @@ public:
     ~PPToolButton() = default;
 
 protected:
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
-        if (*selectedToolSlot) (*selectedToolSlot)->OnEnd();
-        else *selectedToolSlot = nullptr;      
-
-        if (!pressed) *selectedToolSlot = tool;
-    
-        return TextButton::OnMouseDown(event);
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {        
+        if (TextButton::OnMouseDown(event) == hui::EventResult::HANDLED) {
+            if (*selectedToolSlot) (*selectedToolSlot)->OnEnd();    
+            if (pressed) *selectedToolSlot = tool;
+            else *selectedToolSlot = nullptr;
+            
+            return hui::EventResult::HANDLED;
+        }
+        return hui::EventResult::UNHANDLED;
     }
 
     hui::EventResult OnKeyDown(hui::KeyEvent &event) override {
