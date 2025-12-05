@@ -100,8 +100,12 @@ int main(int argc, const char *argv[]) {
 // SETUP PP PLUGIN
     std::vector<cum::PPToolPlugin*> ppPlugins = {};
     
-    auto ppPlugin1 = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/libIADorisovkaPlugin.so")); assert(ppPlugin1);
+    auto ppPlugin1 = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/plugins/pp/libIADorisovkaPlugin.so")); assert(ppPlugin1);
+    // auto ppPlugin2 = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/plugins/pp/PPdenchick.so")); assert(ppPlugin2);
+    
+
     ppPlugins.push_back(ppPlugin1);
+    // ppPlugins.push_back(ppPlugin2);
     // push other plugins
 
     // roa::    PPCanvasWidget *canvas = new roa::PPCanvasWidget(&ui, ppPlugins);
@@ -115,7 +119,7 @@ int main(int argc, const char *argv[]) {
     RTMaterialManager materialManager;
     roa::EditorWidget *editor = new roa::EditorWidget(&ui);
     createSceneObjects(materialManager, editor);
-    editor->SetSize({300, 300});
+    editor->SetSize({100, 100});
     editor->SetPos({100, 100});     
     mainWindow->AddWidget(editor);
 
@@ -126,7 +130,6 @@ int main(int argc, const char *argv[]) {
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [mainWindow](){mainWindow->SwitchModalActiveFlag(); });
 
 // MAIN LOOP
-
 
     ui.Run();
 

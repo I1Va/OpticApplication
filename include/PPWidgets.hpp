@@ -70,7 +70,17 @@ class PPCanvasWidget : public LinContainer<PPToolButton>, public pp::Canvas {
     std::vector<std::unique_ptr<pp::Tool>> tools;
     std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
 
-    pp::ControlsTheme theme;
+    pp::ControlsTheme theme = 
+    {
+        .shapeFillColor = RED,
+        .shapeBorderColor = BLACK,
+        .textColor = BLACK,
+        .baseFontSize = 20,
+        .handleColor = { 255, 105, 180, 255 },
+        .handleHoverColor = { 255, 105, 180, 255 },
+        .handleActiveColor = { 255, 105, 180, 255 }
+    };
+
     pp::Tool* selectedTool = nullptr;
     pp::Shape* selectedShape = nullptr;
 
@@ -115,7 +125,7 @@ protected:
         for (auto &child : children) {
             child->DrawOn(GetTexture());
         }
-    
+        
         for (const auto& shape : shapes) {
             shape.second->DrawOn(GetTexture());
         }   
@@ -199,6 +209,7 @@ protected:
 
                 for (auto& shape : shapes) {
                     if (shape.second->OnMouseDown(dr4ChildEvent)) {
+                        std::cout << "shape\n";
                         ForceRedraw();
                         return hui::EventResult::HANDLED;
                     }
@@ -311,6 +322,12 @@ protected:
         }
 
         return Widget::OnText(event);
+    }
+
+    hui::EventResult OnIdle(hui::IdleEvent &event) {
+        PropagateToChildren(event);
+        
+        return hui::EventResult::UNHANDLED;
     }
 
 private:
