@@ -65,7 +65,7 @@ public:
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear({50, 50, 50, 255});
+        GetTexture().Clear({20, 20, 20, 255});
 
         for (auto &widget : widgets) widget->DrawOn(GetTexture());
 

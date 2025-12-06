@@ -6,11 +6,12 @@
 #include "hui/widget.hpp"
 #include "Camera.h"
 #include "RayTracer.h"
+#include "ROAGUIRender.hpp"
 
 namespace roa
 {
 
-class SceneWidget : public hui::Widget {
+class ViewPortWindow : public hui::Widget {
     static inline constexpr int CAMERA_KEY_CONTROL_DELTA = 10;
     static inline constexpr int CAMERA_MOUSE_RELOCATION_SCALE = 2;
     static constexpr double CAMERA_ZOOM_DELTA = 0.1;
@@ -32,7 +33,7 @@ class SceneWidget : public hui::Widget {
     bool       cameraNeedZoom            = false;
 
 public:
-    SceneWidget(hui::UI *ui): 
+    ViewPortWindow(hui::UI *ui): 
         hui::Widget(ui), 
         sceneImage(ui->GetWindow()->CreateImage())
     { 
@@ -188,6 +189,10 @@ protected:
     }
 
     hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) {
+        if (GetUI()->GetCaptured() != this && GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
+    
+        GetUI()->ReportHover(this);
+    
         if (mouseMiddleKeyPressed) {
             accumulatedCameraRotation += event.rel;
             cameraNeedRotation = true;
@@ -211,6 +216,16 @@ protected:
     }
 
     void Redraw() const override {
+        dr4::Color borderColor = ((GetUI()->GetHovered() == this) ? dr4::Color(55,55,55,255) : dr4::Color(88, 88, 88, 255)); 
+        drawBlenderRoundedFrame(
+            sceneImage->GetWidth(),
+            sceneImage->GetHeight(),
+            10,               // radius
+            2,                // border thickness
+            borderColor,   // blender border
+            [&](int x, int y, dr4::Color c) { sceneImage->SetPixel(x,y,c); }
+        );
+
         sceneImage->DrawOn(GetTexture());
     }
 

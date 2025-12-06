@@ -1,7 +1,7 @@
 #pragma once
 #include "Containers.hpp"
 #include "ObjectsPanel.hpp"
-#include "SceneWidgets.hpp"
+#include "ViewPortWindow.hpp"
 #include "ROAGUIRender.hpp"
 
 namespace roa 
@@ -17,7 +17,7 @@ inline void setIfStringConvertedToFloat(const std::string &inp, std::function<vo
 
 class EditorWidget final : public ZContainer<hui::Widget> {
     static constexpr double PANEL_LAYOUT_SHARE = 0.4; 
-    std::unique_ptr<SceneWidget> scene = nullptr;
+    std::unique_ptr<ViewPortWindow> viewPortWindow = nullptr;
 
     std::unique_ptr<ObjectsPanel<Primitives *>> objectsPanel = nullptr;
     std::unique_ptr<PropertiesPanel> propertiesPanel = nullptr;
@@ -29,7 +29,7 @@ class EditorWidget final : public ZContainer<hui::Widget> {
 public:
     EditorWidget(hui::UI *ui): 
         ZContainer(ui),
-        scene(new SceneWidget(ui)),
+        viewPortWindow(new ViewPortWindow(ui)),
         objectsPanel(new ObjectsPanel<::Primitives *>(ui)),
         propertiesPanel(new PropertiesPanel(ui))
     {
@@ -39,7 +39,7 @@ public:
 
         objectsPanel->SetTitle("Objects");
 
-        BecomeParentOf(scene.get());
+        BecomeParentOf(viewPortWindow.get());
         BecomeParentOf(objectsPanel.get());
         BecomeParentOf(propertiesPanel.get());
     }
@@ -51,7 +51,7 @@ public:
     
         static size_t AddObjectIter = 0; AddObjectIter++;
     
-        scene->AddObject(object);
+        viewPortWindow->AddObject(object);
         
         objectsPanel->AddObject(
             object, object->typeString() + std::to_string(AddObjectIter),
@@ -61,7 +61,7 @@ public:
     }
     void AddLight(::Light *light) {
         assert(light);
-        scene->AddLight(light);
+        viewPortWindow->AddLight(light);
     }
 
     void AddObject(gm::IPoint3 position, ::Primitives *object) {
@@ -69,7 +69,7 @@ public:
     
         static size_t AddObjectIter = 0; AddObjectIter++;
     
-        scene->AddObject(position, object);
+        viewPortWindow->AddObject(position, object);
         
         objectsPanel->AddObject(
             object, object->typeString() + std::to_string(AddObjectIter),
@@ -79,19 +79,19 @@ public:
     }
     void AddLight(gm::IPoint3 position, ::Light *light) {
         assert(light);
-        scene->AddLight(position, light);
+        viewPortWindow->AddLight(position, light);
     }
 
-    std::vector<::Primitives *> &GetPrimitives() { return scene->GetPrimitives(); }
-    std::vector<::Light *>      &GetLights()     { return scene->GetLights(); }
+    std::vector<::Primitives *> &GetPrimitives() { return viewPortWindow->GetPrimitives(); }
+    std::vector<::Light *>      &GetLights()     { return viewPortWindow->GetLights(); }
 
-    SceneManager &GetSceneManager() { return scene->GetSceneManager(); }
+    SceneManager &GetSceneManager() { return viewPortWindow->GetSceneManager(); }
 
     void BringToFront(hui::Widget *) override {}
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        if (event.Apply(*scene) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        if (event.Apply(*viewPortWindow) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         if (event.Apply(*objectsPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         if (event.Apply(*propertiesPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         return hui::EventResult::UNHANDLED;
@@ -99,46 +99,27 @@ protected:
 
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
         if (recordsNeedChange) updateRecords();
-        event.Apply(*scene);
+        event.Apply(*viewPortWindow);
         event.Apply(*objectsPanel);
         event.Apply(*propertiesPanel);
-        
-        mainTextureLayout();
 
         return hui::EventResult::UNHANDLED;
     }
 
     void OnSizeChanged() override { 
         layout(); 
-        mainTextureLayout();
     }    
 
     void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
-        
-        backSurface->DrawOn(GetTexture());
-        
-        
+        GetTexture().Clear({FULL_TRANSPARENT});
+
+        viewPortWindow->DrawOn(GetTexture());        
 
         // objectsPanel->DrawOn(GetTexture());
         // propertiesPanel->DrawOn(GetTexture());
     }
 
 private:
-    void mainTextureLayout() {
-        scene->DrawOn(GetTexture());
-        backSurface = GetTexture().GetImage(); assert(backSurface);
-
-        drawBlenderRoundedFrame(
-            backSurface->GetWidth(),
-            backSurface->GetHeight(),
-            10,               // radius
-            4,                // border thickness
-            {42,42,42,255},   // blender border
-            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
-        );
-    }
-
     void layout() {
         // float panelWidth = GetSize().x * PANEL_LAYOUT_SHARE;
         // float panelHeight = GetSize().y / 2;
@@ -146,7 +127,7 @@ private:
         // float sceneWidth = GetSize().x - panelWidth;
         // float sceneHeight = GetSize().y;
         
-        scene->SetSize(GetSize());
+        viewPortWindow->SetSize({4 * 300 / 3, 300});
 
         // objectsPanel->SetSize({panelWidth, panelHeight});
         // propertiesPanel->SetSize({panelWidth, panelHeight});
