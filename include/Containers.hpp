@@ -55,13 +55,6 @@ public:
     LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
     virtual ~LinContainer() = default;
 
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto it = children.rbegin(); it != children.rend(); it++) {
-            if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
-        return hui::EventResult::UNHANDLED;
-    }
-
     void addWidget(T *widget) {
         hui::Container::BecomeParentOf(widget);
         children.emplace(children.begin(), widget);
@@ -75,6 +68,15 @@ public:
             children.insert(children.begin(), std::move(uptr));
         }
     }
+
+protected:
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        for (auto it = children.rbegin(); it != children.rend(); it++) {
+            if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        }
+        return hui::EventResult::UNHANDLED;
+    }
+
 
 };
 

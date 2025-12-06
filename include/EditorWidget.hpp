@@ -107,7 +107,7 @@ protected:
 
     void Redraw() const override {
         GetTexture().Clear(FULL_TRANSPARENT);
-    
+
         scene->DrawOn(GetTexture());
         objectsPanel->DrawOn(GetTexture());
         propertiesPanel->DrawOn(GetTexture());

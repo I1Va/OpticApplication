@@ -19,6 +19,7 @@
 #include "ObjectsPanel.hpp"
 #include "EditorWidget.hpp"
 #include "PPWidgets.hpp"
+#include "Window.hpp"
 
 const char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -90,6 +91,11 @@ int main(int argc, const char *argv[]) {
     window->Open();
     window->StartTextInput();
     window->SetSize({800, 600});
+
+    dr4::Font *defaultFont = window->CreateFont();
+    defaultFont->LoadFromFile("/usr/share/fonts/TTF/Hack-Bold.ttf");
+    window->SetDefaultFont(defaultFont);
+
 // SETUP UI, MAIN WINDOW
     roa::UI ui(window, FONT_PATH);
     roa::MainWindow *mainWindow = new roa::MainWindow(&ui);
@@ -97,31 +103,64 @@ int main(int argc, const char *argv[]) {
     ui.SetRoot(mainWindow);
 
 
+
+    roa::Window *editorWindow = new roa::Window(&ui);
+    editorWindow->SetSize({560, 420});
+    editorWindow->SetPos({100, 100});
+
+    mainWindow->AddWidget(editorWindow);
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // SETUP PP PLUGIN
     std::vector<cum::PPToolPlugin*> ppPlugins = {};
     
-    auto ppPlugin1 = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/plugins/pp/libIADorisovkaPlugin.so")); assert(ppPlugin1);
-    // auto ppPlugin2 = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile("./external/plugins/pp/PPdenchick.so")); assert(ppPlugin2);
+    std::vector<std::string> ppPluginsPathes = 
+    {
+        "./external/plugins/pp/libIADorisovkaPlugin.so",
+        "./external/plugins/pp/libArtemLine.so",
+        "external/plugins/pp/libSeva.so"
+    };
     
+    for (auto path : ppPluginsPathes) {
+        auto plugin = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile(path));
+        assert(plugin);
+        ppPlugins.push_back(plugin);
+    }
 
-    ppPlugins.push_back(ppPlugin1);
-    // ppPlugins.push_back(ppPlugin2);
-    // push other plugins
-
-    // roa::    PPCanvasWidget *canvas = new roa::PPCanvasWidget(&ui, ppPlugins);
-
-    // TODO : add shortCuts
-    // TODO : add hide option
-    // mainWindow->addModal(canvas);
-
-
+    
  // SETUP SCENE OBJECTS
     RTMaterialManager materialManager;
     roa::EditorWidget *editor = new roa::EditorWidget(&ui);
-    createSceneObjects(materialManager, editor);
-    editor->SetSize({100, 100});
-    editor->SetPos({100, 100});     
-    mainWindow->AddWidget(editor);
+    // createSceneObjects(materialManager, editor);
+    // editor->SetSize({760, 560});
+    // editor->SetPos({20, 20});     
+    // mainWindow->AddWidget(editor);
 
 // MODALS
 
