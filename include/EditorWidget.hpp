@@ -2,6 +2,7 @@
 #include "Containers.hpp"
 #include "ObjectsPanel.hpp"
 #include "SceneWidgets.hpp"
+#include "ROAGUIRender.hpp"
 
 namespace roa 
 {
@@ -22,6 +23,8 @@ class EditorWidget final : public ZContainer<hui::Widget> {
     std::unique_ptr<PropertiesPanel> propertiesPanel = nullptr;
 
     bool recordsNeedChange = true;
+
+    dr4::Image *backSurface = nullptr;
 
 public:
     EditorWidget(hui::UI *ui): 
@@ -99,34 +102,57 @@ protected:
         event.Apply(*scene);
         event.Apply(*objectsPanel);
         event.Apply(*propertiesPanel);
+        
+        mainTextureLayout();
 
         return hui::EventResult::UNHANDLED;
     }
 
-    void OnSizeChanged() override { layout(); }
+    void OnSizeChanged() override { 
+        layout(); 
+        mainTextureLayout();
+    }    
 
     void Redraw() const override {
         GetTexture().Clear(FULL_TRANSPARENT);
+        
+        backSurface->DrawOn(GetTexture());
+        
+        
 
-        scene->DrawOn(GetTexture());
-        objectsPanel->DrawOn(GetTexture());
-        propertiesPanel->DrawOn(GetTexture());
+        // objectsPanel->DrawOn(GetTexture());
+        // propertiesPanel->DrawOn(GetTexture());
     }
 
 private:
-    void layout() {
-        float panelWidth = GetSize().x * PANEL_LAYOUT_SHARE;
-        float panelHeight = GetSize().y / 2;
-    
-        float sceneWidth = GetSize().x - panelWidth;
-        float sceneHeight = GetSize().y;
-        
-        scene->SetSize({sceneWidth, sceneHeight});
-        objectsPanel->SetSize({panelWidth, panelHeight});
-        propertiesPanel->SetSize({panelWidth, panelHeight});
+    void mainTextureLayout() {
+        scene->DrawOn(GetTexture());
+        backSurface = GetTexture().GetImage(); assert(backSurface);
 
-        objectsPanel->SetPos({sceneWidth, 0});
-        propertiesPanel->SetPos({sceneWidth, panelHeight});
+        drawBlenderRoundedFrame(
+            backSurface->GetWidth(),
+            backSurface->GetHeight(),
+            10,               // radius
+            4,                // border thickness
+            {42,42,42,255},   // blender border
+            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
+        );
+    }
+
+    void layout() {
+        // float panelWidth = GetSize().x * PANEL_LAYOUT_SHARE;
+        // float panelHeight = GetSize().y / 2;
+    
+        // float sceneWidth = GetSize().x - panelWidth;
+        // float sceneHeight = GetSize().y;
+        
+        scene->SetSize(GetSize());
+
+        // objectsPanel->SetSize({panelWidth, panelHeight});
+        // propertiesPanel->SetSize({panelWidth, panelHeight});
+
+        // objectsPanel->SetPos({sceneWidth, 0});
+        // propertiesPanel->SetPos({sceneWidth, panelHeight});
     }
 
     void updateRecords() {
@@ -142,6 +168,7 @@ private:
         
         recordsNeedChange = false;
     }
+    
 
     void addCordsPoperties(::Primitives *selectedObject) {
         assert(selectedObject);

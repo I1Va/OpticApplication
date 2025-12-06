@@ -104,34 +104,13 @@ int main(int argc, const char *argv[]) {
 
 
 
-    roa::Window *editorWindow = new roa::Window(&ui);
-    editorWindow->SetSize({560, 420});
-    editorWindow->SetPos({100, 100});
+    // roa::Window *editorWindow = new roa::Window(&ui);
+    // editorWindow->SetSize({560, 420});
+    // editorWindow->SetPos({100, 100});
 
-    mainWindow->AddWidget(editorWindow);
+    // mainWindow->AddWidget(editorWindow);
 
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -157,10 +136,10 @@ int main(int argc, const char *argv[]) {
  // SETUP SCENE OBJECTS
     RTMaterialManager materialManager;
     roa::EditorWidget *editor = new roa::EditorWidget(&ui);
-    // createSceneObjects(materialManager, editor);
-    // editor->SetSize({760, 560});
-    // editor->SetPos({20, 20});     
-    // mainWindow->AddWidget(editor);
+    createSceneObjects(materialManager, editor);
+    editor->SetSize({760, 560});
+    editor->SetPos({20, 20});     
+    mainWindow->AddWidget(editor);
 
 // MODALS
 
