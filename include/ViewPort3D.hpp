@@ -7,11 +7,12 @@
 #include "Camera.h"
 #include "RayTracer.h"
 #include "ROAGUIRender.hpp"
+#include "Window.hpp"
 
 namespace roa
 {
 
-class ViewPortWindow : public hui::Widget {
+class ViewPort3D : public Window {
     static inline constexpr int CAMERA_KEY_CONTROL_DELTA = 10;
     static inline constexpr int CAMERA_MOUSE_RELOCATION_SCALE = 2;
     static constexpr double CAMERA_ZOOM_DELTA = 0.1;
@@ -33,8 +34,8 @@ class ViewPortWindow : public hui::Widget {
     bool       cameraNeedZoom            = false;
 
 public:
-    ViewPortWindow(hui::UI *ui): 
-        hui::Widget(ui), 
+    ViewPort3D(hui::UI *ui): 
+        Window(ui), 
         sceneImage(ui->GetWindow()->CreateImage())
     { 
         camera.setCenter({0, -6, 1});
@@ -215,17 +216,7 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    void Redraw() const override {
-        dr4::Color borderColor = ((GetUI()->GetHovered() == this) ? dr4::Color(55,55,55,255) : dr4::Color(88, 88, 88, 255)); 
-        drawBlenderRoundedFrame(
-            sceneImage->GetWidth(),
-            sceneImage->GetHeight(),
-            10,               // radius
-            2,                // border thickness
-            borderColor,   // blender border
-            [&](int x, int y, dr4::Color c) { sceneImage->SetPixel(x,y,c); }
-        );
-
+    void RedrawSelfAction() const override {
         sceneImage->DrawOn(GetTexture());
     }
 

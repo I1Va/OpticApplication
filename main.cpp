@@ -15,7 +15,7 @@
 #include "MainWindow.hpp"
 #include "ScrollBar.hpp"
 #include "TextWidgets.hpp"
-#include "ViewPortWindow.hpp"
+#include "ViewPort3D.hpp"
 #include "ObjectsPanel.hpp"
 #include "EditorWidget.hpp"
 #include "PPWidgets.hpp"

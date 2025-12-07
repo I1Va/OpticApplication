@@ -10,42 +10,39 @@ namespace roa
 
 
 class Window : public LinContainer<hui::Widget> {
-    dr4::Image *surface;
 public:
-    Window(hui::UI *ui): LinContainer(ui), surface(ui->GetWindow()->CreateImage()) {
-        assert(ui);
-        assert(surface);
-    }
-
-    using LinContainer<hui::Widget>::LinContainer;
+    using LinContainer::LinContainer;
     virtual ~Window() = default;
 
 protected:
-    void Redraw() const override {
+    void Redraw() const override final {
         GetTexture().Clear(FULL_TRANSPARENT);
-        surface->DrawOn(GetTexture());
+        
+        RedrawSelfAction();
+        for (auto &child : children) child->DrawOn(GetTexture());
+        
+        dr4::Image *backSurface = GetTexture().GetImage();
+      
+
+        dr4::Color borderColor = ((GetUI()->GetHovered() == this) ? dr4::Color(55,55,55,255) : dr4::Color(88, 88, 88, 255)); 
+        drawBlenderRoundedFrame(
+            backSurface->GetWidth(),
+            backSurface->GetHeight(),
+            10,               // radius
+            2,                // border thickness
+            borderColor,      // blender border
+            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
+        );
+
+        GetTexture().Clear(FULL_TRANSPARENT);
+        backSurface->DrawOn(GetTexture());
     }
 
-    void OnSizeChanged() override {
-        relayoutTexture();
-    }
+    virtual void RedrawSelfAction() const {} 
+    void OnSizeChanged() override {}
 
 private:
-    void relayoutTexture() {
-        assert(surface);
-    
-        surface->SetSize(GetSize());
 
-        // drawBlenderRoundedRect(
-        //     surface->GetWidth(),
-        //     surface->GetHeight(),
-        //     10,               // radius
-        //     4,                // border thickness
-        //     {60,60,60,255},   // blender bgv
-        //     {42,42,42,255},   // blender border
-        //     [&](int x, int y, dr4::Color c) { surface->SetPixel(x,y,c); }
-        // );
-    }
 };
 
 
