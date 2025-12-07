@@ -15,12 +15,6 @@ public:
     virtual ~Window() = default;
 
 protected:
-
-  
-    virtual hui::EventResult OnIdleSelfAction(hui::IdleEvent &) {
-        return hui::EventResult::UNHANDLED;
-    }
-
     hui::EventResult OnIdle(hui::IdleEvent &evt) override final {
         PropagateToChildren(evt);
 
@@ -28,16 +22,13 @@ protected:
         if (newImplicitHovered != implicitHovered) ForceRedraw();
         implicitHovered = newImplicitHovered;
 
-        OnIdleSelfAction(evt);
         
         return hui::EventResult::UNHANDLED;
     }
 
-
     void Redraw() const override final {
         GetTexture().Clear(FULL_TRANSPARENT);
         
-        RedrawSelfAction();
         for (auto &child : children) child->DrawOn(GetTexture());
         
         dr4::Image *backSurface = GetTexture().GetImage();
@@ -55,7 +46,6 @@ protected:
         GetTexture().Clear(FULL_TRANSPARENT);
         backSurface->DrawOn(GetTexture());
     }
-    virtual void RedrawSelfAction() const {} 
 
 private:
     bool checkImplicitHover() const {

@@ -82,10 +82,21 @@ protected:
         relayoutRecords();
         relayoutScrollBar();
     }
+
+    // void Redraw() const override {
+    //     this->GetTexture().Clear({255, 132, 0, 255});
+    
+    //     for (const auto &record : records) {
+    //         record->DrawOn(this->GetTexture());
+    //     }
+    //     scrollBar->DrawOn(this->GetTexture());
+    //     title->DrawOn(this->GetTexture());
+    // }
+
 };
 
 template <IsPointer T>
-class ObjectsPanel final : public RecordsPanel<TextButton> {
+class ObjectsPanel final : public RecordsPanel<ObjectButton> {
     std::optional<std::pair<std::string, T>> currentSelected;
     std::function<void()> onSelectChangedAction = nullptr;
 public:
@@ -103,8 +114,9 @@ public:
         std::function<void()> onSelect,
         std::function<void()> onUnSelect
     ) {
-        TextButton *record = new TextButton(GetUI()); assert(record);
-        record->SetText(name);
+        ObjectButton *record = new ObjectButton(GetUI()); assert(record);
+    
+        // record->SetText(name);
         record->SetMode(Button::Mode::STICK_MODE);
 
         record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()

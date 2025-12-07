@@ -45,7 +45,6 @@ public:
 
     void SetMode(const Mode m) { mode = m; }
 
-
 protected:
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override final { 
         if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
@@ -179,49 +178,6 @@ protected:
     }
 };
 
-class RoundedBlenderButton : public Button {
-    dr4::Color nonActiveColor = dr4::Color(44, 44, 44);
-    dr4::Color hoverColor     = dr4::Color(54, 54, 54);
-    dr4::Color clickedColor   = dr4::Color(77, 77, 77);
-    int borderRadius = 2;
-
-public:
-    using Button::Button;
-    virtual ~RoundedBlenderButton() = default;
-    void SetBorderRadius(const int radius) { borderRadius = radius; }
-    int  GetBorderRadius() const { return borderRadius; }
-
-protected:
-    void Redraw() const override final {
-        GetTexture().Clear(FULL_TRANSPARENT);
-
-        dr4::Image *backSurface = GetTexture().GetImage();
-        assert(backSurface);
-
-        dr4::Color bgColor = nonActiveColor;
-        if (checkStateProperty(Button::StateProperty::CLICKED)) {
-            bgColor = clickedColor;
-        } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
-            bgColor = hoverColor;
-        }
-
-        DrawBlenderRoundedRectangle(
-            backSurface->GetWidth(),
-            backSurface->GetHeight(),
-            borderRadius,               
-            0,                
-            FULL_TRANSPARENT,  
-            bgColor,
-            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
-        );
-
-        backSurface->DrawOn(GetTexture());
-    }
-};
-        
-
-
-
 class TextureButton : public Button { 
 protected:
     const dr4::Texture *pressedTexture = nullptr;
@@ -292,6 +248,76 @@ protected:
 
 private: 
     void relayout() { text->SetFontSize(GetSize().y); }    
+};
+
+class RoundedBlenderButton : public Button {
+    dr4::Color nonActiveColor = dr4::Color(44, 44, 44);
+    dr4::Color hoverColor     = dr4::Color(54, 54, 54);
+    dr4::Color clickedColor   = dr4::Color(77, 77, 77);
+    int borderRadius = 2;
+
+public:
+    using Button::Button;
+    virtual ~RoundedBlenderButton() = default;
+    void SetBorderRadius(const int radius) { borderRadius = radius; }
+    int  GetBorderRadius() const { return borderRadius; }
+
+protected:
+    void Redraw() const override final {
+        GetTexture().Clear(FULL_TRANSPARENT);
+
+        dr4::Image *backSurface = GetTexture().GetImage();
+        assert(backSurface);
+
+        dr4::Color bgColor = nonActiveColor;
+        if (checkStateProperty(Button::StateProperty::CLICKED)) {
+            bgColor = clickedColor;
+        } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
+            bgColor = hoverColor;
+        }
+
+        DrawBlenderRoundedRectangle(
+            backSurface->GetWidth(),
+            backSurface->GetHeight(),
+            borderRadius,               
+            0,                
+            FULL_TRANSPARENT,  
+            bgColor,
+            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
+        );
+
+        backSurface->DrawOn(GetTexture());
+    }
+};
+        
+// TODO : button texture pack 
+class ObjectButton final : public Button {
+    dr4::Color focusedHovered = RED;
+    dr4::Color focused = {0, 128, 0, 255};
+    dr4::Color hovered = GRAY;
+    dr4::Color nonActive = {0, 0, 255, 255};
+
+    // icon texture
+    // label
+
+public:
+    using Button::Button;
+    ~ObjectButton() = default;
+
+protected:
+    void Redraw() const override final {
+        GetTexture().Clear(FULL_TRANSPARENT);
+
+        if (checkStateProperty(Button::StateProperty::FOCUSED) && checkStateProperty(Button::StateProperty::HOVERED)) {
+            GetTexture().Clear(focusedHovered);
+        } else if (checkStateProperty(Button::StateProperty::FOCUSED)) {
+            GetTexture().Clear(focused);
+        } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
+            GetTexture().Clear(hovered);
+        } else {
+            GetTexture().Clear(nonActive);
+        }
+    }
 };
 
 }

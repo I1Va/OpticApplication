@@ -27,7 +27,7 @@ const char FONT_PATH[] = "assets/RobotoFont.ttf";
 void createSceneObjects
 (
     RTMaterialManager &materialManager,
-    roa::Viewport3D *viewport3D
+    roa::Viewport3DWindow *viewport3D
 ) {
     RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0}); 
     RTMaterial *midSphereMaterial   = materialManager.MakeLambertian({0.1, 0.2, 0.5});
@@ -136,7 +136,7 @@ int main(int argc, const char *argv[]) {
  // SETUP SCENE OBJECTS
 
 
-    roa::Viewport3D *Viewport3D = new roa::Viewport3D(&ui);
+    roa::Viewport3DWindow *Viewport3D = new roa::Viewport3DWindow(&ui);
     RTMaterialManager materialManager;
     createSceneObjects(materialManager, Viewport3D);
 

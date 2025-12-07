@@ -12,7 +12,7 @@
 namespace roa
 {
 
-class Viewport3D : public Window {
+class Viewport3D : public hui::Widget {
     static inline constexpr int CAMERA_KEY_CONTROL_DELTA = 10;
     static inline constexpr int CAMERA_MOUSE_RELOCATION_SCALE = 2;
     static constexpr double CAMERA_ZOOM_DELTA = 0.1;
@@ -35,7 +35,7 @@ class Viewport3D : public Window {
 
 public:
     Viewport3D(hui::UI *ui): 
-        Window(ui), 
+        hui::Widget(ui),
         sceneImage(ui->GetWindow()->CreateImage())
     { 
         camera.setCenter({0, -6, 1});
@@ -121,7 +121,7 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnIdleSelfAction(hui::IdleEvent &) override {
+    hui::EventResult OnIdle(hui::IdleEvent &) override {
         static std::vector<RTPixelColor> tempBufer;
 
         std::pair<int, int> screenResolution = {};
@@ -217,7 +217,7 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    void RedrawSelfAction() const override {
+    void Redraw() const override {
         sceneImage->DrawOn(GetTexture());
     }
 
@@ -253,5 +253,47 @@ protected:
         cameraNeedZoom = false;
     }
 };
+
+class Viewport3DWindow final : public Window {
+    static constexpr float TOOL_BAR_HEIGHT = 20;
+    Viewport3D *viewport3D;
+
+public:
+    Viewport3DWindow(hui::UI *ui): Window(ui), viewport3D(new Viewport3D(ui)) {
+        assert(ui);
+        AddWidget(viewport3D);
+    } 
+    ~Viewport3DWindow() = default;
+
+    void AddObject(Primitives *object) { viewport3D->AddObject(object); }
+    void AddLight(Light *light)        { viewport3D->AddLight(light); }
+    void AddObject(gm::IPoint3 position, Primitives *object) { viewport3D->AddObject(position, object); }
+    void AddLight(gm::IPoint3 position, Light *light)        { viewport3D->AddLight(position, light); }
+
+    std::vector<::Primitives *> &GetPrimitives() { return viewport3D->GetPrimitives(); }
+    std::vector<::Light *>      &GetLights()     { return viewport3D->GetLights(); }
+
+    int GetScreenResolutionWidth()  const { return viewport3D->GetScreenResolutionWidth();  }
+    int GetScreenResolutionHeight() const { return viewport3D->GetScreenResolutionHeight(); }
+
+    Camera &GetCamera() { return viewport3D->GetCamera(); }
+    SceneManager &GetSceneManager() { return viewport3D->GetSceneManager(); }
+
+    double MeasureRenderTime(const std::size_t MEASURE_COUNT=1) {
+        return viewport3D->MeasureRenderTime(MEASURE_COUNT);
+    }
+
+protected:
+    void OnSizeChanged() override {
+        layout();
+    }
+
+    void layout() {
+        viewport3D->SetPos({0, TOOL_BAR_HEIGHT});
+        viewport3D->SetSize(GetSize() - viewport3D->GetPos());
+    }
+};
+
+
 
 } // namespace roa
