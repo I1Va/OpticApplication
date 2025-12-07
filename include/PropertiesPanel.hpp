@@ -1,34 +1,34 @@
-#pragma once
-#include "TextWidgets.hpp"
-#include "RecordsPanel.hpp"
+// #pragma once
+// #include "TextWidgets.hpp"
+// #include "RecordsPanel.hpp"
 
-namespace roa
-{
+// namespace roa
+// {
    
-class PropertiesPanel final : public RecordsPanel<TextInputField> {
-public:
-    using RecordsPanel::RecordsPanel;
-    ~PropertiesPanel() = default;
+// class PropertiesPanel final : public RecordsPanel<TextInputField> {
+// public:
+//     using RecordsPanel::RecordsPanel;
+//     ~PropertiesPanel() = default;
 
-    void AddProperty
-    (
-        const std::string &label, const std::string &value,
-        std::function<void(const std::string&)> setPropertyVal
-    ) {
-        // auto record = std::make_unique<TextInputField>(GetUI());
-        // record->SetLabel(label);
-        // record->SetText(value);
-        // record->SetOnEnterAction(setPropertyVal);
+//     void AddProperty
+//     (
+//         const std::string &label, const std::string &value,
+//         std::function<void(const std::string&)> setPropertyVal
+//     ) {
+//         // auto record = std::make_unique<TextInputField>(GetUI());
+//         // record->SetLabel(label);
+//         // record->SetText(value);
+//         // record->SetOnEnterAction(setPropertyVal);
 
-        // TextInputField* ptr = record.get();
-        // records.emplace_back(std::move(record));
-        // BecomeParentOf(ptr);
-        // relayout();
+//         // TextInputField* ptr = record.get();
+//         // records.emplace_back(std::move(record));
+//         // BecomeParentOf(ptr);
+//         // relayout();
 
-        // ptr->ForceRedraw();
-    }
-};
+//         // ptr->ForceRedraw();
+//     }
+// };
 
-} // namespace roa
+// } // namespace roa
 
 

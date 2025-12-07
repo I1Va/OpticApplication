@@ -17,7 +17,7 @@
 #include "TextWidgets.hpp"
 #include "Viewport3D.hpp"
 #include "RecordsPanel.hpp"
-#include "EditorWidget.hpp"
+
 #include "PPWidgets.hpp"
 #include "Window.hpp"
 
@@ -141,7 +141,7 @@ int main(int argc, const char *argv[]) {
     createSceneObjects(materialManager, Viewport3D);
 
     float padding = 3;
-    roa::ObjectsPanel<roa::TextButton *> *objectsPanel = new roa::ObjectsPanel<roa::TextButton *> (&ui);
+    roa::OutlinerWindow<Primitives *> *outliner = new roa::OutlinerWindow<Primitives *>(&ui);
 
     float Viewport3DWHCoef = 1.8;
     float Viewport3DHeight = 300;
@@ -149,13 +149,17 @@ int main(int argc, const char *argv[]) {
 
     float objectsPanelHWCoef = 1;
     float objectsPanelHeight = 200;
-    objectsPanel->SetSize({objectsPanelHWCoef * objectsPanelHeight, objectsPanelHeight});
+    outliner->SetSize({objectsPanelHWCoef * objectsPanelHeight, objectsPanelHeight});
 
-    dr4::Vec2f objectsPanelPos = {Viewport3D->GetSize().x + padding, 0};
-    objectsPanel->SetPos(objectsPanelPos);
+    dr4::Vec2f outlinerWindowPos = {Viewport3D->GetSize().x + padding, 0};
+    outliner->SetPos(outlinerWindowPos);
+
+    for (Primitives *primitive : Viewport3D->GetPrimitives()) {
+        outliner->AddObject(primitive, "name", nullptr, nullptr);
+    }
 
     mainWindow->AddWidget(Viewport3D);
-    mainWindow->AddWidget(objectsPanel);
+    mainWindow->AddWidget(outliner);
 
 
 

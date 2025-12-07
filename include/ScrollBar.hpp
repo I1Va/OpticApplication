@@ -73,19 +73,19 @@ private:
 };
 
 class VerticalScrollBar : public ZContainer<hui::Widget> {
-    static constexpr double MOUSEWHEEL_THUMB_MOVE_COEF = 0.1;
+    static constexpr float MOUSEWHEEL_THUMB_MOVE_COEF = 0.1;
 
     std::function<void(double)> onScrollAction=nullptr;
 
     std::unique_ptr<ThumbButton> thumbButton  = nullptr;
+    float thumbLayoutShare = 0.5;
+
+    bool hiden = false;
 
 public:
     VerticalScrollBar(hui::UI *ui): ZContainer(ui) {
         thumbButton = std::make_unique<ThumbButton>(ui);
         BecomeParentOf(thumbButton.get());
-
-        initLayout();
-
         thumbButton->SetOnReplaceAction([this] { percantageChanged(); });
     }
 
@@ -97,7 +97,22 @@ public:
         onScrollAction = action;
     }
 
+    void SetThumbLayoutShare(float share) {
+        thumbLayoutShare = share;
+        relayout();
+    }
+
     double GetPercentage() { return calculateThumbPercentage(); }
+
+    void Hide() { 
+        hiden = true; 
+        ForceRedraw();
+    }
+
+    void Show() { 
+        hiden = false;
+        ForceRedraw();
+    }
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
@@ -108,12 +123,14 @@ protected:
         return hui::EventResult::UNHANDLED;
     }
 
-    void OnSizeChanged() override { reLayout(); }
+    void OnSizeChanged() override { relayout(); }
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
-        thumbButton->DrawOn(GetTexture());
+        GetTexture().Clear(RED);
+        if (!hiden) {
+            thumbButton->DrawOn(GetTexture());
+        }
     }
 
     hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
@@ -150,10 +167,9 @@ protected:
 private:
     dr4::Rect2f calculateThumbMovingArea() {
         dr4::Rect2f thumbMovingArea;
-
-        float areaHeight = GetSize().y; 
+    
         thumbMovingArea.pos = dr4::Vec2f(0, 0);
-        thumbMovingArea.size = dr4::Vec2f(GetSize().x, areaHeight);
+        thumbMovingArea.size = dr4::Vec2f(GetSize());
 
         return thumbMovingArea;
     }
@@ -181,20 +197,19 @@ private:
         assert(thumbButton);
 
         dr4::Rect2f thumbMovingArea = calculateThumbMovingArea();
-        
-        thumbButton->SetSize({7, 100}); // FIXME!
+        thumbButton->SetSize({thumbMovingArea.size.x, thumbMovingArea.size.y * thumbLayoutShare});
         thumbButton->SetPos(thumbMovingArea.pos);
         thumbButton->SetMovingArea(thumbMovingArea);
     }
-    
-    void reLayout() {
-        assert(thumbButton);
 
+    void relayout() {
         initLayout();
-    
+        
         double percentage = calculateThumbPercentage();
         dr4::Rect2f thumbMovingArea = calculateThumbMovingArea();
+
         thumbButton->SetPos({0, static_cast<float>(thumbMovingArea.pos.y + thumbMovingArea.size.y * percentage)});
+        ForceRedraw();
     }
 
     void moveThumb(double deltaPercent) {
