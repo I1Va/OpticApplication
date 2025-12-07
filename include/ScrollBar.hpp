@@ -73,11 +73,7 @@ private:
 };
 
 class VerticalScrollBar : public ZContainer<hui::Widget> {
-    static constexpr double THUMB_WIDTH = 7;
-    static constexpr double THUMB_AREA_RIGHT_PADDING = 4;
-    static constexpr double THUMB_AREA_VERTICAL_LAYOUT_SHARE = 0.7; 
     static constexpr double MOUSEWHEEL_THUMB_MOVE_COEF = 0.1;
-
 
     std::function<void(double)> onScrollAction=nullptr;
 
@@ -116,15 +112,16 @@ protected:
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear(RED);
+        GetTexture().Clear(FULL_TRANSPARENT);
         thumbButton->DrawOn(GetTexture());
     }
 
-
     hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
-        if (GetUI()->GetHovered() == this || GetUI()->GetHovered() == thumbButton.get()) {
-            moveThumb(-event.delta.y * MOUSEWHEEL_THUMB_MOVE_COEF);
-            return hui::EventResult::HANDLED; 
+        if (GetUI()->GetHovered() == GetParent()        || 
+            GetUI()->GetHovered() == this               ||
+            GetUI()->GetHovered() == thumbButton.get()) {
+                moveThumb(-event.delta.y * MOUSEWHEEL_THUMB_MOVE_COEF);
+                return hui::EventResult::HANDLED; 
         } else {
              return hui::EventResult::UNHANDLED;
         }
@@ -154,11 +151,9 @@ private:
     dr4::Rect2f calculateThumbMovingArea() {
         dr4::Rect2f thumbMovingArea;
 
-        float areaHeight = THUMB_AREA_VERTICAL_LAYOUT_SHARE * GetSize().y; 
-        float upPadding = (GetSize().y - areaHeight) / 2; 
-    
-        thumbMovingArea.pos = dr4::Vec2f(GetSize().x - THUMB_WIDTH - THUMB_AREA_RIGHT_PADDING, upPadding);
-        thumbMovingArea.size = dr4::Vec2f(THUMB_WIDTH, areaHeight);
+        float areaHeight = GetSize().y; 
+        thumbMovingArea.pos = dr4::Vec2f(0, 0);
+        thumbMovingArea.size = dr4::Vec2f(GetSize().x, areaHeight);
 
         return thumbMovingArea;
     }

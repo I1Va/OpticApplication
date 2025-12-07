@@ -19,8 +19,11 @@ concept IsPointer = std::is_pointer_v<T>;
 
 template <WidgetDerived T>
 class RecordsPanel : public Window {
-    static constexpr double RECORD_HEIGHT = 20;
-    static constexpr double SCROLLBAR_LAYOUT_SHARE = 0.2;
+    static constexpr float RECORD_HEIGHT = 20;
+    static constexpr float SCROLL_BAR_WIDTH = 6;
+    static constexpr float SCROLL_BAR_RIGHT_PADDING = 3;
+    static constexpr float THUMB_AREA_VERTICAL_LAYOUT_SHARE = 0.9; 
+
 protected:
     VerticalScrollBar  *scrollBar; 
     std::vector<T*>     records;
@@ -68,11 +71,9 @@ protected:
     }
 
     void relayoutScrollBar() {
-        float scrollBarHeight = this->GetSize().y - 0;
-        float scrollBarWidth = this->GetSize().x * SCROLLBAR_LAYOUT_SHARE;
-
-        scrollBar->SetSize({scrollBarWidth, scrollBarHeight});
-        scrollBar->SetPos({this->GetSize().x - scrollBarWidth, 0});
+        scrollBar->SetSize({SCROLL_BAR_WIDTH,  THUMB_AREA_VERTICAL_LAYOUT_SHARE * this->GetSize().y});
+        float posY = (this->GetSize().y - scrollBar->GetSize().y) / 2;
+        scrollBar->SetPos({this->GetSize().x - SCROLL_BAR_WIDTH - SCROLL_BAR_RIGHT_PADDING, posY});
     
         scrollBar->ForceRedraw();
     }
