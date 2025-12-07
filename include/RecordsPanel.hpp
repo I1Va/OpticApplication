@@ -37,11 +37,11 @@ public:
         
         SetSize({100, 100});
     
-        // BecomeParentOf(scrollBar);
-        // BecomeParentOf(title);
+        BecomeParentOf(scrollBar);
+        BecomeParentOf(title);
 
-        // AddWidget(scrollBar);
-        // AddWidget(title);
+        AddWidget(scrollBar);
+        AddWidget(title);
 
         scrollBar->SetOnScrollAction([this](double) { relayoutRecords(); });
     }
@@ -146,7 +146,7 @@ public:
 
         records.push_back(record);
         BecomeParentOf(record);
-        // AddWidget(record);
+        AddWidget(record);
 
         relayout();
     }
