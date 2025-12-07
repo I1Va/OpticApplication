@@ -25,44 +25,44 @@ public:
     ~PPToolButton() = default;
 
 protected:
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {        
-        if (TextButton::OnMouseDown(event) == hui::EventResult::HANDLED) {
-            if (*selectedToolSlot) (*selectedToolSlot)->OnEnd();    
-            if (pressed) *selectedToolSlot = tool;
-            else *selectedToolSlot = nullptr;
+    // hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {        
+    //     if (TextButton::OnMouseDown(event) == hui::EventResult::HANDLED) {
+    //         if (*selectedToolSlot) (*selectedToolSlot)->OnEnd();    
+    //         if (pressed) *selectedToolSlot = tool;
+    //         else *selectedToolSlot = nullptr;
             
-            return hui::EventResult::HANDLED;
-        }
-        return hui::EventResult::UNHANDLED;
-    }
+    //         return hui::EventResult::HANDLED;
+    //     }
+    //     return hui::EventResult::UNHANDLED;
+    // }
 
-    hui::EventResult OnKeyDown(hui::KeyEvent &event) override {
-        if (event.key == dr4::KeyCode::KEYCODE_ESCAPE && *selectedToolSlot == tool && tool->IsCurrentlyDrawing()) {
-            (*selectedToolSlot)->OnBreak();
-            return hui::EventResult::HANDLED;
-        }
-        return TextButton::OnKeyDown(event);
-    }
+    // hui::EventResult OnKeyDown(hui::KeyEvent &event) override {
+    //     if (event.key == dr4::KeyCode::KEYCODE_ESCAPE && *selectedToolSlot == tool && tool->IsCurrentlyDrawing()) {
+    //         (*selectedToolSlot)->OnBreak();
+    //         return hui::EventResult::HANDLED;
+    //     }
+    //     return TextButton::OnKeyDown(event);
+    // }
 
-    hui::EventResult OnIdle(hui::IdleEvent &event) override {
-        TextButton::OnIdle(event);
+    // hui::EventResult OnIdle(hui::IdleEvent &event) override {
+    //     TextButton::OnIdle(event);
 
-        // if (*selectedToolSlot == tool) {
-        //     if (!pressed) {
-        //         ForceRedraw();
-        //         if (onPressAction) onPressAction();
-        //     }
-        //     pressed = true;    
-        // } else {
-        //     if (pressed) {
-        //         ForceRedraw();
-        //         if (onUnpressAction) onUnpressAction();
-        //     }
-        //     pressed = false;    
-        // }
+    //     // if (*selectedToolSlot == tool) {
+    //     //     if (!pressed) {
+    //     //         ForceRedraw();
+    //     //         if (onPressAction) onPressAction();
+    //     //     }
+    //     //     pressed = true;    
+    //     // } else {
+    //     //     if (pressed) {
+    //     //         ForceRedraw();
+    //     //         if (onUnpressAction) onUnpressAction();
+    //     //     }
+    //     //     pressed = false;    
+    //     // }
 
-        return hui::EventResult::UNHANDLED;
-    }
+    //     return hui::EventResult::UNHANDLED;
+    // }
 };
 
 
@@ -106,7 +106,7 @@ public:
         for (auto &tool : tools) {
             // crete buttons
             roa::PPToolButton *toolButton = new roa::PPToolButton(ui, tool.get(), &selectedTool);
-            toolButton->SetMode(Button::Mode::STICKING);
+            toolButton->SetMode(Button::Mode::STICK_MODE);
             
             AddWidget(toolButton);
         }

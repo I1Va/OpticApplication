@@ -3,25 +3,36 @@
 #include "hui/widget.hpp"
 #include "ROACommon.hpp"
 #include "ROAUI.hpp"
+#include "ROAGUIRender.hpp"
 
 namespace roa
 {
 
 class Button : public hui::Widget {
 public:
-    enum class Mode {
-        HOVER,
-        FOCUSED,
-        CAPTURED,
-        STICKING
+    enum class Mode{
+        HOVER_MODE,
+        FOCUS_MODE,
+        CAPTURE_MODE,
+        STICK_MODE
     };
 
 protected:
+    enum class StateProperty : uint8_t {
+        NON_ACTIVE  = 0b00000000,
+        HOVERED     = 0b10000000,
+        FOCUSED     = 0b01000000,
+        CLICKED     = 0b00100000,
+    };
+
+// Logic
+    Mode mode = Mode::CAPTURE_MODE;
+    bool pressed = false;
     std::function<void()> onPressAction = nullptr;
     std::function<void()> onUnpressAction = nullptr;
 
-    bool pressed = false;
-    Mode mode = Mode::CAPTURED;
+// Drawing
+    uint8_t state = static_cast<uint8_t>(StateProperty::NON_ACTIVE); 
 
 public:
     using hui::Widget::Widget;
@@ -34,23 +45,26 @@ public:
 
     void SetMode(const Mode m) { mode = m; }
 
+
 protected:
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override final { 
         if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
         
         GetUI()->ReportFocus(this);
         GetUI()->SetCaptured(this);
 
+        addStateProperty(StateProperty::CLICKED);
+
         switch (mode) {
-            case Mode::HOVER: break;
-            case Mode::FOCUSED: break;
-            case Mode::CAPTURED:
+            case Mode::HOVER_MODE: break;
+            case Mode::FOCUS_MODE: break;
+            case Mode::CAPTURE_MODE:
                 ForceRedraw(); 
                 pressed = true; 
                 if (onPressAction) onPressAction();
                 break;
-            case Mode::STICKING: 
+            case Mode::STICK_MODE: 
                 pressed = !pressed; 
                 ForceRedraw();
                 if (pressed && onPressAction) onPressAction();
@@ -61,21 +75,22 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnMouseUp(hui::MouseButtonEvent &event) override { 
+    hui::EventResult OnMouseUp(hui::MouseButtonEvent &event) override final { 
         if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
 
         GetUI()->SetCaptured(nullptr);
+        removeStateProperty(StateProperty::CLICKED);
     
         switch (mode) {
-            case Mode::HOVER: break;
-            case Mode::FOCUSED: break;
-            case Mode::CAPTURED: 
+            case Mode::HOVER_MODE: break;
+            case Mode::FOCUS_MODE: break;
+            case Mode::CAPTURE_MODE: 
                 ForceRedraw();
                 pressed = false; 
                 if (onUnpressAction) onUnpressAction();
                 break;
-            case Mode::STICKING: 
+            case Mode::STICK_MODE: 
                 break;
             default: assert(0); break;
         }
@@ -83,9 +98,16 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnIdle(hui::IdleEvent &) override {
+    hui::EventResult OnIdle(hui::IdleEvent &evt) override final {
+        OnIdleSelfAction(evt);
+    
+        if (GetUI()->GetFocused() == this) addStateProperty(StateProperty::FOCUSED);
+        else removeStateProperty(StateProperty::FOCUSED);
+        if (GetUI()->GetHovered() == this) addStateProperty(StateProperty::HOVERED);
+        else removeStateProperty(StateProperty::HOVERED);
+    
         switch (mode) {
-            case Mode::HOVER:
+            case Mode::HOVER_MODE:
                 {
                     bool newPressed = (GetUI()->GetHovered() == this);
                     if (pressed != newPressed) {
@@ -96,7 +118,7 @@ protected:
                     pressed = newPressed;
                     break;
                 }
-            case Mode::FOCUSED: 
+            case Mode::FOCUS_MODE: 
                 {
                     bool newPressed = (GetUI()->GetCaptured() == this);
                     if (pressed != newPressed) {
@@ -107,14 +129,33 @@ protected:
                     pressed = newPressed;
                     break;
                 }
-            case Mode::CAPTURED: 
+            case Mode::CAPTURE_MODE: 
                 break;
-            case Mode::STICKING: 
+            case Mode::STICK_MODE: 
                 break;
             default: assert(0); break;
         }
         
         return hui::EventResult::UNHANDLED;
+    }
+    virtual void OnIdleSelfAction(hui::IdleEvent &) {}
+
+    bool checkStateProperty(const StateProperty property) const {
+        return (state & static_cast<uint8_t>(property));
+    }
+
+private:
+    void addStateProperty(const StateProperty property) {
+        uint8_t newState = state | static_cast<uint8_t>(property);
+        if (!(newState == state)) ForceRedraw();
+        state = newState;
+    }
+    void removeStateProperty(const StateProperty property) {
+        uint8_t newState = state | static_cast<uint8_t>(property);
+        newState = newState ^ static_cast<uint8_t>(property);
+            
+        if (!(newState == state)) ForceRedraw();
+        state = newState;
     }
 };
 
@@ -136,6 +177,46 @@ protected:
         else GetTexture().Clear(unpressedColor);
     }
 };
+
+class RoundedBlenderButton : public Button {
+    dr4::Color nonActiveColor = dr4::Color(0x3B, 0x3B, 0x3B);
+    dr4::Color hoverColor     = dr4::Color(54, 54, 54);
+    dr4::Color clickedColor   = dr4::Color(59, 59, 59);
+    int borderRadius = 2;
+
+public:
+    using Button::Button;
+    virtual ~RoundedBlenderButton() = default;
+    void SetBorderRadius(const int radius) { borderRadius = radius; }
+    int  GetBorderRadius() const { return borderRadius; }
+
+protected:
+    void Redraw() const override final {
+        GetTexture().Clear(FULL_TRANSPARENT);
+
+        dr4::Image *backSurface = GetTexture().GetImage();
+        assert(backSurface);
+
+        dr4::Color bgColor = nonActiveColor;
+        if      (checkStateProperty(Button::StateProperty::HOVERED)) bgColor = hoverColor;
+        else if (checkStateProperty(Button::StateProperty::CLICKED)) bgColor = clickedColor;
+
+        DrawBlenderRoundedRectangle(
+            backSurface->GetWidth(),
+            backSurface->GetHeight(),
+            borderRadius,               
+            0,                
+            FULL_TRANSPARENT,  
+            bgColor,
+            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
+        );
+
+        backSurface->DrawOn(GetTexture());
+    }
+};
+        
+
+
 
 class TextureButton : public Button { 
 protected:

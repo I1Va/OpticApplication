@@ -122,7 +122,7 @@ public:
     ) {
         TextButton *record = new TextButton(GetUI()); assert(record);
         record->SetText(name);
-        record->SetMode(Button::Mode::STICKING);
+        record->SetMode(Button::Mode::STICK_MODE);
 
         record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {

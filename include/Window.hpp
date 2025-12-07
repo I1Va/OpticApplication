@@ -43,7 +43,7 @@ protected:
         dr4::Image *backSurface = GetTexture().GetImage();
         dr4::Color borderColor = (implicitHovered ? dr4::Color(88, 88, 88, 255) : dr4::Color(55,55,55,255));
         
-        drawBlenderRoundedFrame(
+        DrawBlenderRoundedFrame(
             backSurface->GetWidth(),
             backSurface->GetHeight(),
             10,               // radius
