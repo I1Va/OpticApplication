@@ -36,8 +36,6 @@ public:
     
         objectsPanel->SetOnSelectChangedAction([this](){ recordsNeedChange = true; });
 
-        objectsPanel->SetTitle("Objects");
-
         BecomeParentOf(Viewport3D.get());
         BecomeParentOf(objectsPanel.get());
         BecomeParentOf(propertiesPanel.get());
@@ -144,12 +142,12 @@ private:
         std::optional<std::pair<std::string, ::Primitives *>> selectedObject = objectsPanel->GetSelected();
         propertiesPanel->ClearRecords();
         
-        if (selectedObject.has_value()) {
-            addCordsPoperties(selectedObject.value().second);
-            propertiesPanel->SetTitle(selectedObject.value().first);
-        } else {
-            propertiesPanel->SetTitle("");
-        }
+        // if (selectedObject.has_value()) {
+        //     addCordsPoperties(selectedObject.value().second);
+        //     propertiesPanel->SetTitle(selectedObject.value().first);
+        // } else {
+        //     propertiesPanel->SetTitle("");
+        // }
         
         recordsNeedChange = false;
     }

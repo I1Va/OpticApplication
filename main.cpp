@@ -159,7 +159,6 @@ int main(int argc, const char *argv[]) {
 
 
 
-
 // MODALS
 
     roa::PPCanvasWidget *ppCanvas = new roa::PPCanvasWidget(&ui, ppPlugins);

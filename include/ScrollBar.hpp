@@ -42,9 +42,11 @@ protected:
             ForceRedraw();
         }
     }
-
+    
     hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) override {
         if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
+
+        GetUI()->ReportHover(this);
 
         if (GetUI()->GetFocused() == this && pressed) {
             accumulatedRel += event.rel;
@@ -71,10 +73,11 @@ private:
 };
 
 class VerticalScrollBar : public ZContainer<hui::Widget> {
-    static constexpr double MOUSEWHEEL_THUMB_MOVE_COEF = 0.05;
     static constexpr double THUMB_WIDTH = 7;
     static constexpr double THUMB_AREA_RIGHT_PADDING = 4;
     static constexpr double THUMB_AREA_VERTICAL_LAYOUT_SHARE = 0.7; 
+    static constexpr double MOUSEWHEEL_THUMB_MOVE_COEF = 0.1;
+
 
     std::function<void(double)> onScrollAction=nullptr;
 
@@ -102,10 +105,8 @@ public:
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        assert(bottomButton);
-        assert(topButton);
         assert(thumbButton);
-    
+
         if (event.Apply(*thumbButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
 
         return hui::EventResult::UNHANDLED;
@@ -115,19 +116,18 @@ protected:
 
 protected:
     void Redraw() const override {
-        assert(bottomButton);
-        assert(topButton);
-
-        GetTexture().Clear(FULL_TRANSPARENT);
-        dr4::Image *backSurface = GetTexture().GetImage();
+        GetTexture().Clear(RED);
         thumbButton->DrawOn(GetTexture());
     }
 
-    hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
-        if (GetUI()->GetHovered() != this) return hui::EventResult::UNHANDLED;
-        moveThumb(-event.delta.y * MOUSEWHEEL_THUMB_MOVE_COEF);
 
-        return hui::EventResult::HANDLED; 
+    hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
+        if (GetUI()->GetHovered() == this || GetUI()->GetHovered() == thumbButton.get()) {
+            moveThumb(-event.delta.y * MOUSEWHEEL_THUMB_MOVE_COEF);
+            return hui::EventResult::HANDLED; 
+        } else {
+             return hui::EventResult::UNHANDLED;
+        }
     }
 
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {
@@ -168,7 +168,7 @@ private:
     
         dr4::Rect2f thumbMovingArea = calculateThumbMovingArea();
         double len = thumbMovingArea.size.y;
-        double y = thumbMovingArea.pos.y + len * percentage;
+        double y = thumbMovingArea.pos.y + (len - thumbButton->GetSize().y) * percentage;
 
         return dr4::Vec2f(0, y);
     }
@@ -177,26 +177,22 @@ private:
          dr4::Rect2f thumbMovingArea = calculateThumbMovingArea();
 
         double y = thumbButton->GetPos().y - thumbMovingArea.pos.y;
-        double len = calculateThumbMovingArea().size.y;
+        double len = calculateThumbMovingArea().size.y - thumbButton->GetSize().y;
 
         return y / len;
     }
 
     void initLayout() {
-        assert(bottomButton);
-        assert(topButton);
         assert(thumbButton);
 
         dr4::Rect2f thumbMovingArea = calculateThumbMovingArea();
         
-        thumbButton->SetSize({7, 30}); // FIXME!
+        thumbButton->SetSize({7, 100}); // FIXME!
         thumbButton->SetPos(thumbMovingArea.pos);
         thumbButton->SetMovingArea(thumbMovingArea);
     }
     
     void reLayout() {
-        assert(bottomButton);
-        assert(topButton);
         assert(thumbButton);
 
         initLayout();

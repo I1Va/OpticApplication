@@ -56,12 +56,14 @@ public:
     }
 
     void BringToFront(hui::Widget *widget) override {
-        auto widgetsIt = std::find_if(widgets.begin(), widgets.end(), [widget](const auto &w){ return w.get() == widget; } );
-        if(widgetsIt != widgets.end()) {
-            widgets.erase(widgetsIt);       
-            widgets.emplace(widgets.begin(), widget);
-        }
-    }
+        auto it = std::find_if(widgets.begin(), widgets.end(),
+                            [widget](const auto &w){ return w.get() == widget; });
+        if (it == widgets.end()) return;
+
+        auto up = std::move(*it);          
+        widgets.erase(it);             
+        widgets.insert(widgets.begin(), std::move(up)); 
+}
 
 protected:
     void Redraw() const override {

@@ -103,9 +103,10 @@ protected:
     
         if (GetUI()->GetFocused() == this) addStateProperty(StateProperty::FOCUSED);
         else removeStateProperty(StateProperty::FOCUSED);
+        
         if (GetUI()->GetHovered() == this) addStateProperty(StateProperty::HOVERED);
         else removeStateProperty(StateProperty::HOVERED);
-    
+        
         switch (mode) {
             case Mode::HOVER_MODE:
                 {
@@ -150,9 +151,9 @@ private:
         if (!(newState == state)) ForceRedraw();
         state = newState;
     }
+
     void removeStateProperty(const StateProperty property) {
-        uint8_t newState = state | static_cast<uint8_t>(property);
-        newState = newState ^ static_cast<uint8_t>(property);
+        uint8_t newState = state & ~static_cast<uint8_t>(property);
             
         if (!(newState == state)) ForceRedraw();
         state = newState;
@@ -179,9 +180,9 @@ protected:
 };
 
 class RoundedBlenderButton : public Button {
-    dr4::Color nonActiveColor = dr4::Color(0x3B, 0x3B, 0x3B);
+    dr4::Color nonActiveColor = dr4::Color(44, 44, 44);
     dr4::Color hoverColor     = dr4::Color(54, 54, 54);
-    dr4::Color clickedColor   = dr4::Color(59, 59, 59);
+    dr4::Color clickedColor   = dr4::Color(77, 77, 77);
     int borderRadius = 2;
 
 public:
@@ -198,8 +199,11 @@ protected:
         assert(backSurface);
 
         dr4::Color bgColor = nonActiveColor;
-        if      (checkStateProperty(Button::StateProperty::HOVERED)) bgColor = hoverColor;
-        else if (checkStateProperty(Button::StateProperty::CLICKED)) bgColor = clickedColor;
+        if (checkStateProperty(Button::StateProperty::CLICKED)) {
+            bgColor = clickedColor;
+        } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
+            bgColor = hoverColor;
+        }
 
         DrawBlenderRoundedRectangle(
             backSurface->GetWidth(),

@@ -44,6 +44,7 @@ public:
         camera.renderProperties.samplesPerScatter = 1;
         camera.renderProperties.samplesPerPixel = 1;
         camera.renderProperties.enableLDirect = true;
+        camera.renderProperties.enableParallelRender = true;
         camera.renderProperties.maxRayDepth = 5;
     }
 

@@ -20,38 +20,26 @@ concept IsPointer = std::is_pointer_v<T>;
 template <WidgetDerived T>
 class RecordsPanel : public Window {
     static constexpr double RECORD_HEIGHT = 20;
-    static constexpr double TITLE_HEIGHT = 20;
     static constexpr double SCROLLBAR_LAYOUT_SHARE = 0.2;
 protected:
-    TextWidget         *title;
     VerticalScrollBar  *scrollBar; 
     std::vector<T*>     records;
 
 public:
     RecordsPanel(hui::UI *ui): 
         Window(ui), 
-        title(new TextWidget(ui)),
         scrollBar(new VerticalScrollBar(ui)) 
     { 
         assert(ui);
         
         SetSize({100, 100});
-    
-        BecomeParentOf(scrollBar);
-        BecomeParentOf(title);
 
         AddWidget(scrollBar);
-        AddWidget(title);
 
         scrollBar->SetOnScrollAction([this](double) { relayoutRecords(); });
     }
 
     virtual ~RecordsPanel() = default;
-
-    void SetTitle(const std::string &titleContent) {
-        title->SetText(titleContent);
-        title->ForceRedraw();
-    }
 
     void ClearRecords() {
         records.clear();
@@ -64,7 +52,7 @@ protected:
     void relayoutRecords() {
         float recordHeight = RECORD_HEIGHT;
         float recordWidth = this->GetSize().x - scrollBar->GetSize().x;
-        dr4::Vec2f curRecordPos = dr4::Vec2f(0, TITLE_HEIGHT);
+        dr4::Vec2f curRecordPos = dr4::Vec2f(0, 0);
 
         double scrollPerccentage = scrollBar->GetPercentage();
         float hBias = std::fmax(0, scrollPerccentage * (records.size() * recordHeight - this->GetSize().y));
@@ -80,24 +68,18 @@ protected:
     }
 
     void relayoutScrollBar() {
-        float scrollBarHeight = this->GetSize().y - TITLE_HEIGHT;
+        float scrollBarHeight = this->GetSize().y - 0;
         float scrollBarWidth = this->GetSize().x * SCROLLBAR_LAYOUT_SHARE;
 
         scrollBar->SetSize({scrollBarWidth, scrollBarHeight});
-        scrollBar->SetPos({this->GetSize().x - scrollBarWidth, TITLE_HEIGHT});
+        scrollBar->SetPos({this->GetSize().x - scrollBarWidth, 0});
     
         scrollBar->ForceRedraw();
-    }
-
-    void relayoutTitle() {
-        title->SetSize({this->GetSize().x, TITLE_HEIGHT});
-        title->ForceRedraw();
     }
 
     void relayout() {
         relayoutRecords();
         relayoutScrollBar();
-        relayoutTitle();
     }
 };
 
@@ -145,7 +127,6 @@ public:
         );
 
         records.push_back(record);
-        BecomeParentOf(record);
         AddWidget(record);
 
         relayout();

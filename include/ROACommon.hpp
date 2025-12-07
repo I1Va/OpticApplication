@@ -39,7 +39,8 @@ inline bool checkEventType(const hui::Event &event) {
     return result;
 }
 
-// std::ostream &operator<< (std::ostream &stream, const dr4::Vec2f vec);
-// std::ostream &operator<< (std::ostream &stream, const dr4::Rect2f rect);
+std::ostream &operator<< (std::ostream &stream, const dr4::Vec2f vec);
+std::ostream &operator<< (std::ostream &stream, const dr4::Rect2f rect);
+std::ostream &operator<< (std::ostream &stream, const dr4::Color color);
 
 } // namespace roa
