@@ -15,8 +15,8 @@
 #include "MainWindow.hpp"
 #include "ScrollBar.hpp"
 #include "TextWidgets.hpp"
-#include "ViewPort3D.hpp"
-#include "ObjectsPanel.hpp"
+#include "Viewport3D.hpp"
+#include "RecordsPanel.hpp"
 #include "EditorWidget.hpp"
 #include "PPWidgets.hpp"
 #include "Window.hpp"
@@ -27,7 +27,7 @@ const char FONT_PATH[] = "assets/RobotoFont.ttf";
 void createSceneObjects
 (
     RTMaterialManager &materialManager,
-    roa::EditorWidget *editor
+    roa::Viewport3D *viewport3D
 ) {
     RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0}); 
     RTMaterial *midSphereMaterial   = materialManager.MakeLambertian({0.1, 0.2, 0.5});
@@ -35,7 +35,7 @@ void createSceneObjects
     RTMaterial *glassMaterial       = materialManager.MakeDielectric({1.0, 1.0, 1.0}, 1.50);
     RTMaterial *sunMaterial         = materialManager.MakeEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
 
-    SphereObject *sun = new SphereObject(1, sunMaterial, &editor->GetSceneManager());
+    SphereObject *sun = new SphereObject(1, sunMaterial, &viewport3D->GetSceneManager());
     Light *light = new Light
     (
         /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
@@ -44,16 +44,16 @@ void createSceneObjects
         /* viewLightPow      */  15.0
     );
 
-    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
-    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &editor->GetSceneManager());
-    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &editor->GetSceneManager());
-    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &editor->GetSceneManager());
+    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &viewport3D->GetSceneManager());
+    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &viewport3D->GetSceneManager());
+    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &viewport3D->GetSceneManager());
+    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &viewport3D->GetSceneManager());
 
 
     for (int i = 0; i < 10; i++) {
-        SphereObject *sphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
+        SphereObject *sphere = new SphereObject(1, midSphereMaterial, &viewport3D->GetSceneManager());
         sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
-        editor->AddObject(sphere);
+        viewport3D->AddObject(sphere);
     }
 
 
@@ -65,13 +65,13 @@ void createSceneObjects
 
     light->setPosition({0, 0, 10});
 
-    editor->AddObject(ground);
-    editor->AddObject(glassSphere);
-    editor->AddObject(midSphere);
-    editor->AddObject(sun);
-    editor->AddObject(rightSphere);
+    viewport3D->AddObject(ground);
+    viewport3D->AddObject(glassSphere);
+    viewport3D->AddObject(midSphere);
+    viewport3D->AddObject(sun);
+    viewport3D->AddObject(rightSphere);
 
-    editor->AddLight(light);
+    viewport3D->AddLight(light);
 }
 
 int main(int argc, const char *argv[]) {
@@ -134,12 +134,31 @@ int main(int argc, const char *argv[]) {
 
     
  // SETUP SCENE OBJECTS
+
+
+    roa::Viewport3D *Viewport3D = new roa::Viewport3D(&ui);
     RTMaterialManager materialManager;
-    roa::EditorWidget *editor = new roa::EditorWidget(&ui);
-    createSceneObjects(materialManager, editor);
-    editor->SetSize({760, 560});
-    editor->SetPos({20, 20});     
-    mainWindow->AddWidget(editor);
+    createSceneObjects(materialManager, Viewport3D);
+
+    float padding = 3;
+    roa::ObjectsPanel<roa::TextButton *> *objectsPanel = new roa::ObjectsPanel<roa::TextButton *> (&ui);
+
+    float Viewport3DWHCoef = 1.8;
+    float Viewport3DHeight = 300;
+    Viewport3D->SetSize({Viewport3DWHCoef * Viewport3DHeight, Viewport3DHeight});
+
+    float objectsPanelHWCoef = 1;
+    float objectsPanelHeight = 200;
+    objectsPanel->SetSize({objectsPanelHWCoef * objectsPanelHeight, objectsPanelHeight});
+
+    dr4::Vec2f objectsPanelPos = {Viewport3D->GetSize().x + padding, 0};
+    objectsPanel->SetPos(objectsPanelPos);
+
+    mainWindow->AddWidget(Viewport3D);
+    mainWindow->AddWidget(objectsPanel);
+
+
+
 
 // MODALS
 
@@ -149,7 +168,7 @@ int main(int argc, const char *argv[]) {
 
 // MAIN LOOP
 
-    ui.Run();
+    ui.Run(0.01);
 
 // CLEANUP
     delete window;

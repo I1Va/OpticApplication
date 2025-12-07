@@ -7,14 +7,33 @@
 
 namespace roa
 {
-
-
+ 
 class Window : public LinContainer<hui::Widget> {
+    bool implicitHovered = false;
 public:
     using LinContainer::LinContainer;
     virtual ~Window() = default;
 
 protected:
+
+  
+    virtual hui::EventResult OnIdleSelfAction(hui::IdleEvent &) {
+        return hui::EventResult::UNHANDLED;
+    }
+
+    hui::EventResult OnIdle(hui::IdleEvent &evt) override final {
+        PropagateToChildren(evt);
+
+        bool newImplicitHovered = checkImplicitHover();
+        if (newImplicitHovered != implicitHovered) ForceRedraw();
+        implicitHovered = newImplicitHovered;
+
+        OnIdleSelfAction(evt);
+        
+        return hui::EventResult::UNHANDLED;
+    }
+
+
     void Redraw() const override final {
         GetTexture().Clear(FULL_TRANSPARENT);
         
@@ -22,9 +41,8 @@ protected:
         for (auto &child : children) child->DrawOn(GetTexture());
         
         dr4::Image *backSurface = GetTexture().GetImage();
-      
-
-        dr4::Color borderColor = ((GetUI()->GetHovered() == this) ? dr4::Color(55,55,55,255) : dr4::Color(88, 88, 88, 255)); 
+        dr4::Color borderColor = (implicitHovered ? dr4::Color(88, 88, 88, 255) : dr4::Color(55,55,55,255));
+        
         drawBlenderRoundedFrame(
             backSurface->GetWidth(),
             backSurface->GetHeight(),
@@ -42,7 +60,15 @@ protected:
     void OnSizeChanged() override {}
 
 private:
+    bool checkImplicitHover() const {
+        hui::Widget *hover = GetUI()->GetHovered();
+        while (hover && (hover != this)) {
+            if (hover == hover->GetParent()) break;
+            hover = hover->GetParent();
+        }
 
+        return hover == this;
+    }
 };
 
 

@@ -12,7 +12,7 @@
 namespace roa
 {
 
-class ViewPort3D : public Window {
+class Viewport3D : public Window {
     static inline constexpr int CAMERA_KEY_CONTROL_DELTA = 10;
     static inline constexpr int CAMERA_MOUSE_RELOCATION_SCALE = 2;
     static constexpr double CAMERA_ZOOM_DELTA = 0.1;
@@ -34,7 +34,7 @@ class ViewPort3D : public Window {
     bool       cameraNeedZoom            = false;
 
 public:
-    ViewPort3D(hui::UI *ui): 
+    Viewport3D(hui::UI *ui): 
         Window(ui), 
         sceneImage(ui->GetWindow()->CreateImage())
     { 
@@ -120,7 +120,7 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnIdle(hui::IdleEvent &) override {
+    hui::EventResult OnIdleSelfAction(hui::IdleEvent &) override {
         static std::vector<RTPixelColor> tempBufer;
 
         std::pair<int, int> screenResolution = {};
@@ -190,7 +190,7 @@ protected:
     }
 
     hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) {
-        if (GetUI()->GetCaptured() != this && GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
+        if (!(GetUI()->GetCaptured() == this || GetRect().Contains(event.pos))) return hui::EventResult::UNHANDLED;
     
         GetUI()->ReportHover(this);
     

@@ -108,7 +108,7 @@ public:
             roa::PPToolButton *toolButton = new roa::PPToolButton(ui, tool.get(), &selectedTool);
             toolButton->SetMode(Button::Mode::STICKING);
             
-            addWidget(toolButton);
+            AddWidget(toolButton);
         }
         
         SetSize({GetUI()->GetWindow()->GetSize() - dr4::Vec2f(borderSz * 2, borderSz * 2)});
@@ -209,7 +209,6 @@ protected:
 
                 for (auto& shape : shapes) {
                     if (shape.second->OnMouseDown(dr4ChildEvent)) {
-                        std::cout << "shape\n";
                         ForceRedraw();
                         return hui::EventResult::HANDLED;
                     }

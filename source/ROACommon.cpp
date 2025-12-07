@@ -10,14 +10,14 @@ dr4::Vec2f getClampedDotInRect(const dr4::Vec2f dot, const dr4::Rect2f rect) {
     return result;
 }
 
-std::ostream &operator<< (std::ostream &stream, const dr4::Vec2f vec) {
-    stream << "dr4::Vec2f{" << vec.x << ", " << vec.y << "}";
-    return stream;
-}
+// std::ostream &operator<< (std::ostream &stream, const dr4::Vec2f vec) {
+//     stream << "dr4::Vec2f{" << vec.x << ", " << vec.y << "}";
+//     return stream;
+// }
 
-std::ostream &operator<< (std::ostream &stream, const dr4::Rect2f rect) {
-    stream << "dr4::Rect2f{pos: " << rect.pos.x << ", " << rect.pos.y << " | size : " << rect.size.x << ", " << rect.size.y << "}";
-    return stream;
-}
+// std::ostream &operator<< (std::ostream &stream, const dr4::Rect2f rect) {
+//     stream << "dr4::Rect2f{pos: " << rect.pos.x << ", " << rect.pos.y << " | size : " << rect.size.x << ", " << rect.size.y << "}";
+//     return stream;
+// }
 
 } // namespace roa

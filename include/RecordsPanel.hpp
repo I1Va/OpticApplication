@@ -7,46 +7,46 @@
 #include "RayTracer.h"
 #include "ScrollBar.hpp"
 #include "TextWidgets.hpp"
+#include "Window.hpp"
 
 namespace roa
 {
 
 // inline SDL_Color convertRTPixelColor(const RTPixelColor color) { return {color.r, color.g, color.b, color.a}; }
 
-
-
-
 template<typename T>
 concept IsPointer = std::is_pointer_v<T>;
 
 template <WidgetDerived T>
-class RecordsPanel : public ZContainer<T> {
-protected:
+class RecordsPanel : public Window {
     static constexpr double RECORD_HEIGHT = 20;
     static constexpr double TITLE_HEIGHT = 20;
     static constexpr double SCROLLBAR_LAYOUT_SHARE = 0.2;
-
-    std::unique_ptr<TextWidget> title;
-    std::unique_ptr<VerticalScrollBar> scrollBar; 
-    std::vector<std::unique_ptr<T>> records;
+protected:
+    TextWidget         *title;
+    VerticalScrollBar  *scrollBar; 
+    std::vector<T*>     records;
 
 public:
     RecordsPanel(hui::UI *ui): 
-        ZContainer<T>(ui), 
+        Window(ui), 
         title(new TextWidget(ui)),
         scrollBar(new VerticalScrollBar(ui)) 
     { 
         assert(ui);
-        this->SetSize({100, 100});
-        this->BecomeParentOf(scrollBar.get());
+        
+        SetSize({100, 100});
+    
+        // BecomeParentOf(scrollBar);
+        // BecomeParentOf(title);
+
+        // AddWidget(scrollBar);
+        // AddWidget(title);
 
         scrollBar->SetOnScrollAction([this](double) { relayoutRecords(); });
-        relayout();
     }
 
     virtual ~RecordsPanel() = default;
-
-    void BringToFront(T *) override {}
 
     void SetTitle(const std::string &titleContent) {
         title->SetText(titleContent);
@@ -59,24 +59,6 @@ public:
     }
 
 protected:
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto it = records.rbegin(); it != records.rend(); it++) {
-            if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
-        if (event.Apply(*scrollBar) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        return hui::EventResult::UNHANDLED;
-    }
-    
-    void Redraw() const override {
-        this->GetTexture().Clear({255, 132, 0, 255});
-    
-        for (const auto &record : records) {
-            record->DrawOn(this->GetTexture());
-        }
-        scrollBar->DrawOn(this->GetTexture());
-        title->DrawOn(this->GetTexture());
-    }
-
     void OnSizeChanged() override { relayout(); }
 
     void relayoutRecords() {
@@ -138,7 +120,7 @@ public:
         std::function<void()> onSelect,
         std::function<void()> onUnSelect
     ) {
-        auto record = std::make_unique<TextButton>(GetUI());
+        TextButton *record = new TextButton(GetUI()); assert(record);
         record->SetText(name);
         record->SetMode(Button::Mode::STICKING);
 
@@ -162,47 +144,13 @@ public:
             }
         );
 
-        TextButton* ptr = record.get();
-        records.emplace_back(std::move(record));
-        BecomeParentOf(ptr);
+        records.push_back(record);
+        BecomeParentOf(record);
+        // AddWidget(record);
 
         relayout();
     }
 
 };
-
-class PropertiesPanel final : public RecordsPanel<TextInputField> {
-public:
-    using RecordsPanel::RecordsPanel;
-    ~PropertiesPanel() = default;
-
-    void AddProperty
-    (
-        const std::string &label, const std::string &value,
-        std::function<void(const std::string&)> setPropertyVal
-    ) {
-        auto record = std::make_unique<TextInputField>(GetUI());
-        record->SetLabel(label);
-        record->SetText(value);
-        record->SetOnEnterAction(setPropertyVal);
-
-        TextInputField* ptr = record.get();
-        records.emplace_back(std::move(record));
-        BecomeParentOf(ptr);
-        relayout();
-
-        ptr->ForceRedraw();
-    }
-
-    hui::EventResult OnIdle(hui::IdleEvent &event) {
-        PropagateToChildren(event);
-
-
-        return hui::EventResult::UNHANDLED;
-    }
-
-};
-
-
 
 } // namespace roa

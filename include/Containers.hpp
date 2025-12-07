@@ -31,7 +31,7 @@ public:
     ListContainer(hui::UI *ui): ZContainer<T>(ui) {}
     virtual ~ListContainer() = default;
 
-    void addWidget(T  *widget) {
+    void AddWidget(T  *widget) {
         BecomeParentOf(widget);
         children.emplace_front(widget);
     }
@@ -55,7 +55,7 @@ public:
     LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
     virtual ~LinContainer() = default;
 
-    void addWidget(T *widget) {
+    void AddWidget(T *widget) {
         hui::Container::BecomeParentOf(widget);
         children.emplace(children.begin(), widget);
     }
@@ -76,7 +76,6 @@ protected:
         }
         return hui::EventResult::UNHANDLED;
     }
-
 
 };
 

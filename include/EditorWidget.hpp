@@ -1,8 +1,9 @@
 #pragma once
 #include "Containers.hpp"
-#include "ObjectsPanel.hpp"
-#include "ViewPort3D.hpp"
+#include "RecordsPanel.hpp"
+#include "Viewport3D.hpp"
 #include "ROAGUIRender.hpp"
+#include "PropertiesPanel.hpp"
 
 namespace roa 
 {
@@ -17,7 +18,7 @@ inline void setIfStringConvertedToFloat(const std::string &inp, std::function<vo
 
 class EditorWidget final : public ZContainer<hui::Widget> {
     static constexpr double PANEL_LAYOUT_SHARE = 0.4; 
-    std::unique_ptr<roa::ViewPort3D> ViewPort3D = nullptr;
+    std::unique_ptr<roa::Viewport3D> Viewport3D = nullptr;
 
     std::unique_ptr<ObjectsPanel<Primitives *>> objectsPanel = nullptr;
     std::unique_ptr<PropertiesPanel> propertiesPanel = nullptr;
@@ -27,7 +28,7 @@ class EditorWidget final : public ZContainer<hui::Widget> {
 public:
     EditorWidget(hui::UI *ui): 
         ZContainer(ui),
-        ViewPort3D(new roa::ViewPort3D(ui)),
+        Viewport3D(new roa::Viewport3D(ui)),
         objectsPanel(new ObjectsPanel<::Primitives *>(ui)),
         propertiesPanel(new PropertiesPanel(ui))
     {
@@ -37,7 +38,7 @@ public:
 
         objectsPanel->SetTitle("Objects");
 
-        BecomeParentOf(ViewPort3D.get());
+        BecomeParentOf(Viewport3D.get());
         BecomeParentOf(objectsPanel.get());
         BecomeParentOf(propertiesPanel.get());
     }
@@ -49,7 +50,7 @@ public:
     
         static size_t AddObjectIter = 0; AddObjectIter++;
     
-        ViewPort3D->AddObject(object);
+        Viewport3D->AddObject(object);
         
         objectsPanel->AddObject(
             object, object->typeString() + std::to_string(AddObjectIter),
@@ -59,7 +60,7 @@ public:
     }
     void AddLight(::Light *light) {
         assert(light);
-        ViewPort3D->AddLight(light);
+        Viewport3D->AddLight(light);
     }
 
     void AddObject(gm::IPoint3 position, ::Primitives *object) {
@@ -67,7 +68,7 @@ public:
     
         static size_t AddObjectIter = 0; AddObjectIter++;
     
-        ViewPort3D->AddObject(position, object);
+        Viewport3D->AddObject(position, object);
         
         objectsPanel->AddObject(
             object, object->typeString() + std::to_string(AddObjectIter),
@@ -77,27 +78,27 @@ public:
     }
     void AddLight(gm::IPoint3 position, ::Light *light) {
         assert(light);
-        ViewPort3D->AddLight(position, light);
+        Viewport3D->AddLight(position, light);
     }
 
-    std::vector<::Primitives *> &GetPrimitives() { return ViewPort3D->GetPrimitives(); }
-    std::vector<::Light *>      &GetLights()     { return ViewPort3D->GetLights(); }
+    std::vector<::Primitives *> &GetPrimitives() { return Viewport3D->GetPrimitives(); }
+    std::vector<::Light *>      &GetLights()     { return Viewport3D->GetLights(); }
 
-    SceneManager &GetSceneManager() { return ViewPort3D->GetSceneManager(); }
+    SceneManager &GetSceneManager() { return Viewport3D->GetSceneManager(); }
 
     void BringToFront(hui::Widget *) override {}
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        if (event.Apply(*ViewPort3D) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        if (event.Apply(*objectsPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        if (event.Apply(*propertiesPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        if (event.Apply(*Viewport3D) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        // if (event.Apply(*objectsPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        // if (event.Apply(*propertiesPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         return hui::EventResult::UNHANDLED;
     }
 
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
         if (recordsNeedChange) updateRecords();
-        event.Apply(*ViewPort3D);
+        event.Apply(*Viewport3D);
         event.Apply(*objectsPanel);
         event.Apply(*propertiesPanel);
 
@@ -111,21 +112,26 @@ protected:
     void Redraw() const override {
         GetTexture().Clear({FULL_TRANSPARENT});
 
-        ViewPort3D->DrawOn(GetTexture());        
+        Viewport3D->DrawOn(GetTexture());        
+        objectsPanel->DrawOn(GetTexture());
 
-        // objectsPanel->DrawOn(GetTexture());
         // propertiesPanel->DrawOn(GetTexture());
     }
 
 private:
     void layout() {
-        // float panelWidth = GetSize().x * PANEL_LAYOUT_SHARE;
-        // float panelHeight = GetSize().y / 2;
-    
-        // float sceneWidth = GetSize().x - panelWidth;
-        // float sceneHeight = GetSize().y;
-        
-        ViewPort3D->SetSize({4 * 300 / 3, 300});
+        float padding = 3;
+
+        float Viewport3DWHCoef = 1.8;
+        float Viewport3DHeight = 300;
+        Viewport3D->SetSize({Viewport3DWHCoef * Viewport3DHeight, Viewport3DHeight});
+
+        float objectsPanelHWCoef = 1;
+        float objectsPanelHeight = 200;
+        objectsPanel->SetSize({objectsPanelHWCoef * objectsPanelHeight, objectsPanelHeight});
+
+        dr4::Vec2f objectsPanelPos = {Viewport3D->GetSize().x + padding, 0};
+        objectsPanel->SetPos(objectsPanelPos);
 
         // objectsPanel->SetSize({panelWidth, panelHeight});
         // propertiesPanel->SetSize({panelWidth, panelHeight});
