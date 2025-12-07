@@ -100,12 +100,6 @@ protected:
 
     hui::EventResult OnIdle(hui::IdleEvent &evt) override final {
         OnIdleSelfAction(evt);
-    
-        if (GetUI()->GetFocused() == this) addStateProperty(StateProperty::FOCUSED);
-        else removeStateProperty(StateProperty::FOCUSED);
-        
-        if (GetUI()->GetHovered() == this) addStateProperty(StateProperty::HOVERED);
-        else removeStateProperty(StateProperty::HOVERED);
         
         switch (mode) {
             case Mode::HOVER_MODE:
@@ -144,6 +138,12 @@ protected:
     bool checkStateProperty(const StateProperty property) const {
         return (state & static_cast<uint8_t>(property));
     }
+
+    void OnHoverGained() override { addStateProperty   (StateProperty::HOVERED); }
+    void OnHoverLost()   override { removeStateProperty(StateProperty::HOVERED); }
+
+    void OnFocusGained() override { addStateProperty   (StateProperty::FOCUSED); }
+    void OnFocusLost()   override { removeStateProperty(StateProperty::FOCUSED); }
 
 private:
     void addStateProperty(const StateProperty property) {

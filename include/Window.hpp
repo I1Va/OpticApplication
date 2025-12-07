@@ -55,9 +55,7 @@ protected:
         GetTexture().Clear(FULL_TRANSPARENT);
         backSurface->DrawOn(GetTexture());
     }
-
     virtual void RedrawSelfAction() const {} 
-    void OnSizeChanged() override {}
 
 private:
     bool checkImplicitHover() const {
