@@ -25,12 +25,15 @@
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
-const static roa::IconsTexturePack ICONS_TEXTURE_PACK = 
+const static roa::TexturePack ICONS_TEXTURE_PACK = 
 {
     .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg",
     .collectionSvgPath     = "assets/icons/Collection.svg",
     .triaDownSvgPath       = "assets/icons/triaDown.svg",
-    .triaRightSvgPath      = "assets/icons/triaRight.svg"
+    .triaRightSvgPath      = "assets/icons/triaRight.svg",
+
+    .whiteTextColor = dr4::Color(222, 222, 222),
+    .fontSize = 11
 };
 
 void createSceneObjects
@@ -107,7 +110,7 @@ int main(int argc, const char *argv[]) {
 
 // SETUP UI, MAIN WINDOW
     roa::UI ui(window, FONT_PATH);
-    ui.SetIconsTexturePack(ICONS_TEXTURE_PACK);
+    ui.SetTexturePack(ICONS_TEXTURE_PACK);
     roa::MainWindow *mainWindow = new roa::MainWindow(&ui);
     mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
     ui.SetRoot(mainWindow);

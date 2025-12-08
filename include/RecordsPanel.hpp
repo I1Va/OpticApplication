@@ -109,6 +109,92 @@ private:
     }
 };
 
+   
+struct ObjectButtonColorPack {
+    dr4::Color focusedHovered;
+    dr4::Color focused;
+    dr4::Color hovered;
+    dr4::Color nonActive;
+};
+
+static const inline ObjectButtonColorPack BLACK_OBJECT_PACK = 
+{
+    .focusedHovered = dr4::Color(78, 100, 145),
+    .focused = dr4::Color(51, 77, 128),
+    .hovered = dr4::Color(68, 68, 68),
+    .nonActive = dr4::Color(40, 40, 40)
+};
+
+static const inline ObjectButtonColorPack GRAY_OBJECT_PACK = 
+{
+    .focusedHovered = dr4::Color(78, 100, 145),
+    .focused = dr4::Color(51, 77, 128),
+    .hovered = dr4::Color(71, 71, 71),
+    .nonActive = dr4::Color(43, 43, 43)
+};
+
+class ObjectButton final : public Button {
+    const dr4::Color labelNonFocusedColor = dr4::Color(174, 174, 174, 255); 
+    const dr4::Color labelFocusedColor    = dr4::Color(232, 165, 55, 255); 
+
+    ObjectButtonColorPack colorPack = BLACK_OBJECT_PACK;
+    dr4::Text *label;
+    dr4::Image *mainIcon;
+
+public:
+    ObjectButton(hui::UI *ui): 
+        Button(ui), 
+        label(ui->GetWindow()->CreateText()),
+        mainIcon(ui->GetWindow()->CreateImage()) 
+    {
+        assert(ui);
+        assert(label);    
+        
+        // FIXME: ADD LAYOUT
+        label->SetPos({40, 3}); 
+        label->SetFontSize(11);
+        label->SetText("Figure.000");
+        label->DrawOn(GetTexture());
+
+        mainIcon->SetPos({20, 2});
+        mainIcon->SetSize({16, 16});
+    }
+
+    ~ObjectButton() = default;
+    
+    void SetColorPack(const ObjectButtonColorPack pack) {
+        colorPack = pack;
+    }
+
+    void SetLabelText(const std::string &text) { label->SetText(text); }
+    void SetLabelFontSize(const int fontSize) { label->SetFontSize(fontSize); }
+    void LoadSVGMainIcon(const std::string &path) {
+        assert(mainIcon);
+        ExtractSVG(path, mainIcon->GetSize(), [this](int x, int y, dr4::Color color){ mainIcon->SetPixel(x, y, color); });
+    }
+
+protected:
+    void Redraw() const override final {
+        GetTexture().Clear(FULL_TRANSPARENT);
+
+        label->SetColor(labelNonFocusedColor);
+        if (checkStateProperty(Button::StateProperty::FOCUSED) && checkStateProperty(Button::StateProperty::HOVERED)) {
+            GetTexture().Clear(colorPack.focusedHovered);
+            label->SetColor(labelFocusedColor);
+        } else if (checkStateProperty(Button::StateProperty::FOCUSED)) {
+            label->SetColor(labelFocusedColor);
+            GetTexture().Clear(colorPack.focused);
+        } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
+            GetTexture().Clear(colorPack.hovered);
+        } else {
+            GetTexture().Clear(colorPack.nonActive);
+        }
+        
+        mainIcon->DrawOn(GetTexture());
+        label->DrawOn(GetTexture());
+    }
+};
+
 template <IsPointer T>
 class Outliner final : public RecordsPanel<ObjectButton> {
     static constexpr float RECORD_HEIGHT = 20;
@@ -135,7 +221,7 @@ public:
         record->SetMode(Button::Mode::FOCUS_MODE);
 
         UI *ui = static_cast<UI *>(GetUI()); assert(ui);
-        record->LoadSVGMainIcon(ui->GetIconsTexturePack().outlinerObMeshSvgPath);
+        record->LoadSVGMainIcon(ui->GetTexturePack().outlinerObMeshSvgPath);
         record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {
                 if (onSelect) onSelect();

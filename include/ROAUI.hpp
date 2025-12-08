@@ -10,18 +10,22 @@
 namespace roa
 {
 
-struct IconsTexturePack {
+struct TexturePack {
+// SVG
     std::string outlinerObMeshSvgPath;
     std::string collectionSvgPath;
     std::string triaDownSvgPath;
     std::string triaRightSvgPath;
+// TEXT
+    dr4::Color whiteTextColor = dr4::Color(222, 222, 222);
+    int fontSize = 11;
 };
 
 
 class UI : public hui::UI {
     dr4::Font *defaultFont = nullptr;
     std::vector<std::pair<dr4::Event::KeyEvent, std::function<void()>>> hotkeyTable;
-    IconsTexturePack iconsTexturePack;
+    TexturePack texturePack;
 
 public:
     UI(dr4::Window *window, const std::string &defaultFontPath): hui::UI(window) {
@@ -83,8 +87,8 @@ public:
 
     dr4::Font *GetDefaultFont() { return defaultFont; }
 
-    void SetIconsTexturePack(const IconsTexturePack &pack) { iconsTexturePack = pack; }
-    const IconsTexturePack &GetIconsTexturePack() const { return iconsTexturePack; }; 
+    void SetTexturePack(const TexturePack &pack) { texturePack = pack; }
+    const TexturePack &GetTexturePack() const { return texturePack; }; 
 
 private:
     std::function<void()> findHotkeyFunction(dr4::Event::KeyEvent hotkey) {
