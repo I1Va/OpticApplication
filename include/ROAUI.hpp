@@ -11,7 +11,7 @@ namespace roa
 {
 
 struct IconsTexturePack {
-    const char *outlinerObMeshSvgPath = nullptr;
+    std::string outlinerObMeshSvgPath;
 };
 
 
@@ -81,6 +81,7 @@ public:
     dr4::Font *GetDefaultFont() { return defaultFont; }
 
     void SetIconsTexturePack(const IconsTexturePack &pack) { iconsTexturePack = pack; }
+    const IconsTexturePack &GetIconsTexturePack() const { return iconsTexturePack; }; 
 
 private:
     std::function<void()> findHotkeyFunction(dr4::Event::KeyEvent hotkey) {

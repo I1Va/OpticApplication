@@ -2,8 +2,8 @@
 #include <concepts>
 
 #include "hui/container.hpp"
-#include "Buttons.hpp"
-#include "ROACommon.hpp"
+#include "BasicWidgets/Buttons.hpp"
+#include "Utilities/ROACommon.hpp"
 
 namespace roa
 {

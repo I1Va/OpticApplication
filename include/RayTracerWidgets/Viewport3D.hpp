@@ -6,8 +6,8 @@
 #include "hui/widget.hpp"
 #include "Camera.h"
 #include "RayTracer.h"
-#include "ROAGUIRender.hpp"
-#include "Window.hpp"
+#include "Utilities/ROAGUIRender.hpp"
+#include "BasicWidgets/Window.hpp"
 
 namespace roa
 {

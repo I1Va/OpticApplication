@@ -1,8 +1,8 @@
 // #pragma once
-// #include "Containers.hpp"
+// #include "BasicWidgets/Containers.hpp"
 // #include "RecordsPanel.hpp"
-// #include "Viewport3D.hpp"
-// #include "ROAGUIRender.hpp"
+// #include "RayTracerWidgets/Viewport3D.hpp"
+// #include "Utilities/ROAGUIRender.hpp"
 // // #include "PropertiesPanel.hpp"
 
 // namespace roa 

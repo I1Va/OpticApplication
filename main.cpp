@@ -11,19 +11,23 @@
 #include "cum/ifc/dr4.hpp"
 #include "cum/ifc/pp.hpp"
 
-#include "Buttons.hpp"
-#include "MainWindow.hpp"
-#include "ScrollBar.hpp"
-#include "TextWidgets.hpp"
-#include "Viewport3D.hpp"
+#include "BasicWidgets/Buttons.hpp"
+#include "BasicWidgets/MainWindow.hpp"
+#include "BasicWidgets/ScrollBar.hpp"
+#include "BasicWidgets/TextWidgets.hpp"
+#include "RayTracerWidgets/Viewport3D.hpp"
 #include "RecordsPanel.hpp"
 #include "DropDownMenu.hpp"
 
 #include "PPWidgets.hpp"
-#include "Window.hpp"
+#include "BasicWidgets/Window.hpp"
 
-const char FONT_PATH[] = "assets/RobotoFont.ttf";
+const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
+const static roa::IconsTexturePack ICONS_TEXTURE_PACK = 
+{
+    .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg"
+};
 
 void createSceneObjects
 (
@@ -99,6 +103,7 @@ int main(int argc, const char *argv[]) {
 
 // SETUP UI, MAIN WINDOW
     roa::UI ui(window, FONT_PATH);
+    ui.SetIconsTexturePack(ICONS_TEXTURE_PACK);
     roa::MainWindow *mainWindow = new roa::MainWindow(&ui);
     mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
     ui.SetRoot(mainWindow);

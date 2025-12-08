@@ -1,9 +1,9 @@
 #pragma once
 
 #include "hui/widget.hpp"
-#include "ROACommon.hpp"
+#include "Utilities/ROACommon.hpp"
 #include "ROAUI.hpp"
-#include "ROAGUIRender.hpp"
+#include "Utilities/ROAGUIRender.hpp"
 #include "SVGParser/SVGImageConverter.hpp"
 
 namespace roa

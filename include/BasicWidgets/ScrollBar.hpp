@@ -4,9 +4,9 @@
 #include <cmath>
 #include <cassert>
 
-#include "Containers.hpp"
-#include "ROAGUIRender.hpp"
-#include "ROACommon.hpp"
+#include "BasicWidgets/Containers.hpp"
+#include "Utilities/ROAGUIRender.hpp"
+#include "Utilities/ROACommon.hpp"
 
 namespace roa
 {

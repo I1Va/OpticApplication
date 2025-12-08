@@ -3,11 +3,11 @@
 #include <optional>
 
 #include "hui/widget.hpp"
-#include "Containers.hpp"
+#include "BasicWidgets/Containers.hpp"
 #include "RayTracer.h"
-#include "ScrollBar.hpp"
-#include "TextWidgets.hpp"
-#include "Window.hpp"
+#include "BasicWidgets/ScrollBar.hpp"
+#include "BasicWidgets/TextWidgets.hpp"
+#include "BasicWidgets/Window.hpp"
 
 namespace roa
 {
@@ -133,8 +133,9 @@ public:
     
         record->SetLabelText(name);
         record->SetMode(Button::Mode::FOCUS_MODE);
-        record->LoadSVGIcon("./assets/icons/OutlinerObMesh.svg");
 
+        UI *ui = static_cast<UI *>(GetUI()); assert(ui);
+        record->LoadSVGIcon(ui->GetIconsTexturePack().outlinerObMeshSvgPath);
         record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {
                 if (onSelect) onSelect();
