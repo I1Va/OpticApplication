@@ -12,6 +12,9 @@ namespace roa
 
 struct IconsTexturePack {
     std::string outlinerObMeshSvgPath;
+    std::string collectionSvgPath;
+    std::string triaDownSvgPath;
+    std::string triaRightSvgPath;
 };
 
 

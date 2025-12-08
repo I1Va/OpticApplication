@@ -323,25 +323,37 @@ class ObjectButton final : public Button {
     // label
     dr4::Text *label;
 
-    dr4::Image *icon;
-    std::string iconSVGPath = "";
+    bool dropDownActive = false;
+    dr4::Image *dropDownActiveIcon;
+    dr4::Image *dropDownNonActiveIcon;
+    dr4::Image *mainIcon;
 
 public:
     ObjectButton(hui::UI *ui): 
-    Button(ui), 
-    label(ui->GetWindow()->CreateText()),
-    icon(ui->GetWindow()->CreateImage()) 
+        Button(ui), 
+        label(ui->GetWindow()->CreateText()),
+        dropDownActiveIcon(ui->GetWindow()->CreateImage()),
+        dropDownNonActiveIcon(ui->GetWindow()->CreateImage()),
+        mainIcon(ui->GetWindow()->CreateImage()) 
     {
         assert(ui);
         assert(label);    
-    
-        label->SetPos({40, 3}); // FIXME
+        
+        // FIXME: ADD LAYOUT
+        label->SetPos({40, 3}); 
         label->SetFontSize(11);
         label->SetText("Figure.000");
         label->DrawOn(GetTexture());
 
-        icon->SetPos({20, 2});
-        icon->SetSize({16, 16});
+
+        dropDownNonActiveIcon->SetPos({4, 2});
+        dropDownNonActiveIcon->SetSize({16, 16});
+
+        dropDownActiveIcon->SetPos(dropDownNonActiveIcon->GetPos());
+        dropDownActiveIcon->SetSize(dropDownNonActiveIcon->GetSize());
+
+        mainIcon->SetPos({20, 2});
+        mainIcon->SetSize({16, 16});
     }
 
     ~ObjectButton() = default;
@@ -352,11 +364,19 @@ public:
 
     void SetLabelText(const std::string &text) { label->SetText(text); }
     void SetLabelFontSize(const int fontSize) { label->SetFontSize(fontSize); }
-    void LoadSVGIcon(const std::string &path) {
-        assert(icon);
-        iconSVGPath = path;
-        ExtractSVG(path, icon->GetSize(), [this](int x, int y, dr4::Color color){ icon->SetPixel(x, y, color); });
+    void LoadSVGMainIcon(const std::string &path) {
+        assert(mainIcon);
+        ExtractSVG(path, mainIcon->GetSize(), [this](int x, int y, dr4::Color color){ mainIcon->SetPixel(x, y, color); });
     }
+    void LoadSVGDropDownIcon(const std::string &nonActiveIconPath, const std::string &activeIconPath) {
+        assert(dropDownNonActiveIcon);
+        assert(dropDownActiveIcon);
+        
+        ExtractSVG(nonActiveIconPath, dropDownNonActiveIcon->GetSize(), [this](int x, int y, dr4::Color color){ dropDownNonActiveIcon->SetPixel(x, y, color); });
+        ExtractSVG(activeIconPath, dropDownActiveIcon->GetSize(), [this](int x, int y, dr4::Color color){ dropDownActiveIcon->SetPixel(x, y, color); });
+    }
+
+    void SwitchDropDownState() { dropDownActive = !dropDownActive; ForceRedraw(); }
 
 protected:
     void Redraw() const override final {
@@ -375,11 +395,11 @@ protected:
             GetTexture().Clear(colorPack.nonActive);
         }
         
+        mainIcon->DrawOn(GetTexture());
+        if (dropDownActive) dropDownActiveIcon->DrawOn(GetTexture());
+        else dropDownNonActiveIcon->DrawOn(GetTexture());
         label->DrawOn(GetTexture());
-        icon->DrawOn(GetTexture());
     }
-
-private:
 };
 
 }

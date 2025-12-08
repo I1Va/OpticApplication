@@ -135,7 +135,7 @@ public:
         record->SetMode(Button::Mode::FOCUS_MODE);
 
         UI *ui = static_cast<UI *>(GetUI()); assert(ui);
-        record->LoadSVGIcon(ui->GetIconsTexturePack().outlinerObMeshSvgPath);
+        record->LoadSVGMainIcon(ui->GetIconsTexturePack().outlinerObMeshSvgPath);
         record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {
                 if (onSelect) onSelect();

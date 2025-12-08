@@ -26,7 +26,10 @@ const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
 const static roa::IconsTexturePack ICONS_TEXTURE_PACK = 
 {
-    .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg"
+    .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg",
+    .collectionSvgPath     = "assets/icons/Collection.svg",
+    .triaDownSvgPath       = "assets/icons/triaDown.svg",
+    .triaRightSvgPath      = "assets/icons/triaRight.svg"
 };
 
 void createSceneObjects
