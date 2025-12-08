@@ -377,6 +377,7 @@ public:
     }
 
     void SwitchDropDownState() { dropDownActive = !dropDownActive; ForceRedraw(); }
+    bool IsDropDownActive() const { return dropDownActive; }
 
 protected:
     void Redraw() const override final {

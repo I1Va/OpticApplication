@@ -18,6 +18,7 @@
 #include "RayTracerWidgets/Viewport3D.hpp"
 #include "RecordsPanel.hpp"
 #include "DropDownMenu.hpp"
+#include "PropertiesPanel.hpp"
 
 #include "PPWidgets.hpp"
 #include "BasicWidgets/Window.hpp"
@@ -151,17 +152,28 @@ int main(int argc, const char *argv[]) {
 
     float padding = 3;
     roa::OutlinerWindow<Primitives *> *outliner = new roa::OutlinerWindow<Primitives *>(&ui);
+    roa::PropertiesWindow             *propertiesWindow = new roa::PropertiesWindow(&ui);
 
-    float Viewport3DWHCoef = 1.8;
-    float Viewport3DHeight = 300;
-    Viewport3D->SetSize({Viewport3DWHCoef * Viewport3DHeight, Viewport3DHeight});
+    float viewport3DWHCoef = 1.8;
+    float viewport3DHeight = 300;
+    Viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
 
     float objectsPanelHWCoef = 1;
     float objectsPanelHeight = 200;
     outliner->SetSize({objectsPanelHWCoef * objectsPanelHeight, objectsPanelHeight});
 
+    float propertiesWindowHWCoef = 1;
+    float propertiesWindowHeight = 200;
+    propertiesWindow->SetSize({propertiesWindowHWCoef * propertiesWindowHeight, propertiesWindowHeight});
+
     dr4::Vec2f outlinerWindowPos = {Viewport3D->GetSize().x + padding, 0};
     outliner->SetPos(outlinerWindowPos);
+
+    dr4::Vec2f propertiesWindowPos = outlinerWindowPos + dr4::Vec2f(0, propertiesWindowHeight + padding);
+    propertiesWindow->SetPos(propertiesWindowPos);
+
+    propertiesWindow->AddProperty("Transform", "52", nullptr);
+
 
     int primId = 0;
     for (Primitives *primitive : Viewport3D->GetPrimitives()) {
@@ -175,8 +187,7 @@ int main(int argc, const char *argv[]) {
 
     mainWindow->AddWidget(Viewport3D);
     mainWindow->AddWidget(outliner);
-
-
+    mainWindow->AddWidget(propertiesWindow);
 
 // MODALS
 

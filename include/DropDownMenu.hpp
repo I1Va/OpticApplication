@@ -6,68 +6,52 @@ namespace roa
 {
 
 class DropDownMenu : public LinContainer<hui::Widget> {
-    ObjectButton *topButton;
-    hui::Widget *dropDown;
+    ObjectButton *topButton=nullptr;
+    hui::Widget *dropDown=nullptr;
 
 public:
     DropDownMenu(hui::UI *ui): LinContainer(ui), topButton(new ObjectButton(ui))
     {
+        assert(ui);
+    
+        topButton->SetOnPressAction([this](){ SwitchDropDownState(); });
+
+        UI *extUI = static_cast<UI *>(ui); assert(ui);
+        topButton->LoadSVGDropDownIcon(extUI->GetIconsTexturePack().triaRightSvgPath, extUI->GetIconsTexturePack().triaDownSvgPath);
         AddWidget(topButton);
+    }
+
+    void SetLabelText(const std::string &label) { topButton->SetLabelText(label); }
+    void SetDropDownWidget(hui::Widget *wgt) { dropDown = wgt; ForceRedraw(); }
+    void SwitchDropDownState() {
+        topButton->SwitchDropDownState();
+    }
+
+protected:
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        if (event.Apply(*topButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+        if (topButton->IsDropDownActive() && dropDown && event.Apply(*dropDown) == hui::EventResult::HANDLED) 
+            return hui::EventResult::HANDLED; 
+
+        return hui::EventResult::UNHANDLED;
+    }
+
+    void OnSizeChanged() override { layout(); }
+
+    void Redraw() const override {
+        topButton->DrawOn(GetTexture());
+        if (topButton->IsDropDownActive()) {
+            if (dropDown) dropDown->DrawOn(GetTexture());
+        }
+    }
+
+private:
+    void layout() {
+        topButton->SetSize(GetSize());
+        if (dropDown) dropDown->SetPos(dr4::Vec2f(0, topButton->GetSize().y));
+        ForceRedraw();
     }
 };
 
 
 } // namespace roa
-
-
-
-// class ObjectButton final : public Button {
-//     const dr4::Color labelNonFocusedColor = dr4::Color(174, 174, 174, 255); 
-//     const dr4::Color labelFocusedColor    = dr4::Color(232, 165, 55, 255); 
-
-//     ObjectButtonColorPack colorPack = BLACK_OBJECT_PACK;
-//     // icon texture
-//     // label
-//     dr4::Text *label;
-
-// public:
-//     ObjectButton(hui::UI *ui): Button(ui), label(ui->GetWindow()->CreateText()) 
-//     {
-//         assert(ui);
-//         assert(label);    
-    
-//         label->SetPos({40, 3}); // FIXME
-//         label->SetFontSize(11);
-//         label->SetText("Figure.000");
-//         label->DrawOn(GetTexture());
-//     }
-
-//     ~ObjectButton() = default;
-    
-//     void SetColorPack(const ObjectButtonColorPack pack) {
-//         colorPack = pack;
-//     }
-
-//     void SetLabelText(const std::string &text) { label->SetText(text); }
-//     void SetLabelFontSize(const int fontSize) { label->SetFontSize(fontSize); }
-
-// protected:
-//     void Redraw() const override final {
-//         GetTexture().Clear(FULL_TRANSPARENT);
-
-//         label->SetColor(labelNonFocusedColor);
-//         if (checkStateProperty(Button::StateProperty::FOCUSED) && checkStateProperty(Button::StateProperty::HOVERED)) {
-//             GetTexture().Clear(colorPack.focusedHovered);
-//             label->SetColor(labelFocusedColor);
-//         } else if (checkStateProperty(Button::StateProperty::FOCUSED)) {
-//             label->SetColor(labelFocusedColor);
-//             GetTexture().Clear(colorPack.focused);
-//         } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
-//             GetTexture().Clear(colorPack.hovered);
-//         } else {
-//             GetTexture().Clear(colorPack.nonActive);
-//         }
-    
-//         label->DrawOn(GetTexture());
-//     }
-// };
