@@ -24,6 +24,8 @@ class RecordsPanel : public LinContainer<hui::Widget> {
     static constexpr float SCROLL_BAR_WIDTH = 6;
     static constexpr float SCROLL_BAR_RIGHT_PADDING = 3;
     static constexpr float SCROLL_BAR_HEIGHT_SHARE = 0.9;
+    
+    float recordsPadding = 0;
 
 protected:
     VerticalScrollBar            *scrollBar; 
@@ -40,6 +42,7 @@ public:
     }
     ~RecordsPanel() = default;
 
+    void SetRecordsPadding(const float padding) { recordsPadding = padding; }
 protected:
     void OnSizeChanged() override { relayout(); }
 
@@ -83,7 +86,7 @@ private:
         for (auto &record : records) {
             record->SetPos(curRecordPos - dr4::Vec2f(0, hBias));
             record->ForceRedraw();
-            curRecordPos += dr4::Vec2f(0, record->GetSize().y);
+            curRecordPos += dr4::Vec2f(0, record->GetSize().y + recordsPadding);
         }
 
         this->ForceRedraw();
@@ -130,6 +133,7 @@ public:
     
         record->SetLabelText(name);
         record->SetMode(Button::Mode::FOCUS_MODE);
+        record->LoadSVGIcon("./assets/icons/OutlinerObMesh.svg");
 
         record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {

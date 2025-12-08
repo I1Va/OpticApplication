@@ -24,6 +24,7 @@ add_subdirectory(external/RayTracer)
 
 add_executable(${PROJECT_NAME} 
     ${CMAKE_CURRENT_SOURCE_DIR}/source/ROACommon.cpp    
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/SVGParser/SVGImageConverter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 

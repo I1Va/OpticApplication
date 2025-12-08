@@ -17,6 +17,7 @@
 #include "TextWidgets.hpp"
 #include "Viewport3D.hpp"
 #include "RecordsPanel.hpp"
+#include "DropDownMenu.hpp"
 
 #include "PPWidgets.hpp"
 #include "Window.hpp"

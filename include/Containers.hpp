@@ -3,6 +3,7 @@
 
 #include "hui/container.hpp"
 #include "Buttons.hpp"
+#include "ROACommon.hpp"
 
 namespace roa
 {

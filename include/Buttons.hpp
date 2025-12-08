@@ -4,6 +4,7 @@
 #include "ROACommon.hpp"
 #include "ROAUI.hpp"
 #include "ROAGUIRender.hpp"
+#include "SVGParser/SVGImageConverter.hpp"
 
 namespace roa
 {
@@ -322,8 +323,14 @@ class ObjectButton final : public Button {
     // label
     dr4::Text *label;
 
+    dr4::Image *icon;
+    std::string iconSVGPath = "";
+
 public:
-    ObjectButton(hui::UI *ui): Button(ui), label(ui->GetWindow()->CreateText()) 
+    ObjectButton(hui::UI *ui): 
+    Button(ui), 
+    label(ui->GetWindow()->CreateText()),
+    icon(ui->GetWindow()->CreateImage()) 
     {
         assert(ui);
         assert(label);    
@@ -332,6 +339,9 @@ public:
         label->SetFontSize(11);
         label->SetText("Figure.000");
         label->DrawOn(GetTexture());
+
+        icon->SetPos({20, 2});
+        icon->SetSize({16, 16});
     }
 
     ~ObjectButton() = default;
@@ -342,6 +352,11 @@ public:
 
     void SetLabelText(const std::string &text) { label->SetText(text); }
     void SetLabelFontSize(const int fontSize) { label->SetFontSize(fontSize); }
+    void LoadSVGIcon(const std::string &path) {
+        assert(icon);
+        iconSVGPath = path;
+        ExtractSVG(path, icon->GetSize(), [this](int x, int y, dr4::Color color){ icon->SetPixel(x, y, color); });
+    }
 
 protected:
     void Redraw() const override final {
@@ -359,9 +374,12 @@ protected:
         } else {
             GetTexture().Clear(colorPack.nonActive);
         }
-    
+        
         label->DrawOn(GetTexture());
+        icon->DrawOn(GetTexture());
     }
+
+private:
 };
 
 }
