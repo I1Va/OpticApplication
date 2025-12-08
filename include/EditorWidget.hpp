@@ -43,14 +43,14 @@
 
 //     ~EditorWidget() = default;
 
-//     void AddObject(::Primitives *object) {
+//     void AddRecord(::Primitives *object) {
 //         assert(object);
     
 //         static size_t AddObjectIter = 0; AddObjectIter++;
     
-//         Viewport3D->AddObject(object);
+//         Viewport3D->AddRecord(object);
         
-//         objectsPanel->AddObject(
+//         objectsPanel->AddRecord(
 //             object, object->typeString() + std::to_string(AddObjectIter),
 //             [object](){ object->setSelectFlag(true); },
 //             [object](){ object->setSelectFlag(false); }    
@@ -61,14 +61,14 @@
 //         Viewport3D->AddLight(light);
 //     }
 
-//     void AddObject(gm::IPoint3 position, ::Primitives *object) {
+//     void AddRecord(gm::IPoint3 position, ::Primitives *object) {
 //         assert(object);
     
 //         static size_t AddObjectIter = 0; AddObjectIter++;
     
-//         Viewport3D->AddObject(position, object);
+//         Viewport3D->AddRecord(position, object);
         
-//         objectsPanel->AddObject(
+//         objectsPanel->AddRecord(
 //             object, object->typeString() + std::to_string(AddObjectIter),
 //             [object](){ object->setSelectFlag(true); },
 //             [object](){ object->setSelectFlag(false); }    

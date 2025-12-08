@@ -11,7 +11,6 @@ class DropDownButton final : public Button {
     int borderRadius = 2;
 
     dr4::Text *label;
-
     dr4::Image *dropDownActiveIcon;
     dr4::Image *dropDownNonActiveIcon;
 
@@ -48,7 +47,7 @@ public:
 
     ~DropDownButton() = default;
 
-    void SetLabelText(const std::string &text) { label->SetText(text); }
+    void SetLabel(const std::string &text) { label->SetText(text); }
     void SetLabelFontSize(const int fontSize) { label->SetFontSize(fontSize); }
 
     bool IsDropDownActive() const { return pressed; }
@@ -73,10 +72,7 @@ protected:
 
         if (pressed) dropDownActiveIcon->DrawOn(GetTexture());
         else dropDownNonActiveIcon->DrawOn(GetTexture());
-        label->DrawOn(GetTexture());
-
-        
-        
+        label->DrawOn(GetTexture());        
     }
 
 private:
@@ -92,9 +88,9 @@ private:
 };
 
 class DropDownMenu : public LinContainer<hui::Widget> {
-    DropDownButton *topButton=nullptr;
+protected:
+    DropDownButton *topButton;
     hui::Widget *dropDown=nullptr;
-
 public:
     DropDownMenu(hui::UI *ui): LinContainer(ui), topButton(new DropDownButton(ui))
     {
@@ -103,7 +99,7 @@ public:
         AddWidget(topButton);
     }
 
-    void SetLabelText(const std::string &label) { topButton->SetLabelText(label); }
+    void SetLabel(const std::string &label) { topButton->SetLabel(label); }
     void SetDropDownWidget(hui::Widget *wgt) { dropDown = wgt; ForceRedraw(); }
 
 protected:

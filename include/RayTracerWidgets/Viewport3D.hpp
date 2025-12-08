@@ -48,9 +48,9 @@ public:
         camera.renderProperties.maxRayDepth = 5;
     }
 
-    void AddObject(Primitives *object) { sceneManager.addObject(object); }
+    void AddRecord(Primitives *object) { sceneManager.addObject(object); }
     void AddLight(Light *light) { sceneManager.addLight(light); }
-    void AddObject(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
+    void AddRecord(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
     void AddLight(gm::IPoint3 position, Light *light) { sceneManager.addLight(position, light); }
 
     std::vector<::Primitives *> &GetPrimitives() { return sceneManager.primitives(); }
@@ -265,9 +265,9 @@ public:
     } 
     ~Viewport3DWindow() = default;
 
-    void AddObject(Primitives *object) { viewport3D->AddObject(object); }
+    void AddRecord(Primitives *object) { viewport3D->AddRecord(object); }
     void AddLight(Light *light)        { viewport3D->AddLight(light); }
-    void AddObject(gm::IPoint3 position, Primitives *object) { viewport3D->AddObject(position, object); }
+    void AddRecord(gm::IPoint3 position, Primitives *object) { viewport3D->AddRecord(position, object); }
     void AddLight(gm::IPoint3 position, Light *light)        { viewport3D->AddLight(position, light); }
 
     std::vector<::Primitives *> &GetPrimitives() { return viewport3D->GetPrimitives(); }

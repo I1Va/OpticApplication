@@ -67,7 +67,7 @@ void createSceneObjects
     for (int i = 0; i < 10; i++) {
         SphereObject *sphere = new SphereObject(1, midSphereMaterial, &viewport3D->GetSceneManager());
         sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
-        viewport3D->AddObject(sphere);
+        viewport3D->AddRecord(sphere);
     }
 
 
@@ -79,11 +79,11 @@ void createSceneObjects
 
     light->setPosition({0, 0, 10});
 
-    viewport3D->AddObject(ground);
-    viewport3D->AddObject(glassSphere);
-    viewport3D->AddObject(midSphere);
-    viewport3D->AddObject(sun);
-    viewport3D->AddObject(rightSphere);
+    viewport3D->AddRecord(ground);
+    viewport3D->AddRecord(glassSphere);
+    viewport3D->AddRecord(midSphere);
+    viewport3D->AddRecord(sun);
+    viewport3D->AddRecord(rightSphere);
 
     viewport3D->AddLight(light);
 }
@@ -177,12 +177,18 @@ int main(int argc, const char *argv[]) {
     dr4::Vec2f propertiesWindowPos = outlinerWindowPos + dr4::Vec2f(0, propertiesWindowHeight + padding);
     propertiesWindow->SetPos(propertiesWindowPos);
 
-    propertiesWindow->AddProperty("Transform", "52", nullptr);
+    roa::Property *transformProperty = new roa::Property(&ui);
+    transformProperty->SetLabel("Transform");
+    transformProperty->AddPropertyField("Location X", "52", nullptr);
+    // transformProperty->AddPropertyField("         Y", "28", nullptr);
+    // transformProperty->AddPropertyField("         Z", "17", nullptr);
+
+    // propertiesWindow->AddProperty(transformProperty);
 
 
     int primId = 0;
     for (Primitives *primitive : Viewport3D->GetPrimitives()) {
-        outliner->AddObject
+        outliner->AddRecord
         (
             primitive, primitive->typeString() + "." + std::to_string(primId++), 
             [primitive](){ primitive->setSelectFlag(true); },

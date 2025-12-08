@@ -48,6 +48,12 @@ public:
     void SetRecordsStartPos(const dr4::Vec2f pos) { recordsStartPos = pos; }
     void SetBGColor(const dr4::Color color)       { BGColor = color; }
 
+    void AddRecord(T *record) {
+        records.push_back(record);
+        AddWidget(record);
+        relayout();
+    }
+
 protected:
     void OnSizeChanged() override { relayout(); }
 
@@ -172,7 +178,7 @@ public:
         colorPack = pack;
     }
 
-    void SetLabelText(const std::string &text) { label->SetText(text); }
+    void SetLabel(const std::string &text) { label->SetText(text); }
     void SetLabelFontSize(const int fontSize) { label->SetFontSize(fontSize); }
     void LoadSVGMainIcon(const std::string &path) {
         assert(mainIcon);
@@ -213,7 +219,7 @@ public:
     std::optional<std::pair<std::string, T>> GetSelected() { return currentSelected; }
     void SetOnSelectChangedAction(std::function<void()> action) { onSelectChangedAction = action; }
 
-    void AddObject
+    void AddRecord
     (
         T object,
         const std::string &name,
@@ -223,7 +229,7 @@ public:
         ObjectButton *record = new ObjectButton(GetUI()); assert(record);
         record->SetSize({GetSize().x, RECORD_HEIGHT});
     
-        record->SetLabelText(name);
+        record->SetLabel(name);
         record->SetMode(Button::Mode::FOCUS_MODE);
 
         UI *ui = static_cast<UI *>(GetUI()); assert(ui);
@@ -249,11 +255,8 @@ public:
         );
         if (records.size() % 2) record->SetColorPack(GRAY_OBJECT_PACK);
         else                    record->SetColorPack(BLACK_OBJECT_PACK);
-    
-        records.push_back(record);
-        AddWidget(record);
-
-        relayout();
+        
+        RecordsPanel<ObjectButton>::AddRecord(record);
     }
 };
 
@@ -270,13 +273,13 @@ public:
 
     ~OutlinerWindow() = default;  
 
-    void AddObject
+    void AddRecord
     (
         T object,
         const std::string &name,
         std::function<void()> onSelect,
         std::function<void()> onUnSelect
-    ) { outliner->AddObject(object, name, onSelect, onUnSelect); }
+    ) { outliner->AddRecord(object, name, onSelect, onUnSelect); }
 
 protected:
     void OnSizeChanged() override { layout(); }
