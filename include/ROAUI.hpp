@@ -17,8 +17,11 @@ struct TexturePack {
     std::string triaDownSvgPath;
     std::string triaRightSvgPath;
 // TEXT
-    dr4::Color whiteTextColor = dr4::Color(222, 222, 222);
-    int fontSize = 11;
+    dr4::Color whiteTextColor;
+    int fontSize;
+
+// GUI COLORS
+    dr4::Color propertiesPanelBGColor;
 };
 
 

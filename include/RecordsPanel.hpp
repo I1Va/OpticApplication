@@ -26,6 +26,8 @@ class RecordsPanel : public LinContainer<hui::Widget> {
     static constexpr float SCROLL_BAR_HEIGHT_SHARE = 0.9;
     
     float recordsPadding = 0;
+    dr4::Vec2f recordsStartPos = dr4::Vec2f(0, 0);
+    dr4::Color BGColor = RED;
 
 protected:
     VerticalScrollBar            *scrollBar; 
@@ -42,7 +44,10 @@ public:
     }
     ~RecordsPanel() = default;
 
-    void SetRecordsPadding(const float padding) { recordsPadding = padding; }
+    void SetRecordsPadding(const float padding)   { recordsPadding = padding; }
+    void SetRecordsStartPos(const dr4::Vec2f pos) { recordsStartPos = pos; }
+    void SetBGColor(const dr4::Color color)       { BGColor = color; }
+
 protected:
     void OnSizeChanged() override { relayout(); }
 
@@ -52,13 +57,14 @@ protected:
     }
 
     void Redraw() const override {
-        this->GetTexture().Clear(FULL_TRANSPARENT);
+        this->GetTexture().Clear(BGColor);
     
         for (const auto &record : records) {
             record->DrawOn(this->GetTexture());
         }
-    
-        scrollBar->DrawOn(this->GetTexture());
+        
+        if (!scrollBar->IsHidden())
+            scrollBar->DrawOn(this->GetTexture());
     }
 
     hui::EventResult OnMouseWheel(hui::MouseWheelEvent &evt) {
@@ -79,7 +85,7 @@ private:
     }
 
     void relayoutRecords() { // ADD PADDING
-        dr4::Vec2f curRecordPos = dr4::Vec2f(0, 0);
+        dr4::Vec2f curRecordPos = recordsStartPos;
         double scrollPerccentage = scrollBar->GetPercentage();
         float hBias = std::fmax(0, scrollPerccentage * (calculateSummaryRecordsHeight() - this->GetSize().y));
 

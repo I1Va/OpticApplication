@@ -26,19 +26,22 @@ public:
         assert(label);    
         
         // FIXME: ADD LAYOUT
-        label->SetPos({40, 3}); 
+        label->SetPos({20, 3}); 
         label->SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
         label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
         label->SetText("Figure.000");
         label->DrawOn(GetTexture());
 
         dropDownNonActiveIcon->SetPos({4, 2});
-        dropDownNonActiveIcon->SetSize({16, 16});
+
+        float dropDownNonActiveIconWHCoef = 700.0 / 1100;
+        dropDownNonActiveIcon->SetSize({16 * dropDownNonActiveIconWHCoef, 16});
 
         SetMode(Button::Mode::STICK_MODE);
 
-        dropDownActiveIcon->SetPos(dropDownNonActiveIcon->GetPos());
-        dropDownActiveIcon->SetSize(dropDownNonActiveIcon->GetSize());
+        dropDownActiveIcon->SetPos(4, 6);
+        float dropDownActiveIconWHCoef = 1100.0 / 700.0;
+        dropDownActiveIcon->SetSize({10 * dropDownActiveIconWHCoef, 10});
 
         LoadSVGDropDownIcons();
     }
@@ -52,11 +55,7 @@ public:
 
 protected:
     void Redraw() const override final {
-        GetTexture().Clear(buttonColor);
-
-        if (pressed) dropDownActiveIcon->DrawOn(GetTexture());
-        else dropDownNonActiveIcon->DrawOn(GetTexture());
-        label->DrawOn(GetTexture());
+        GetTexture().Clear(FULL_TRANSPARENT);
 
         dr4::Image *backSurface = GetTexture().GetImage(); assert(backSurface);
 
@@ -71,6 +70,13 @@ protected:
         );
 
         backSurface->DrawOn(GetTexture());
+
+        if (pressed) dropDownActiveIcon->DrawOn(GetTexture());
+        else dropDownNonActiveIcon->DrawOn(GetTexture());
+        label->DrawOn(GetTexture());
+
+        
+        
     }
 
 private:
@@ -88,7 +94,6 @@ private:
 class DropDownMenu : public LinContainer<hui::Widget> {
     DropDownButton *topButton=nullptr;
     hui::Widget *dropDown=nullptr;
-
 
 public:
     DropDownMenu(hui::UI *ui): LinContainer(ui), topButton(new DropDownButton(ui))

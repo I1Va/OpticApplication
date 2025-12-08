@@ -29,11 +29,13 @@ const static roa::TexturePack ICONS_TEXTURE_PACK =
 {
     .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg",
     .collectionSvgPath     = "assets/icons/Collection.svg",
-    .triaDownSvgPath       = "assets/icons/triaDown.svg",
-    .triaRightSvgPath      = "assets/icons/triaRight.svg",
+    .triaDownSvgPath       = "assets/icons/TriaDown.svg",
+    .triaRightSvgPath      = "assets/icons/TriaRight.svg",
 
     .whiteTextColor = dr4::Color(222, 222, 222),
-    .fontSize = 11
+    .fontSize = 11,
+
+    .propertiesPanelBGColor = dr4::Color(48, 48, 48)
 };
 
 void createSceneObjects

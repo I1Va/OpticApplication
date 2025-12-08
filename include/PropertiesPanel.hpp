@@ -12,8 +12,17 @@ namespace roa
 {
    
 class PropertiesPanel final : public RecordsPanel<DropDownMenu> {
+    const float horizontalPadding = 8;
+
 public:
-    using RecordsPanel::RecordsPanel;
+    PropertiesPanel(hui::UI *ui) : RecordsPanel(ui) {
+        assert(ui);
+    
+        SetRecordsPadding(2);
+        SetRecordsStartPos({horizontalPadding, 0});
+        SetBGColor(static_cast<UI *>(ui)->GetTexturePack().propertiesPanelBGColor);
+    }
+
     ~PropertiesPanel() = default;
 
     void AddProperty
@@ -23,7 +32,7 @@ public:
     ) {
         DropDownMenu *record = new DropDownMenu(GetUI());
         record->SetLabelText(label);
-        record->SetSize(GetSize().x, 25);
+        record->SetSize(GetSize().x - 2 * horizontalPadding, 25);
 
         // record->SetLabel(label);
         // record->SetText(value);
@@ -68,7 +77,6 @@ private:
     void layout() {
         propertiesPanel->SetPos({0, TITLE_BAR_HEIGHT});
         propertiesPanel->SetSize(GetSize() - propertiesPanel->GetPos());
-        propertiesPanel->SetRecordsPadding(2);
     }
 };
 

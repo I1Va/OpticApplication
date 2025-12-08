@@ -104,6 +104,7 @@ public:
 
     double GetPercentage() { return calculateThumbPercentage(); }
 
+    bool IsHidden() const { return hiden; }
     void Hide() { 
         hiden = true; 
         ForceRedraw();
