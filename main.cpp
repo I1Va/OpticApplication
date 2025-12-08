@@ -154,8 +154,14 @@ int main(int argc, const char *argv[]) {
     dr4::Vec2f outlinerWindowPos = {Viewport3D->GetSize().x + padding, 0};
     outliner->SetPos(outlinerWindowPos);
 
+    int primId = 0;
     for (Primitives *primitive : Viewport3D->GetPrimitives()) {
-        outliner->AddObject(primitive, "name", nullptr, nullptr);
+        outliner->AddObject
+        (
+            primitive, primitive->typeString() + "." + std::to_string(primId++), 
+            [primitive](){ primitive->setSelectFlag(true); },
+            [primitive](){ primitive->setSelectFlag(false); }
+        );
     }
 
     mainWindow->AddWidget(Viewport3D);

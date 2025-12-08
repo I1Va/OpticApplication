@@ -17,18 +17,19 @@ namespace roa
 template<typename T>
 concept IsPointer = std::is_pointer_v<T>;
 
-template <IsPointer T>
-class Outliner final : public LinContainer<hui::Widget> {
-    static constexpr float RECORD_HEIGHT = 20;
+
+
+template <WidgetDerived T>
+class RecordsPanel : public LinContainer<hui::Widget> {
     static constexpr float SCROLL_BAR_WIDTH = 6;
     static constexpr float SCROLL_BAR_RIGHT_PADDING = 3;
     static constexpr float SCROLL_BAR_HEIGHT_SHARE = 0.9;
 
+protected:
     VerticalScrollBar            *scrollBar; 
-    std::vector<ObjectButton *>   records;
-
+    std::vector<T *>              records;
 public:
-    Outliner(hui::UI *ui): 
+    RecordsPanel(hui::UI *ui): 
         LinContainer(ui),
         scrollBar(new VerticalScrollBar(ui))
     {
@@ -37,85 +38,10 @@ public:
         AddWidget(scrollBar);
         scrollBar->SetOnScrollAction([this](double) { relayoutRecords(); });
     }
-
-    ~Outliner() = default;
-
-    void AddObject
-    (
-        T object,
-        const std::string &name,
-        std::function<void()> onSelect,
-        std::function<void()> onUnSelect
-    ) {
-        ObjectButton *record = new ObjectButton(GetUI()); assert(record);
-    
-        // record->SetText(name);
-        record->SetMode(Button::Mode::STICK_MODE);
-
-        // record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
-        //     {
-        //         if (onSelect) onSelect();
-        //         if (!currentSelected.has_value() || currentSelected.value().second != object) {
-        //             currentSelected = std::pair<std::string, T>(name, object);
-        //             if (onSelectChangedAction) onSelectChangedAction();
-        //         }
-        //     }
-        // );
-
-        // record->SetOnUnpressAction([this, object, onUnSelect]()
-        //     {
-        //         if (onUnSelect) onUnSelect();
-        //         if (currentSelected.has_value() && currentSelected.value().second == object) {
-        //             currentSelected.reset();
-        //             if (onSelectChangedAction) onSelectChangedAction();
-        //         }
-        //     }
-        // );
-        if (records.size() % 2) record->SetColorPack(GRAY_OBJECT_PACK);
-        else                    record->SetColorPack(BLACK_OBJECT_PACK);
-    
-        records.push_back(record);
-        AddWidget(record);
-
-        relayout();
-    }
+    ~RecordsPanel() = default;
 
 protected:
     void OnSizeChanged() override { relayout(); }
-
-    void relayoutRecords() {
-        float recordHeight = RECORD_HEIGHT;
-        float recordWidth  = this->GetSize().x;
-        dr4::Vec2f curRecordPos = dr4::Vec2f(0, 0);
-
-        double scrollPerccentage = scrollBar->GetPercentage();
-        float hBias = std::fmax(0, scrollPerccentage * (records.size() * recordHeight - this->GetSize().y));
-
-        for (auto &record : records) {
-            record->SetPos(curRecordPos - dr4::Vec2f(0, hBias));
-            record->SetSize({recordWidth, recordHeight});
-            record->ForceRedraw();
-            curRecordPos += dr4::Vec2f(0, recordHeight);
-        }
-
-        this->ForceRedraw();
-    }
-
-    void relayoutScrollBar() {
-        float recordsDummaryHeight = records.size() * RECORD_HEIGHT;
-
-        scrollBar->Show();
-        scrollBar->SetSize(SCROLL_BAR_WIDTH, GetSize().y * SCROLL_BAR_HEIGHT_SHARE);
-        
-        float posY = (this->GetSize().y - scrollBar->GetSize().y) / 2;
-        scrollBar->SetPos({this->GetSize().x - SCROLL_BAR_WIDTH - SCROLL_BAR_RIGHT_PADDING, posY});
-
-        double thumbLayoutShare = 1;
-        if (recordsDummaryHeight > GetSize().y) {
-            thumbLayoutShare = GetSize().y / recordsDummaryHeight;
-        }
-        scrollBar->SetThumbLayoutShare(thumbLayoutShare);
-    }
 
     void relayout() {
         relayoutRecords();
@@ -139,9 +65,99 @@ protected:
         }
         return hui::EventResult::UNHANDLED;
     }
-       
-    
+
 private:
+    float calculateSummaryRecordsHeight() {
+        float result = 0;
+        for (const auto &record : records) {
+            result += record->GetSize().y;
+        }
+        return result;
+    }
+
+    void relayoutRecords() { // ADD PADDING
+        dr4::Vec2f curRecordPos = dr4::Vec2f(0, 0);
+        double scrollPerccentage = scrollBar->GetPercentage();
+        float hBias = std::fmax(0, scrollPerccentage * (calculateSummaryRecordsHeight() - this->GetSize().y));
+
+        for (auto &record : records) {
+            record->SetPos(curRecordPos - dr4::Vec2f(0, hBias));
+            record->ForceRedraw();
+            curRecordPos += dr4::Vec2f(0, record->GetSize().y);
+        }
+
+        this->ForceRedraw();
+    }
+
+    void relayoutScrollBar() {
+        float recordsSummaryHeight = calculateSummaryRecordsHeight();
+
+        scrollBar->Show();
+        scrollBar->SetSize(SCROLL_BAR_WIDTH, GetSize().y * SCROLL_BAR_HEIGHT_SHARE);
+        
+        float posY = (this->GetSize().y - scrollBar->GetSize().y) / 2;
+        scrollBar->SetPos({this->GetSize().x - SCROLL_BAR_WIDTH - SCROLL_BAR_RIGHT_PADDING, posY});
+
+        double thumbLayoutShare = 1;
+        if (recordsSummaryHeight > GetSize().y) {
+            thumbLayoutShare = GetSize().y / recordsSummaryHeight;
+        }
+        scrollBar->SetThumbLayoutShare(thumbLayoutShare);
+    }
+};
+
+template <IsPointer T>
+class Outliner final : public RecordsPanel<ObjectButton> {
+    static constexpr float RECORD_HEIGHT = 20;
+    std::optional<std::pair<std::string, T>> currentSelected;
+    std::function<void()> onSelectChangedAction = nullptr;
+public:
+    using RecordsPanel::RecordsPanel;
+    ~Outliner() = default;
+
+    std::optional<std::pair<std::string, T>> GetSelected() { return currentSelected; }
+    void SetOnSelectChangedAction(std::function<void()> action) { onSelectChangedAction = action; }
+
+    void AddObject
+    (
+        T object,
+        const std::string &name,
+        std::function<void()> onSelect,
+        std::function<void()> onUnSelect
+    ) {
+        ObjectButton *record = new ObjectButton(GetUI()); assert(record);
+        record->SetSize({GetSize().x, RECORD_HEIGHT});
+    
+        record->SetLabelText(name);
+        record->SetMode(Button::Mode::FOCUS_MODE);
+
+        record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
+            {
+                if (onSelect) onSelect();
+                if (!currentSelected.has_value() || currentSelected.value().second != object) {
+                    currentSelected = std::pair<std::string, T>(name, object);
+                    if (onSelectChangedAction) onSelectChangedAction();
+                }
+            }
+        );
+
+        record->SetOnUnpressAction([this, object, onUnSelect]()
+            {
+                if (onUnSelect) onUnSelect();
+                if (currentSelected.has_value() && currentSelected.value().second == object) {
+                    currentSelected.reset();
+                    if (onSelectChangedAction) onSelectChangedAction();
+                }
+            }
+        );
+        if (records.size() % 2) record->SetColorPack(GRAY_OBJECT_PACK);
+        else                    record->SetColorPack(BLACK_OBJECT_PACK);
+    
+        records.push_back(record);
+        AddWidget(record);
+
+        relayout();
+    }
 };
 
 template <IsPointer T>

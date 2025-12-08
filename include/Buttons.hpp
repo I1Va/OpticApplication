@@ -114,7 +114,7 @@ protected:
                 }
             case Mode::FOCUS_MODE: 
                 {
-                    bool newPressed = (GetUI()->GetCaptured() == this);
+                    bool newPressed = (GetUI()->GetFocused() == this);
                     if (pressed != newPressed) {
                         if (newPressed && onPressAction) onPressAction();
                         if (!newPressed && onUnpressAction) onUnpressAction();
