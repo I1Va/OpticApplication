@@ -127,21 +127,15 @@ protected:
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear(RED);
+        GetTexture().Clear(FULL_TRANSPARENT);
         if (!hiden) {
             thumbButton->DrawOn(GetTexture());
         }
     }
 
     hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
-        if (GetUI()->GetHovered() == GetParent()        || 
-            GetUI()->GetHovered() == this               ||
-            GetUI()->GetHovered() == thumbButton.get()) {
-                moveThumb(-event.delta.y * MOUSEWHEEL_THUMB_MOVE_COEF);
-                return hui::EventResult::HANDLED; 
-        } else {
-             return hui::EventResult::UNHANDLED;
-        }
+        moveThumb(-event.delta.y * MOUSEWHEEL_THUMB_MOVE_COEF);
+        return hui::EventResult::HANDLED; 
     }
 
     hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {

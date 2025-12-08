@@ -290,32 +290,54 @@ protected:
     }
 };
         
-// TODO : button texture pack 
-class ObjectButton final : public Button {
-    dr4::Color focusedHovered = RED;
-    dr4::Color focused = {0, 128, 0, 255};
-    dr4::Color hovered = GRAY;
-    dr4::Color nonActive = {0, 0, 255, 255};
+struct ObjectButtonColorPack {
+    dr4::Color focusedHovered;
+    dr4::Color focused;
+    dr4::Color hovered;
+    dr4::Color nonActive;
+};
 
+static const inline ObjectButtonColorPack BLACK_OBJECT_PACK = 
+{
+    .focusedHovered = dr4::Color(78, 100, 145),
+    .focused = dr4::Color(51, 77, 128),
+    .hovered = dr4::Color(68, 68, 68),
+    .nonActive = dr4::Color(40, 40, 40)
+};
+
+static const inline ObjectButtonColorPack GRAY_OBJECT_PACK = 
+{
+    .focusedHovered = dr4::Color(78, 100, 145),
+    .focused = dr4::Color(51, 77, 128),
+    .hovered = dr4::Color(71, 71, 71),
+    .nonActive = dr4::Color(43, 43, 43)
+};
+
+class ObjectButton final : public Button {
+    ObjectButtonColorPack colorPack = BLACK_OBJECT_PACK;
     // icon texture
     // label
 
 public:
     using Button::Button;
     ~ObjectButton() = default;
+    
+    void SetColorPack(const ObjectButtonColorPack pack) {
+        colorPack = pack;
+    }
 
 protected:
     void Redraw() const override final {
         GetTexture().Clear(FULL_TRANSPARENT);
 
         if (checkStateProperty(Button::StateProperty::FOCUSED) && checkStateProperty(Button::StateProperty::HOVERED)) {
-            GetTexture().Clear(focusedHovered);
+            GetTexture().Clear(colorPack.focusedHovered);
         } else if (checkStateProperty(Button::StateProperty::FOCUSED)) {
-            GetTexture().Clear(focused);
+            GetTexture().Clear(colorPack.focused);
         } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
-            GetTexture().Clear(hovered);
+            GetTexture().Clear(colorPack.hovered);
         } else {
-            GetTexture().Clear(nonActive);
+            GetTexture().Clear(colorPack.nonActive);
         }
     }
 };

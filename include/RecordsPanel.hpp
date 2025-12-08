@@ -71,7 +71,9 @@ public:
         //         }
         //     }
         // );
-
+        if (records.size() % 2) record->SetColorPack(GRAY_OBJECT_PACK);
+        else                    record->SetColorPack(BLACK_OBJECT_PACK);
+    
         records.push_back(record);
         AddWidget(record);
 
@@ -130,7 +132,14 @@ protected:
         scrollBar->DrawOn(this->GetTexture());
     }
 
-    
+    hui::EventResult OnMouseWheel(hui::MouseWheelEvent &evt) {
+        if (GetRect().Contains(evt.pos)) {
+            evt.pos -= GetPos();
+            return evt.Apply(*scrollBar);
+        }
+        return hui::EventResult::UNHANDLED;
+    }
+       
     
 private:
 };
@@ -158,6 +167,8 @@ public:
 
 protected:
     void OnSizeChanged() override { layout(); }
+
+
 
 private:
     void layout() {
