@@ -93,7 +93,7 @@ int main(int argc, const char *argv[]) {
     window->SetSize({800, 600});
 
     dr4::Font *defaultFont = window->CreateFont();
-    defaultFont->LoadFromFile("/usr/share/fonts/TTF/Hack-Bold.ttf");
+    defaultFont->LoadFromFile("./assets/Inter.ttf");
     window->SetDefaultFont(defaultFont);
 
 // SETUP UI, MAIN WINDOW
