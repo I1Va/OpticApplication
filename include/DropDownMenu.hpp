@@ -30,7 +30,6 @@ public:
         label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
         label->SetText("Figure.000");
         label->DrawOn(GetTexture());
-
         dropDownNonActiveIcon->SetPos({4, 2});
 
         float dropDownNonActiveIconWHCoef = 700.0 / 1100;

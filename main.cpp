@@ -180,8 +180,8 @@ int main(int argc, const char *argv[]) {
     roa::Property *transformProperty = new roa::Property(&ui);
     transformProperty->SetLabel("Transform");
     transformProperty->AddPropertyField("Location X", "52", nullptr);
-    transformProperty->AddPropertyField("         Y", "28", nullptr);
-    transformProperty->AddPropertyField("         Z", "17", nullptr);
+    transformProperty->AddPropertyField("                 Y", "28", nullptr);
+    transformProperty->AddPropertyField("                 Z", "17", nullptr);
 
     roa::Property *MaterialProperty = new roa::Property(&ui);
     MaterialProperty->SetLabel("Material");

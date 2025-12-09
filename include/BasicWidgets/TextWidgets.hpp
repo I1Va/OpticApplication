@@ -17,29 +17,39 @@ protected:
     std::unique_ptr<dr4::Line> caret;
     int caretPos = 0;
     bool drawCaret = false;
-    
-    dr4::Color backColor = WHITE;
 
 public:
     TextWidget(hui::UI *ui): hui::Widget(ui), text(GetUI()->GetWindow()->CreateText()), caret(GetUI()->GetWindow()->CreateLine()) { 
         assert(ui); 
-        text->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
+        text->SetFont(ui->GetWindow()->GetDefaultFont());
         caret->SetColor(BLACK);
         caret->SetThickness(2);
     }
 
     ~TextWidget() = default;
 
-    void SetFont(dr4::Font *font) {
+    void SetFont(const dr4::Font *font) {
         assert(font);
 
         text->SetFont(font);
         ForceRedraw();
     }
 
+    void SetFontSize(const int fontSize) {
+        assert(font);
+
+        text->SetFontSize(fontSize);
+        ForceRedraw();
+    }
+
     void SetText(const std::string &content) {
         text->SetText(content);
         relayoutCaret();
+        ForceRedraw();
+    }
+
+    void SetColor(const dr4::Color color) {
+        text->SetColor(color);
         ForceRedraw();
     }
 
@@ -63,7 +73,7 @@ public:
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear(backColor);
+        GetTexture().Clear(FULL_TRANSPARENT);
         text->DrawOn(GetTexture());
         if (drawCaret) {
             caret->DrawOn(GetTexture());
@@ -72,10 +82,7 @@ protected:
     
     void OnSizeChanged() override { 
         relayoutCaret(); 
-        relayoutText();
     }
-
-    void relayoutText() { text->SetFontSize(GetSize().y); }
 
     void relayoutCaret() {
         caretPos = std::clamp(caretPos, 0, static_cast<int>(text->GetText().size()));
@@ -111,7 +118,10 @@ class TextInputWidget : public TextWidget {
 public:
     TextInputWidget(hui::UI *ui) : TextWidget(ui) {
         assert(ui);
-        SetText(" ");
+        SetText("");
+        SetFont(GetUI()->GetWindow()->GetDefaultFont());
+        SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
+        SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
     }
 
     ~TextInputWidget() = default;
@@ -189,6 +199,7 @@ protected:
         return hui::EventResult::UNHANDLED;
     }
 };
+
 
 
 }

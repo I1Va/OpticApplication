@@ -8,15 +8,18 @@ namespace roa
 {
 
 class PropertyField final : public LinContainer<hui::Widget> {
-    TextWidget      *label;
+    dr4::Text       *label;
     TextInputWidget *inputField;
 
 public:
-    PropertyField(hui::UI *ui) : LinContainer(ui), label(new TextWidget(ui)), inputField(new TextInputWidget(ui)) { 
+    PropertyField(hui::UI *ui) : LinContainer(ui), label(ui->GetWindow()->CreateText()), inputField(new TextInputWidget(ui)) { 
         assert(ui); 
-        AddWidget(label);
         AddWidget(inputField);
+
+        label->SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
+        label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
     }
+
     ~PropertyField() = default;
 
     void SetLabel(const std::string &content) {
@@ -42,18 +45,16 @@ protected:
         float inputFieldWidth = labelWIdth;
         float inputFieldWidthHeight = GetSize().y;
 
-        label->SetSize({labelWIdth, labelHeight});
         inputField->SetSize({inputFieldWidth, inputFieldWidthHeight}); 
         inputField->SetPos({labelWIdth, 0});
 
         inputField->ForceRedraw();
-        label->ForceRedraw();
         ForceRedraw();
 
     }
     
     void Redraw() const override {
-        GetTexture().Clear(RED);
+        GetTexture().Clear(FULL_TRANSPARENT);
         
         label->DrawOn(GetTexture());
         inputField->DrawOn(GetTexture());
@@ -81,6 +82,7 @@ public:
         
         propertyFieldsPanel->SetSize({30, 200});
 
+        propertyFieldsPanel->SetBGColor({61, 61, 61});
         dropDown = propertyFieldsPanel;
         AddWidget(propertyFieldsPanel);
         
