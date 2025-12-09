@@ -49,6 +49,7 @@ public:
     void SetBGColor(const dr4::Color color)       { BGColor = color; }
     std::vector<T *> &GetRecords()                { return records; }
 
+
     void AddRecord(T *record) {
         records.push_back(record);
         AddWidget(record);
@@ -60,6 +61,15 @@ public:
         relayoutScrollBar();
         ForceRedraw();
     }
+    
+    float calculateSummaryRecordsHeight() {
+        float result = 0;
+        for (const auto &record : records) {
+            result += record->GetSize().y;
+        }
+        return result;
+    }
+
 
 protected:
     void OnSizeChanged() override { relayout(); }
@@ -84,14 +94,6 @@ protected:
     }
 
 private:
-    float calculateSummaryRecordsHeight() {
-        float result = 0;
-        for (const auto &record : records) {
-            result += record->GetSize().y;
-        }
-        return result;
-    }
-
     void relayoutRecords() { // ADD PADDING
         dr4::Vec2f curRecordPos = recordsStartPos;
         double scrollPerccentage = scrollBar->GetPercentage();

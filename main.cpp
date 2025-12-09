@@ -183,16 +183,16 @@ int main(int argc, const char *argv[]) {
     transformProperty->AddPropertyField("         Y", "28", nullptr);
     transformProperty->AddPropertyField("         Z", "17", nullptr);
 
-    // roa::Property *MaterialProperty = new roa::Property(&ui);
-    // MaterialProperty->SetLabel("Material");
-    // MaterialProperty->AddPropertyField("Diffuse  X", "11", nullptr);
-    // MaterialProperty->AddPropertyField("         Y", "3", nullptr);
-    // MaterialProperty->AddPropertyField("         Z", "12", nullptr);
+    roa::Property *MaterialProperty = new roa::Property(&ui);
+    MaterialProperty->SetLabel("Material");
+    MaterialProperty->AddPropertyField("Diffuse  X", "11", nullptr);
+    MaterialProperty->AddPropertyField("         Y", "3", nullptr);
+    MaterialProperty->AddPropertyField("         Z", "12", nullptr);
 
 
 
     propertiesWindow->AddProperty(transformProperty);
-    // propertiesWindow->AddProperty(MaterialProperty);
+    propertiesWindow->AddProperty(MaterialProperty);
 
 
     int primId = 0;
@@ -205,7 +205,7 @@ int main(int argc, const char *argv[]) {
         );
     }
 
-    // mainWindow->AddWidget(Viewport3D);
+    mainWindow->AddWidget(Viewport3D);
     mainWindow->AddWidget(outliner);
     mainWindow->AddWidget(propertiesWindow);
 

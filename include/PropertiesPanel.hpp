@@ -61,7 +61,9 @@ protected:
 };
 
 class Property final : public DropDownMenu {
-    const float recordsPadding = 1;
+    static constexpr float RECORDS_PADDING = 1;
+    static constexpr float PROPERTY_FIELDS_PANEL_PADDING = 30;
+
     const dr4::Vec2f recordsStartPos = dr4::Vec2f(16, 0);
 
     RecordsPanel<PropertyField> *propertyFieldsPanel;
@@ -73,11 +75,11 @@ public:
     {
         assert(ui);
         
-        propertyFieldsPanel->SetRecordsPadding(recordsPadding);
+        propertyFieldsPanel->SetRecordsPadding(RECORDS_PADDING);
         propertyFieldsPanel->SetRecordsStartPos(recordsStartPos);
         propertyFieldsPanel->SetBGColor(static_cast<UI *>(ui)->GetTexturePack().propertiesPanelBGColor);
         
-        propertyFieldsPanel->SetSize({30, 100});
+        propertyFieldsPanel->SetSize({30, 200});
 
         dropDown = propertyFieldsPanel;
         AddWidget(propertyFieldsPanel);
@@ -99,8 +101,6 @@ public:
         properyField->SetOnEnterAction(setPropertyVal);
 
         propertyFieldsPanel->AddRecord(properyField);
-
-        layout();
     }
 
 protected:
@@ -110,7 +110,7 @@ protected:
     }
 
     void layout() {
-        propertyFieldsPanel->SetSize(GetSize());
+        propertyFieldsPanel->SetSize(GetSize().x, propertyFieldsPanel->calculateSummaryRecordsHeight() + PROPERTY_FIELDS_PANEL_PADDING);
         for (auto propertyField : propertyFieldsPanel->GetRecords()) {
            propertyField->SetSize(GetSize().x - 2 * recordsStartPos.x, 25);
         }
