@@ -79,6 +79,8 @@ public:
 
         dropDown = propertyFieldsPanel;
         AddWidget(propertyFieldsPanel);
+        
+        SetSize(100, 100);
     }
     ~Property() = default;
     
