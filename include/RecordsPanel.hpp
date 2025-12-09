@@ -27,7 +27,7 @@ class RecordsPanel : public LinContainer<hui::Widget> {
     
     float recordsPadding = 0;
     dr4::Vec2f recordsStartPos = dr4::Vec2f(0, 0);
-    dr4::Color BGColor = RED;
+    dr4::Color BGColor = BLACK;
 
 protected:
     VerticalScrollBar            *scrollBar; 
@@ -47,6 +47,7 @@ public:
     void SetRecordsPadding(const float padding)   { recordsPadding = padding; }
     void SetRecordsStartPos(const dr4::Vec2f pos) { recordsStartPos = pos; }
     void SetBGColor(const dr4::Color color)       { BGColor = color; }
+    std::vector<T *> &GetRecords()                { return records; }
 
     void AddRecord(T *record) {
         records.push_back(record);

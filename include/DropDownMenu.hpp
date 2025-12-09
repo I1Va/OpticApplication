@@ -132,6 +132,7 @@ protected:
     void Redraw() const override {
         GetTexture().Clear(FULL_TRANSPARENT);
         topButton->DrawOn(GetTexture());
+
         if (dropDown) dropDown->DrawOn(GetTexture());
     }
 

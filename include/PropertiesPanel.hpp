@@ -43,16 +43,17 @@ protected:
         float inputFieldWidthHeight = GetSize().y;
 
         label->SetSize({labelWIdth, labelHeight});
-        inputField->SetSize({inputFieldWidth, inputFieldWidthHeight});    
-        
+        inputField->SetSize({inputFieldWidth, inputFieldWidthHeight}); 
         inputField->SetPos({labelWIdth, 0});
 
         inputField->ForceRedraw();
         label->ForceRedraw();
+        ForceRedraw();
+
     }
     
     void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
+        GetTexture().Clear(RED);
         
         label->DrawOn(GetTexture());
         inputField->DrawOn(GetTexture());
@@ -75,12 +76,13 @@ public:
         propertyFieldsPanel->SetRecordsPadding(recordsPadding);
         propertyFieldsPanel->SetRecordsStartPos(recordsStartPos);
         propertyFieldsPanel->SetBGColor(static_cast<UI *>(ui)->GetTexturePack().propertiesPanelBGColor);
-        propertyFieldsPanel->SetSize({100, 100});
+        
+        propertyFieldsPanel->SetSize({30, 100});
 
         dropDown = propertyFieldsPanel;
         AddWidget(propertyFieldsPanel);
         
-        SetSize(100, 100);
+        SetSize(300, 100);
     }
     ~Property() = default;
     
@@ -91,11 +93,30 @@ public:
     ) {
         PropertyField *properyField = new PropertyField(GetUI());
         properyField->SetSize(GetSize().x - 2 * recordsStartPos.x, 25);
+    
         properyField->SetLabel(label);
         properyField->SetContent(value);
         properyField->SetOnEnterAction(setPropertyVal);
 
         propertyFieldsPanel->AddRecord(properyField);
+
+        layout();
+    }
+
+protected:
+    void OnSizeChanged() override { 
+        DropDownMenu::OnSizeChanged();
+        layout();
+    }
+
+    void layout() {
+        propertyFieldsPanel->SetSize(GetSize());
+        for (auto propertyField : propertyFieldsPanel->GetRecords()) {
+           propertyField->SetSize(GetSize().x - 2 * recordsStartPos.x, 25);
+        }
+
+        propertyFieldsPanel->relayout();
+        ForceRedraw();
     }
 };
 
@@ -115,10 +136,9 @@ public:
     
     void AddProperty(Property *property) {
         assert(property);
-
-        property->SetSize(GetSize().x - 2 * RECORDS_START_POS.x, 25);
         property->SetOnSizeChangedAction([this](){ relayout(); });
-    
+        property->SetSize(GetSize().x - 2 * RECORDS_START_POS.x, 25);
+        
         records.push_back(property);
         AddWidget(property);
         relayout();
