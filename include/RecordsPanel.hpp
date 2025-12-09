@@ -53,14 +53,15 @@ public:
         AddWidget(record);
         relayout();
     }
-
-protected:
-    void OnSizeChanged() override { relayout(); }
-
+    
     void relayout() {
         relayoutRecords();
         relayoutScrollBar();
+        ForceRedraw();
     }
+
+protected:
+    void OnSizeChanged() override { relayout(); }
 
     void Redraw() const override {
         this->GetTexture().Clear(BGColor);
@@ -116,6 +117,8 @@ private:
         double thumbLayoutShare = 1;
         if (recordsSummaryHeight > GetSize().y) {
             thumbLayoutShare = GetSize().y / recordsSummaryHeight;
+        } else {
+            scrollBar->Hide();
         }
         scrollBar->SetThumbLayoutShare(thumbLayoutShare);
     }

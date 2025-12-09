@@ -173,7 +173,6 @@ public:
 
 protected:
     void Redraw() const override {
-
         if (pressed) GetTexture().Clear(pressedColor);
         else GetTexture().Clear(unpressedColor);
     }

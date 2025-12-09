@@ -21,9 +21,11 @@ public:
 
     void SetLabel(const std::string &content) {
         label->SetText(content);
+        ForceRedraw();
     }
     void SetContent(const std::string &content) {
         inputField->SetText(content);
+        ForceRedraw();
     }
 
     void SetOnEnterAction(std::function<void(const std::string &)> action) { inputField->SetOnEnterAction(action); }
@@ -42,6 +44,7 @@ protected:
 
         label->SetSize({labelWIdth, labelHeight});
         inputField->SetSize({inputFieldWidth, inputFieldWidthHeight});    
+        
         inputField->SetPos({labelWIdth, 0});
 
         inputField->ForceRedraw();
@@ -68,10 +71,11 @@ public:
         propertyFieldsPanel(new RecordsPanel<PropertyField>(ui))
     {
         assert(ui);
-    
+        
         propertyFieldsPanel->SetRecordsPadding(recordsPadding);
         propertyFieldsPanel->SetRecordsStartPos(recordsStartPos);
         propertyFieldsPanel->SetBGColor(static_cast<UI *>(ui)->GetTexturePack().propertiesPanelBGColor);
+        propertyFieldsPanel->SetSize({100, 100});
 
         dropDown = propertyFieldsPanel;
         AddWidget(propertyFieldsPanel);
@@ -84,10 +88,9 @@ public:
         std::function<void(const std::string&)> setPropertyVal
     ) {
         PropertyField *properyField = new PropertyField(GetUI());
+        properyField->SetSize(GetSize().x - 2 * recordsStartPos.x, 25);
         properyField->SetLabel(label);
         properyField->SetContent(value);
-        properyField->SetSize(GetSize().x - 2 * recordsStartPos.x, 25);
-
         properyField->SetOnEnterAction(setPropertyVal);
 
         propertyFieldsPanel->AddRecord(properyField);
@@ -95,13 +98,14 @@ public:
 };
 
 class PropertiesPanel final : public RecordsPanel<DropDownMenu> {
-    const float horizontalPadding = 8; 
+    const dr4::Vec2f RECORDS_START_POS = {8, 16};
 public:
+    
     PropertiesPanel(hui::UI *ui) : RecordsPanel(ui) {
         assert(ui);
     
         SetRecordsPadding(2);
-        SetRecordsStartPos({horizontalPadding, 0});
+        SetRecordsStartPos(RECORDS_START_POS);
         SetBGColor(static_cast<UI *>(ui)->GetTexturePack().propertiesPanelBGColor);
     }
 
@@ -109,6 +113,9 @@ public:
     
     void AddProperty(Property *property) {
         assert(property);
+
+        property->SetSize(GetSize().x - 2 * RECORDS_START_POS.x, 25);
+        property->SetOnSizeChangedAction([this](){ relayout(); });
     
         records.push_back(property);
         AddWidget(property);

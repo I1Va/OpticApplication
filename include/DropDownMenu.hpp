@@ -91,16 +91,26 @@ class DropDownMenu : public LinContainer<hui::Widget> {
 protected:
     DropDownButton *topButton;
     hui::Widget *dropDown=nullptr;
+
+    bool detailResize = false;
+    dr4::Vec2f originSize = dr4::Vec2f(0, 0);
+
+    std::function<void()> onSizeChangedAction = nullptr;
+
 public:
     DropDownMenu(hui::UI *ui): LinContainer(ui), topButton(new DropDownButton(ui))
     {
         assert(ui);
-    
+        
+        topButton->SetOnPressAction([this](){ layout(); });
+        topButton->SetOnUnpressAction([this](){ layout(); });
+       
         AddWidget(topButton);
     }
 
     void SetLabel(const std::string &label) { topButton->SetLabel(label); }
     void SetDropDownWidget(hui::Widget *wgt) { dropDown = wgt; ForceRedraw(); }
+    void SetOnSizeChangedAction(std::function<void()> action) { onSizeChangedAction = action; }
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
@@ -111,20 +121,34 @@ protected:
         return hui::EventResult::UNHANDLED;
     }
 
-    void OnSizeChanged() override { layout(); }
+    void OnSizeChanged() override { 
+        if (!detailResize) {
+            originSize = GetSize(); 
+            layout();
+        }
+        if (onSizeChangedAction) onSizeChangedAction();
+    }
 
     void Redraw() const override {
+        GetTexture().Clear(FULL_TRANSPARENT);
         topButton->DrawOn(GetTexture());
-        if (topButton->IsDropDownActive()) {
-            if (dropDown) dropDown->DrawOn(GetTexture());
-        }
+        if (dropDown) dropDown->DrawOn(GetTexture());
     }
 
 private:
     void layout() {
-        topButton->SetSize(GetSize());
-        if (dropDown) dropDown->SetPos(dr4::Vec2f(0, topButton->GetSize().y));
+        detailResize = true;
+        topButton->SetSize(originSize);
+        dropDown->SetPos(dr4::Vec2f(0, topButton->GetSize().y));
+        if (topButton->IsDropDownActive()) {
+            dr4::Vec2f extendedSize = dr4::Vec2f(originSize.x, std::fmax(originSize.y, dropDown->GetPos().y + dropDown->GetSize().y));
+            SetSize(extendedSize);
+        } else {
+            SetSize(originSize);
+        }       
+      
         ForceRedraw();
+        detailResize = false;
     }
 };
 
