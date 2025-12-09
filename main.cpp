@@ -15,13 +15,14 @@
 #include "BasicWidgets/MainWindow.hpp"
 #include "BasicWidgets/ScrollBar.hpp"
 #include "BasicWidgets/TextWidgets.hpp"
-#include "RayTracerWidgets/Viewport3D.hpp"
 #include "RecordsPanel.hpp"
 #include "DropDownMenu.hpp"
 #include "PropertiesPanel.hpp"
 
 #include "PPWidgets.hpp"
 #include "BasicWidgets/Window.hpp"
+
+#include "EditorWidget.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -41,7 +42,7 @@ const static roa::TexturePack ICONS_TEXTURE_PACK =
 void createSceneObjects
 (
     RTMaterialManager &materialManager,
-    roa::Viewport3DWindow *viewport3D
+    roa::EditorWidget *editor
 ) {
     RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0}); 
     RTMaterial *midSphereMaterial   = materialManager.MakeLambertian({0.1, 0.2, 0.5});
@@ -49,7 +50,7 @@ void createSceneObjects
     RTMaterial *glassMaterial       = materialManager.MakeDielectric({1.0, 1.0, 1.0}, 1.50);
     RTMaterial *sunMaterial         = materialManager.MakeEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
 
-    SphereObject *sun = new SphereObject(1, sunMaterial, &viewport3D->GetSceneManager());
+    SphereObject *sun = new SphereObject(1, sunMaterial, &editor->GetSceneManager());
     Light *light = new Light
     (
         /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
@@ -58,16 +59,16 @@ void createSceneObjects
         /* viewLightPow      */  15.0
     );
 
-    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &viewport3D->GetSceneManager());
-    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &viewport3D->GetSceneManager());
-    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &viewport3D->GetSceneManager());
-    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &viewport3D->GetSceneManager());
+    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
+    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &editor->GetSceneManager());
+    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &editor->GetSceneManager());
+    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &editor->GetSceneManager());
 
 
     for (int i = 0; i < 10; i++) {
-        SphereObject *sphere = new SphereObject(1, midSphereMaterial, &viewport3D->GetSceneManager());
+        SphereObject *sphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
         sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
-        viewport3D->AddRecord(sphere);
+        editor->AddRecord(sphere);
     }
 
 
@@ -79,13 +80,13 @@ void createSceneObjects
 
     light->setPosition({0, 0, 10});
 
-    viewport3D->AddRecord(ground);
-    viewport3D->AddRecord(glassSphere);
-    viewport3D->AddRecord(midSphere);
-    viewport3D->AddRecord(sun);
-    viewport3D->AddRecord(rightSphere);
+    editor->AddRecord(ground);
+    editor->AddRecord(glassSphere);
+    editor->AddRecord(midSphere);
+    editor->AddRecord(sun);
+    editor->AddRecord(rightSphere);
 
-    viewport3D->AddLight(light);
+    editor->AddLight(light);
 }
 
 int main(int argc, const char *argv[]) {
@@ -117,20 +118,7 @@ int main(int argc, const char *argv[]) {
     mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
     ui.SetRoot(mainWindow);
 
-
-
-    // roa::Window *editorWindow = new roa::Window(&ui);
-    // editorWindow->SetSize({560, 420});
-    // editorWindow->SetPos({100, 100});
-
-    // mainWindow->AddWidget(editorWindow);
-
     
-
-
-
-
-
 // SETUP PP PLUGIN
     std::vector<cum::PPToolPlugin*> ppPlugins = {};
     
@@ -149,70 +137,21 @@ int main(int argc, const char *argv[]) {
 
     
  // SETUP SCENE OBJECTS
-
-
-    roa::Viewport3DWindow *Viewport3D = new roa::Viewport3DWindow(&ui);
     RTMaterialManager materialManager;
-    createSceneObjects(materialManager, Viewport3D);
 
-    float padding = 3;
-    roa::OutlinerWindow<Primitives *> *outliner = new roa::OutlinerWindow<Primitives *>(&ui);
-    roa::PropertiesWindow             *propertiesWindow = new roa::PropertiesWindow(&ui);
+    roa::EditorWidget *editor = new roa::EditorWidget(&ui);
+    editor->SetSize(mainWindow->GetSize());
 
-    float viewport3DWHCoef = 1.8;
-    float viewport3DHeight = 300;
-    Viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
+    createSceneObjects(materialManager, editor);
+    
+   
+    mainWindow->AddWidget(editor);
 
-    float objectsPanelHWCoef = 1;
-    float objectsPanelHeight = 200;
-    outliner->SetSize({objectsPanelHWCoef * objectsPanelHeight, objectsPanelHeight});
-
-    float propertiesWindowHWCoef = 1;
-    float propertiesWindowHeight = 200;
-    propertiesWindow->SetSize({propertiesWindowHWCoef * propertiesWindowHeight, propertiesWindowHeight});
-
-    dr4::Vec2f outlinerWindowPos = {Viewport3D->GetSize().x + padding, 0};
-    outliner->SetPos(outlinerWindowPos);
-
-    dr4::Vec2f propertiesWindowPos = outlinerWindowPos + dr4::Vec2f(0, propertiesWindowHeight + padding);
-    propertiesWindow->SetPos(propertiesWindowPos);
-
-    roa::Property *transformProperty = new roa::Property(&ui);
-    transformProperty->SetLabel("Transform");
-    transformProperty->AddPropertyField("Location X", "52", nullptr);
-    transformProperty->AddPropertyField("                 Y", "28", nullptr);
-    transformProperty->AddPropertyField("                 Z", "17", nullptr);
-
-    roa::Property *MaterialProperty = new roa::Property(&ui);
-    MaterialProperty->SetLabel("Material");
-    MaterialProperty->AddPropertyField("Diffuse  X", "11", nullptr);
-    MaterialProperty->AddPropertyField("         Y", "3", nullptr);
-    MaterialProperty->AddPropertyField("         Z", "12", nullptr);
-
-
-
-    propertiesWindow->AddProperty(transformProperty);
-    propertiesWindow->AddProperty(MaterialProperty);
-
-
-    int primId = 0;
-    for (Primitives *primitive : Viewport3D->GetPrimitives()) {
-        outliner->AddRecord
-        (
-            primitive, primitive->typeString() + "." + std::to_string(primId++), 
-            [primitive](){ primitive->setSelectFlag(true); },
-            [primitive](){ primitive->setSelectFlag(false); }
-        );
-    }
-
-    mainWindow->AddWidget(Viewport3D);
-    mainWindow->AddWidget(outliner);
-    mainWindow->AddWidget(propertiesWindow);
 
 // MODALS
 
-    roa::PPCanvasWidget *ppCanvas = new roa::PPCanvasWidget(&ui, ppPlugins);
-    mainWindow->SetModal(ppCanvas);
+    // roa::PPCanvasWidget *ppCanvas = new roa::PPCanvasWidget(&ui, ppPlugins);
+    // mainWindow->SetModal(ppCanvas);
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [mainWindow](){mainWindow->SwitchModalActiveFlag(); });
 
 // MAIN LOOP

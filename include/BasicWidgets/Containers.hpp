@@ -52,6 +52,7 @@ template <WidgetDerived T>
 class LinContainer : public ZContainer<T> {
 protected:
     std::vector<std::unique_ptr<T>> children; 
+    std::vector<std::unique_ptr<T>> erasable;
 public:
     LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
     virtual ~LinContainer() = default;
@@ -59,6 +60,14 @@ public:
     void AddWidget(T *widget) {
         hui::Container::BecomeParentOf(widget);
         children.emplace(children.begin(), widget);
+    }
+
+    void EraseWidget(T *widget) {
+        auto it = std::find_if(children.begin(), children.end(), [widget](const auto &ptr){ return ptr.get() == widget; });
+        if (it != children.end()) {
+            erasable.push_back(std::move(*it));
+            children.erase(it);
+        }
     }
 
     void BringToFront(T *widget) override {

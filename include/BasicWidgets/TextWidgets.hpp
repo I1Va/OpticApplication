@@ -36,8 +36,6 @@ public:
     }
 
     void SetFontSize(const int fontSize) {
-        assert(font);
-
         text->SetFontSize(fontSize);
         ForceRedraw();
     }

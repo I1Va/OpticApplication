@@ -8,8 +8,8 @@ namespace roa
 {
 
 class PropertyField final : public LinContainer<hui::Widget> {
-    dr4::Text       *label;
-    TextInputWidget *inputField;
+    std::unique_ptr<dr4::Text> label;
+    TextInputWidget           *inputField;
 
 public:
     PropertyField(hui::UI *ui) : LinContainer(ui), label(ui->GetWindow()->CreateText()), inputField(new TextInputWidget(ui)) { 
@@ -17,7 +17,8 @@ public:
         AddWidget(inputField);
 
         label->SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
-        label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
+        label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize + 1);
+        inputField->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize + 1);
     }
 
     ~PropertyField() = default;
@@ -40,7 +41,6 @@ protected:
 
     void relayout() {
         float labelWIdth = GetSize().x / 2;
-        float labelHeight = GetSize().y;
     
         float inputFieldWidth = labelWIdth;
         float inputFieldWidthHeight = GetSize().y;
@@ -162,6 +162,10 @@ public:
     void AddProperty(Property *property) { 
         assert(property);
         propertiesPanel->AddProperty(property); 
+    }
+
+    void ClearRecords() {
+        propertiesPanel->ClearRecords();
     }
 
 protected:

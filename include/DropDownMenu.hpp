@@ -10,9 +10,9 @@ class DropDownButton final : public Button {
     const dr4::Color buttonColor = dr4::Color(61, 61, 61);
     int borderRadius = 2;
 
-    dr4::Text *label;
-    dr4::Image *dropDownActiveIcon;
-    dr4::Image *dropDownNonActiveIcon;
+    std::unique_ptr<dr4::Text > label;
+    std::unique_ptr<dr4::Image> dropDownActiveIcon;
+    std::unique_ptr<dr4::Image> dropDownNonActiveIcon;
 
 public:
     DropDownButton(hui::UI *ui): 

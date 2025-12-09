@@ -17,8 +17,6 @@ namespace roa
 template<typename T>
 concept IsPointer = std::is_pointer_v<T>;
 
-
-
 template <WidgetDerived T>
 class RecordsPanel : public LinContainer<hui::Widget> {
     static constexpr float SCROLL_BAR_WIDTH = 6;
@@ -54,6 +52,13 @@ public:
         records.push_back(record);
         AddWidget(record);
         relayout();
+    }
+
+    void ClearRecords() {
+        for (auto widget : records) {
+            EraseWidget(widget);
+        }
+        records.clear();    
     }
     
     void relayout() {
@@ -156,8 +161,8 @@ class ObjectButton final : public Button {
     const dr4::Color labelFocusedColor    = dr4::Color(232, 165, 55, 255); 
 
     ObjectButtonColorPack colorPack = BLACK_OBJECT_PACK;
-    dr4::Text *label;
-    dr4::Image *mainIcon;
+    std::unique_ptr<dr4::Text> label;
+    std::unique_ptr<dr4::Image> mainIcon;
 
 public:
     ObjectButton(hui::UI *ui): 
@@ -196,10 +201,10 @@ protected:
         GetTexture().Clear(FULL_TRANSPARENT);
 
         label->SetColor(labelNonFocusedColor);
-        if (checkStateProperty(Button::StateProperty::FOCUSED) && checkStateProperty(Button::StateProperty::HOVERED)) {
+        if (pressed && checkStateProperty(Button::StateProperty::HOVERED)) {
             GetTexture().Clear(colorPack.focusedHovered);
             label->SetColor(labelFocusedColor);
-        } else if (checkStateProperty(Button::StateProperty::FOCUSED)) {
+        } else if (pressed) {
             label->SetColor(labelFocusedColor);
             GetTexture().Clear(colorPack.focused);
         } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
@@ -216,7 +221,7 @@ protected:
 template <IsPointer T>
 class Outliner final : public RecordsPanel<ObjectButton> {
     static constexpr float RECORD_HEIGHT = 20;
-    std::optional<std::pair<std::string, T>> currentSelected;
+    std::optional<std::pair<std::string, T>> currentSelected = std::nullopt;
     std::function<void()> onSelectChangedAction = nullptr;
 public:
     using RecordsPanel::RecordsPanel;
@@ -236,13 +241,13 @@ public:
         record->SetSize({GetSize().x, RECORD_HEIGHT});
     
         record->SetLabel(name);
-        record->SetMode(Button::Mode::FOCUS_MODE);
+        record->SetMode(Button::Mode::STICK_MODE);
 
         UI *ui = static_cast<UI *>(GetUI()); assert(ui);
         record->LoadSVGMainIcon(ui->GetTexturePack().outlinerObMeshSvgPath);
         record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {
-                if (onSelect) onSelect();
+                if (onSelect) onSelect();     
                 if (!currentSelected.has_value() || currentSelected.value().second != object) {
                     currentSelected = std::pair<std::string, T>(name, object);
                     if (onSelectChangedAction) onSelectChangedAction();
@@ -252,6 +257,7 @@ public:
 
         record->SetOnUnpressAction([this, object, onUnSelect]()
             {
+                std::cout << "onUnpress\n";
                 if (onUnSelect) onUnSelect();
                 if (currentSelected.has_value() && currentSelected.value().second == object) {
                     currentSelected.reset();
@@ -287,10 +293,15 @@ public:
         std::function<void()> onUnSelect
     ) { outliner->AddRecord(object, name, onSelect, onUnSelect); }
 
+    void SetOnSelectChangedAction(std::function<void()> action) { 
+        outliner->SetOnSelectChangedAction(action); 
+    }
+    std::optional<std::pair<std::string, T>> GetSelected() { 
+        return outliner->GetSelected(); 
+    }
+
 protected:
     void OnSizeChanged() override { layout(); }
-
-
 
 private:
     void layout() {

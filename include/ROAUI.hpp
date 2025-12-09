@@ -26,7 +26,7 @@ struct TexturePack {
 
 
 class UI : public hui::UI {
-    dr4::Font *defaultFont = nullptr;
+    std::unique_ptr<dr4::Font> defaultFont = nullptr;
     std::vector<std::pair<dr4::Event::KeyEvent, std::function<void()>>> hotkeyTable;
     TexturePack texturePack;
 
@@ -35,16 +35,15 @@ public:
         assert(window);
 
         try {
-            defaultFont = window->CreateFont();        
+            defaultFont.reset(window->CreateFont());        
             if (defaultFont)
                 defaultFont->LoadFromFile(defaultFontPath);
         } catch (std::runtime_error &e) {
-            delete defaultFont;
             std::cerr << "roa::UI create defaultFont failed : " << e.what() << "\n";
             throw;
         }
     }
-    ~UI() { if (defaultFont) delete defaultFont; }
+    ~UI() = default;
 
     void AddHotkey(dr4::Event::KeyEvent keyEvent, std::function<void()> onHotkey) {
         assert(onHotkey);
@@ -88,7 +87,7 @@ public:
         }
     }
 
-    dr4::Font *GetDefaultFont() { return defaultFont; }
+    dr4::Font *GetDefaultFont() { return defaultFont.get(); }
 
     void SetTexturePack(const TexturePack &pack) { texturePack = pack; }
     const TexturePack &GetTexturePack() const { return texturePack; }; 

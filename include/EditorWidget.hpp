@@ -1,204 +1,194 @@
-// #pragma once
-// #include "BasicWidgets/Containers.hpp"
-// #include "RecordsPanel.hpp"
-// #include "RayTracerWidgets/Viewport3D.hpp"
-// #include "Utilities/ROAGUIRender.hpp"
-// // #include "PropertiesPanel.hpp"
-
-// namespace roa 
-// {
+#pragma once
+#include "BasicWidgets/Containers.hpp"
+#include "RecordsPanel.hpp"
+#include "RayTracerWidgets/Viewport3D.hpp"
+#include "Utilities/ROAGUIRender.hpp"
+#include "PropertiesPanel.hpp"
+namespace roa 
+{
  
-// inline void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
-//     char* end = nullptr;
-//     float val = std::strtof(inp.c_str(), &end);
-//     if (*end == '\0' && end != inp.c_str()) {
-//         setter(val);
-//     }
-// }
+inline void setIfStringConvertedToFloat(const std::string &inp, std::function<void(float)> setter) {
+    char* end = nullptr;
+    float val = std::strtof(inp.c_str(), &end);
+    if (*end == '\0' && end != inp.c_str()) {
+        setter(val);
+    }
+}
 
-// class EditorWidget final : public ZContainer<hui::Widget> {
-//     static constexpr double PANEL_LAYOUT_SHARE = 0.4; 
-//     std::unique_ptr<roa::Viewport3D> Viewport3D = nullptr;
+class EditorWidget final : public LinContainer<hui::Widget> {
+    Viewport3DWindow             *viewport3D;
+    OutlinerWindow<Primitives *> *outliner;
+    PropertiesWindow             *propertiesPanel;
 
-//     std::unique_ptr<OutLinerWindow<Primitives *>> objectsPanel = nullptr;
-//     // std::unique_ptr<PropertiesPanel> propertiesPanel = nullptr;
-
-//     bool recordsNeedChange = true;
-
-// public:
-//     EditorWidget(hui::UI *ui): 
-//         ZContainer(ui),
-//         Viewport3D(new roa::Viewport3D(ui)),
-//         objectsPanel(new ObjectsPanel<::Primitives *>(ui)),
-//         propertiesPanel(new PropertiesPanel(ui))
-//     {
-//         assert(ui);
+public:
+    EditorWidget(hui::UI *ui): 
+        LinContainer(ui),
+        viewport3D(new Viewport3DWindow(ui)),
+        outliner(new OutlinerWindow<Primitives *>(ui)),
+        propertiesPanel(new PropertiesWindow(ui))
+    {
+        assert(ui);
     
-//         objectsPanel->SetOnSelectChangedAction([this](){ recordsNeedChange = true; });
+        outliner->SetOnSelectChangedAction([this](){ updateRecords(); });
 
-//         BecomeParentOf(Viewport3D.get());
-//         BecomeParentOf(objectsPanel.get());
-//         BecomeParentOf(propertiesPanel.get());
-//     }
+        AddWidget(viewport3D);
+        AddWidget(outliner);
+        AddWidget(propertiesPanel);
+    }
 
-//     ~EditorWidget() = default;
+    ~EditorWidget() = default;
 
-//     void AddRecord(::Primitives *object) {
-//         assert(object);
+    void AddRecord(Primitives *object) {
+        assert(object);
     
-//         static size_t AddObjectIter = 0; AddObjectIter++;
+        static size_t AddObjectIter = 0; AddObjectIter++;
     
-//         Viewport3D->AddRecord(object);
+        viewport3D->AddRecord(object);
         
-//         objectsPanel->AddRecord(
-//             object, object->typeString() + std::to_string(AddObjectIter),
-//             [object](){ object->setSelectFlag(true); },
-//             [object](){ object->setSelectFlag(false); }    
-//         );
-//     }
-//     void AddLight(::Light *light) {
-//         assert(light);
-//         Viewport3D->AddLight(light);
-//     }
+        outliner->AddRecord(
+            object, object->typeString() + std::to_string(AddObjectIter),
+            [this, object](){ object->setSelectFlag(true); },
+            [this, object](){ object->setSelectFlag(false); }    
+        );
+    }
 
-//     void AddRecord(gm::IPoint3 position, ::Primitives *object) {
-//         assert(object);
+    void AddLight(::Light *light) {
+        assert(light);
+        viewport3D->AddLight(light);
+    }
+    void AddRecord(gm::IPoint3 position, Primitives *object) {
+        assert(object);
     
-//         static size_t AddObjectIter = 0; AddObjectIter++;
+        static size_t AddObjectIter = 0; AddObjectIter++;
     
-//         Viewport3D->AddRecord(position, object);
+        viewport3D->AddRecord(position, object);
         
-//         objectsPanel->AddRecord(
-//             object, object->typeString() + std::to_string(AddObjectIter),
-//             [object](){ object->setSelectFlag(true); },
-//             [object](){ object->setSelectFlag(false); }    
-//         );
-//     }
-//     void AddLight(gm::IPoint3 position, ::Light *light) {
-//         assert(light);
-//         Viewport3D->AddLight(position, light);
-//     }
+        outliner->AddRecord(
+            object, object->typeString() + std::to_string(AddObjectIter),
+            [object](){ object->setSelectFlag(true); },
+            [object](){ object->setSelectFlag(false); }    
+        );
+    }
+    void AddLight(gm::IPoint3 position, ::Light *light) {
+        assert(light);
+        viewport3D->AddLight(position, light);
+    }
 
-//     std::vector<::Primitives *> &GetPrimitives() { return Viewport3D->GetPrimitives(); }
-//     std::vector<::Light *>      &GetLights()     { return Viewport3D->GetLights(); }
+    std::vector<::Primitives *> &GetPrimitives() { return viewport3D->GetPrimitives(); }
+    std::vector<::Light *>      &GetLights()     { return viewport3D->GetLights(); }
 
-//     SceneManager &GetSceneManager() { return Viewport3D->GetSceneManager(); }
+    SceneManager &GetSceneManager() { return viewport3D->GetSceneManager(); }
 
-//     void BringToFront(hui::Widget *) override {}
+    void BringToFront(hui::Widget *) override {}
 
-// protected:
-//     hui::EventResult PropagateToChildren(hui::Event &event) override {
-//         if (event.Apply(*Viewport3D) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-//         // if (event.Apply(*objectsPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-//         // if (event.Apply(*propertiesPanel) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-//         return hui::EventResult::UNHANDLED;
-//     }
+protected:
+    void OnSizeChanged() override { 
+        layout(); 
+    }    
 
-//     hui::EventResult OnIdle(hui::IdleEvent &event) override {
-//         if (recordsNeedChange) updateRecords();
-//         event.Apply(*Viewport3D);
-//         event.Apply(*objectsPanel);
-//         event.Apply(*propertiesPanel);
+    void Redraw() const override {
+        GetTexture().Clear({FULL_TRANSPARENT});
+        viewport3D->DrawOn(GetTexture());        
+        outliner->DrawOn(GetTexture());
+        propertiesPanel->DrawOn(GetTexture());
+    }
 
-//         return hui::EventResult::UNHANDLED;
-//     }
+private:
+    void layout() {
+        float padding = 3;
+    
+        float viewport3DWHCoef = 1.8;
+        float viewport3DHeight = 30;
+        viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
 
-//     void OnSizeChanged() override { 
-//         layout(); 
-//     }    
+        float outlinerHWCoef = 1;
+        float outlinerHeight = 200;
+        outliner->SetSize({outlinerHWCoef * outlinerHeight, outlinerHeight});
 
-//     void Redraw() const override {
-//         GetTexture().Clear({FULL_TRANSPARENT});
+        float propertiesWindowHWCoef = 1;
+        float propertiesWindowHeight = 200;
+        propertiesPanel->SetSize({propertiesWindowHWCoef * propertiesWindowHeight, propertiesWindowHeight});
 
-//         Viewport3D->DrawOn(GetTexture());        
-//         objectsPanel->DrawOn(GetTexture());
+        dr4::Vec2f outlinerPos = {viewport3D->GetSize().x + padding, 0};
+        outliner->SetPos(outlinerPos);
 
-//         // propertiesPanel->DrawOn(GetTexture());
-//     }
+        dr4::Vec2f propertiesPanelPos = outlinerPos + dr4::Vec2f(0, propertiesWindowHeight + padding);
+        propertiesPanel->SetPos(propertiesPanelPos);
 
-// private:
-//     void layout() {
-//         float padding = 3;
+        viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
+    }
 
-//         float Viewport3DWHCoef = 1.8;
-//         float Viewport3DHeight = 300;
-//         Viewport3D->SetSize({Viewport3DWHCoef * Viewport3DHeight, Viewport3DHeight});
+    void updateRecords() {
+        std::optional<std::pair<std::string, ::Primitives *>> selectedObject = outliner->GetSelected();
 
-//         float objectsPanelHWCoef = 1;
-//         float objectsPanelHeight = 200;
-//         objectsPanel->SetSize({objectsPanelHWCoef * objectsPanelHeight, objectsPanelHeight});
+        propertiesPanel->ClearRecords();
+        if (selectedObject.has_value()) {
+            addCordsPoperties(selectedObject.value().second);
+            // propertiesPanel->SetLabel(selectedObject.value().first);
+        } else {
+            // propertiesPanel->SetTitle("");
+        }
 
-//         dr4::Vec2f objectsPanelPos = {Viewport3D->GetSize().x + padding, 0};
-//         objectsPanel->SetPos(objectsPanelPos);
-
-//         // objectsPanel->SetSize({panelWidth, panelHeight});
-//         // propertiesPanel->SetSize({panelWidth, panelHeight});
-
-//         // objectsPanel->SetPos({sceneWidth, 0});
-//         // propertiesPanel->SetPos({sceneWidth, panelHeight});
-//     }
-
-//     void updateRecords() {
-//         std::optional<std::pair<std::string, ::Primitives *>> selectedObject = objectsPanel->GetSelected();
-//         propertiesPanel->ClearRecords();
-        
-//         // if (selectedObject.has_value()) {
-//         //     addCordsPoperties(selectedObject.value().second);
-//         //     propertiesPanel->SetTitle(selectedObject.value().first);
-//         // } else {
-//         //     propertiesPanel->SetTitle("");
-//         // }
-        
-//         recordsNeedChange = false;
-//     }
+        ForceRedraw();
+    }
     
 
-//     void addCordsPoperties(::Primitives *selectedObject) {
-//         assert(selectedObject);
+    void addCordsPoperties(::Primitives *selectedObject) {
+        std::cout << "add property\n";
+        assert(selectedObject);
     
-//         std::string XContent = std::to_string(selectedObject->position().x());
-//         std::string YContent = std::to_string(selectedObject->position().y());
-//         std::string ZContent = std::to_string(selectedObject->position().z());
+        std::string XLabel = "Location X";
+        std::string YLabel = "                 Y";
+        std::string ZLabel = "                 Z";
     
-//         propertiesPanel->AddProperty
-//             (
-//                 "X", XContent,
-//                 [selectedObject](const std::string &newCord)
-//                 {
-//                     setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
-//                         auto pos = selectedObject->position();
-//                         pos.setX(val);
-//                         selectedObject->setPosition(pos);
-//                     });
-//                 }
-//             );
-//         propertiesPanel->AddProperty
-//             (
-//                 "Y", YContent,
-//                 [selectedObject](const std::string &newCord)
-//                 {
-//                     setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
-//                         auto pos = selectedObject->position();
-//                         pos.setY(val);
-//                         selectedObject->setPosition(pos);
-//                     });
-//                 }
-//             );
-//         propertiesPanel->AddProperty
-//         (
-//             "Z", ZContent,
-//             [selectedObject](const std::string &newCord)
-//             {
-//                 setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
-//                     auto pos = selectedObject->position();
-//                     pos.setZ(val);
-//                     selectedObject->setPosition(pos);
-//                 });
-//             }
-//         );
-//     }
+        std::string XContent = std::to_string(selectedObject->position().x());
+        std::string YContent = std::to_string(selectedObject->position().y());
+        std::string ZContent = std::to_string(selectedObject->position().z());
 
+        std::function<void(const std::string &newCord)> XCordFunction = 
+        [selectedObject](const std::string &newCord)
+        {
+            setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
+                auto pos = selectedObject->position();
+                pos.setY(val);
+                selectedObject->setPosition(pos);
+            });
+        };
+    
+        std::function<void(const std::string &newCord)> YCordFunction = 
+        [selectedObject](const std::string &newCord)
+        {
+            setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
+                auto pos = selectedObject->position();
+                pos.setY(val);
+                selectedObject->setPosition(pos);
+            });
+        };
+    
+        std::function<void(const std::string &newCord)> ZCordFunction = 
+        [selectedObject](const std::string &newCord)
+        {
+            setIfStringConvertedToFloat(newCord, [selectedObject](float val) {
+                auto pos = selectedObject->position();
+                pos.setZ(val);
+                selectedObject->setPosition(pos);
+            });
+        };
+    
+        roa::Property *transformProperty = new roa::Property(GetUI());
+        transformProperty->SetLabel("Transform");
+        transformProperty->AddPropertyField(XLabel, XContent, XCordFunction);
+        transformProperty->AddPropertyField(YLabel, YContent, YCordFunction);
+        transformProperty->AddPropertyField(ZLabel, ZContent, ZCordFunction);
 
-// };
+        // roa::Property *MaterialProperty = new roa::Property(GetUI());
+        // MaterialProperty->SetLabel("Material");
+        // MaterialProperty->AddPropertyField("Diffuse  X", "11", nullptr);
+        // MaterialProperty->AddPropertyField("         Y", "3", nullptr);
+        // MaterialProperty->AddPropertyField("         Z", "12", nullptr);
 
-// } // namespace roa
+        propertiesPanel->AddProperty(transformProperty);
+    }
+};
+
+} // namespace roa
