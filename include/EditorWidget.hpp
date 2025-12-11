@@ -125,6 +125,7 @@ private:
         if (selectedObject.has_value()) {
             addCordsProperties(selectedObject.value().second);
             addMaterialProperties(selectedObject.value().second);
+            addSpecialProperties(selectedObject.value().second);
             // propertiesPanel->SetLabel(selectedObject.value().first);
         } else {
             // propertiesPanel->SetTitle("");
@@ -203,6 +204,24 @@ private:
         propertiesPanel->AddProperty(diffuseProperty);
         propertiesPanel->AddProperty(specularProperty);
         propertiesPanel->AddProperty(emittedProperty);
+    }
+
+    void addSpecialProperties(::Primitives *selectedObject) {
+        ::SphereObject *sphere = dynamic_cast<::SphereObject *>(selectedObject);
+        if (sphere) {
+            roa::Property *sphereProperty = new roa::Property(GetUI());
+            fillSphereProperty(sphere, sphereProperty);
+            propertiesPanel->AddProperty(sphereProperty);
+            return;
+        }
+
+        ::PlaneObject *plane = dynamic_cast<::PlaneObject *>(selectedObject);
+        if (plane) {
+            roa::Property *planeProperty = new roa::Property(GetUI());
+            fillPlaneProperty(plane, planeProperty);
+            propertiesPanel->AddProperty(planeProperty);
+            return;
+        }
     }
 
     void fillSpecularProperty(::Primitives *selectedObject, roa::Property *specularProperty) {
@@ -311,6 +330,64 @@ private:
         emittedProperty->AddPropertyField(ZLabel, ZContent, setZ);
     }
 
+    void fillSphereProperty(::SphereObject *selectedSphere, roa::Property *property) {
+        assert(selectedSphere);
+        assert(property);
+
+        float radius = selectedSphere->getRadius();
+
+        std::string radiusLabel   = "Radius";
+        std::string radiusContent = std::to_string(radius);
+
+        auto setRadius = [selectedSphere](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedSphere](float v){
+                selectedSphere->setRadius(v);
+            });
+        };
+
+        property->SetLabel("Sphere properties");
+        property->AddPropertyField(radiusLabel, radiusContent, setRadius);
+    }
+
+    void fillPlaneProperty(::PlaneObject *seletedPlane, roa::Property *property) {
+        assert(seletedPlane);
+        assert(property);
+
+        std::string XLabel = "Normal X";
+        std::string YLabel = "                 Y";
+        std::string ZLabel = "                 Z";
+
+        std::string XContent = std::to_string(seletedPlane->getNormal().x());
+        std::string YContent = std::to_string(seletedPlane->getNormal().y());
+        std::string ZContent = std::to_string(seletedPlane->getNormal().z());
+
+        auto setX = [seletedPlane](const std::string &s){
+            setIfStringConvertedToFloat(s, [seletedPlane](float v){
+                gm::IVec3f normal = seletedPlane->getNormal();
+                normal.setX(v);
+                seletedPlane->setNormal(normal);
+            });
+        };
+        auto setY = [seletedPlane](const std::string &s){
+            setIfStringConvertedToFloat(s, [seletedPlane](float v){
+                gm::IVec3f normal = seletedPlane->getNormal();
+                normal.setY(v);
+                seletedPlane->setNormal(normal);
+            });
+        };
+        auto setZ = [seletedPlane](const std::string &s){
+            setIfStringConvertedToFloat(s, [seletedPlane](float v){
+                gm::IVec3f normal = seletedPlane->getNormal();
+                normal.setZ(v);
+                seletedPlane->setNormal(normal);
+            });
+        };
+
+        property->SetLabel("Plane properties");
+        property->AddPropertyField(XLabel, XContent, setX);
+        property->AddPropertyField(YLabel, YContent, setY);
+        property->AddPropertyField(ZLabel, ZContent, setZ);
+    }
 };
 
 } // namespace roa

@@ -257,7 +257,6 @@ public:
 
         record->SetOnUnpressAction([this, object, onUnSelect]()
             {
-                std::cout << "onUnpress\n";
                 if (onUnSelect) onUnSelect();
                 if (currentSelected.has_value() && currentSelected.value().second == object) {
                     currentSelected.reset();
