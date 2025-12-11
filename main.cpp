@@ -66,11 +66,11 @@ void createSceneObjects
 
 
     for (int i = 0; i < 10; i++) {
-        SphereObject *sphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
+        RTMaterial *sphereMaterial = materialManager.MakeMetal({0.8, 0.8, 0.8}, 0.3);
+        SphereObject *sphere = new SphereObject(1, sphereMaterial, &editor->GetSceneManager());
         sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
         editor->AddRecord(sphere);
     }
-
 
     ground->setPosition({0, 0, -100});
     glassSphere->setPosition({0, 0, 1});

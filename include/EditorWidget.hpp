@@ -123,7 +123,8 @@ private:
 
         propertiesPanel->ClearRecords();
         if (selectedObject.has_value()) {
-            addCordsPoperties(selectedObject.value().second);
+            addCordsProperties(selectedObject.value().second);
+            addMaterialProperties(selectedObject.value().second);
             // propertiesPanel->SetLabel(selectedObject.value().first);
         } else {
             // propertiesPanel->SetTitle("");
@@ -133,8 +134,7 @@ private:
     }
     
 
-    void addCordsPoperties(::Primitives *selectedObject) {
-        std::cout << "add property\n";
+    void addCordsProperties(::Primitives *selectedObject) {
         assert(selectedObject);
     
         std::string XLabel = "Location X";
@@ -189,6 +189,128 @@ private:
 
         propertiesPanel->AddProperty(transformProperty);
     }
+    void addMaterialProperties(::Primitives *selectedObject) {
+        assert(selectedObject);
+
+        roa::Property *diffuseProperty = new roa::Property(GetUI());
+        roa::Property *specularProperty = new roa::Property(GetUI());
+        roa::Property *emittedProperty = new roa::Property(GetUI());
+    
+        fillSpecularProperty(selectedObject, specularProperty);
+        fillDiffuseProperty(selectedObject, diffuseProperty);
+        fillEmittedProperty(selectedObject, emittedProperty);
+
+        propertiesPanel->AddProperty(diffuseProperty);
+        propertiesPanel->AddProperty(specularProperty);
+        propertiesPanel->AddProperty(emittedProperty);
+    }
+
+    void fillSpecularProperty(::Primitives *selectedObject, roa::Property *specularProperty) {
+        assert(selectedObject);
+        assert(specularProperty);
+
+        auto &m = *selectedObject->material();
+
+        std::string XLabel = "Specular X";
+        std::string YLabel = "                 Y";
+        std::string ZLabel = "                 Z";
+
+        std::string XContent = std::to_string(m.specular().x());
+        std::string YContent = std::to_string(m.specular().y());
+        std::string ZContent = std::to_string(m.specular().z());
+
+        auto setX = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->specular().setX(v);
+            });
+        };
+        auto setY = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->specular().setY(v);
+            });
+        };
+        auto setZ = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->specular().setZ(v);
+            });
+        };
+
+        specularProperty->SetLabel("Specular");
+        specularProperty->AddPropertyField(XLabel, XContent, setX);
+        specularProperty->AddPropertyField(YLabel, YContent, setY);
+        specularProperty->AddPropertyField(ZLabel, ZContent, setZ);
+    }
+    void fillDiffuseProperty(::Primitives *selectedObject, roa::Property *diffuseProperty) {
+        assert(selectedObject);
+        assert(diffuseProperty);
+
+        auto &m = *selectedObject->material();
+
+        std::string XLabel = "Diffuse X";
+        std::string YLabel = "                 Y";
+        std::string ZLabel = "                 Z";
+
+        std::string XContent = std::to_string(m.diffuse().x());
+        std::string YContent = std::to_string(m.diffuse().y());
+        std::string ZContent = std::to_string(m.diffuse().z());
+
+        auto setX = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->diffuse().setX(v);
+            });
+        };
+        auto setY = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->diffuse().setY(v);
+            });
+        };
+        auto setZ = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->diffuse().setZ(v);
+            });
+        };
+
+        diffuseProperty->SetLabel("Diffuse");
+        diffuseProperty->AddPropertyField(XLabel, XContent, setX);
+        diffuseProperty->AddPropertyField(YLabel, YContent, setY);
+        diffuseProperty->AddPropertyField(ZLabel, ZContent, setZ);
+    }
+    void fillEmittedProperty(::Primitives *selectedObject, roa::Property *emittedProperty) {
+        assert(selectedObject);
+        assert(emittedProperty);
+
+        auto &m = *selectedObject->material();
+
+        std::string XLabel = "Emitted X";
+        std::string YLabel = "                 Y";
+        std::string ZLabel = "                 Z";
+
+        std::string XContent = std::to_string(m.emitted().x());
+        std::string YContent = std::to_string(m.emitted().y());
+        std::string ZContent = std::to_string(m.emitted().z());
+
+        auto setX = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->emitted().setX(v);
+            });
+        };
+        auto setY = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->emitted().setY(v);
+            });
+        };
+        auto setZ = [selectedObject](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedObject](float v){
+                selectedObject->material()->emitted().setZ(v);
+            });
+        };
+
+        emittedProperty->SetLabel("Emitted");
+        emittedProperty->AddPropertyField(XLabel, XContent, setX);
+        emittedProperty->AddPropertyField(YLabel, YContent, setY);
+        emittedProperty->AddPropertyField(ZLabel, ZContent, setZ);
+    }
+
 };
 
 } // namespace roa
