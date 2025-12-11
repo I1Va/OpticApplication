@@ -11,14 +11,16 @@ class PropertyField final : public LinContainer<hui::Widget> {
     std::unique_ptr<dr4::Text> label;
     TextInputWidget           *inputField;
 
+    dr4::Color BGColor = FULL_TRANSPARENT;
+
 public:
     PropertyField(hui::UI *ui) : LinContainer(ui), label(ui->GetWindow()->CreateText()), inputField(new TextInputWidget(ui)) { 
         assert(ui); 
         AddWidget(inputField);
 
         label->SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
-        label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize + 1);
-        inputField->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize + 1);
+        label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
+        inputField->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
     }
 
     ~PropertyField() = default;
@@ -29,6 +31,10 @@ public:
     }
     void SetContent(const std::string &content) {
         inputField->SetText(content);
+        ForceRedraw();
+    }
+    void SetBGColor(const dr4::Color color) {
+        BGColor = color;
         ForceRedraw();
     }
 
@@ -54,8 +60,7 @@ protected:
     }
     
     void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
-        
+        GetTexture().Clear(BGColor);
         label->DrawOn(GetTexture());
         inputField->DrawOn(GetTexture());
     }
@@ -64,6 +69,7 @@ protected:
 class Property final : public DropDownMenu {
     static constexpr float RECORDS_PADDING = 1;
     static constexpr float PROPERTY_FIELDS_PANEL_PADDING = 30;
+    const dr4::Color BGColor = {61, 61, 61, 255};
 
     const dr4::Vec2f recordsStartPos = dr4::Vec2f(16, 0);
 
@@ -82,7 +88,7 @@ public:
         
         propertyFieldsPanel->SetSize({30, 200});
 
-        propertyFieldsPanel->SetBGColor({61, 61, 61});
+        propertyFieldsPanel->SetBGColor(BGColor);
         dropDown = propertyFieldsPanel;
         AddWidget(propertyFieldsPanel);
         
@@ -100,6 +106,7 @@ public:
     
         properyField->SetLabel(label);
         properyField->SetContent(value);
+        properyField->SetBGColor(BGColor);
         properyField->SetOnEnterAction(setPropertyVal);
 
         propertyFieldsPanel->AddRecord(properyField);

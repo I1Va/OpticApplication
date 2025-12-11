@@ -137,6 +137,21 @@ int main(int argc, const char *argv[]) {
 
     
  // SETUP SCENE OBJECTS
+
+    // roa::DropDownButton *button = new roa::DropDownButton(&ui);
+    // button->SetSize(100, 100);
+    // button->SetPos({100, 300});
+    // button->SetLabel("Transform");
+    // mainWindow->AddWidget(button);
+
+
+    // mainWindow->AddWidget(label);
+
+
+
+
+
+
     RTMaterialManager materialManager;
 
     roa::EditorWidget *editor = new roa::EditorWidget(&ui);
@@ -147,11 +162,15 @@ int main(int argc, const char *argv[]) {
    
     mainWindow->AddWidget(editor);
 
+    
+
+
+
 
 // MODALS
 
-    // roa::PPCanvasWidget *ppCanvas = new roa::PPCanvasWidget(&ui, ppPlugins);
-    // mainWindow->SetModal(ppCanvas);
+    roa::PPCanvasWidget *ppCanvas = new roa::PPCanvasWidget(&ui, ppPlugins);
+    mainWindow->SetModal(ppCanvas);
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [mainWindow](){mainWindow->SwitchModalActiveFlag(); });
 
 // MAIN LOOP

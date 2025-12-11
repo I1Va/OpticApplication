@@ -98,7 +98,7 @@ private:
         float padding = 3;
     
         float viewport3DWHCoef = 1.8;
-        float viewport3DHeight = 30;
+        float viewport3DHeight = 300;
         viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
 
         float outlinerHWCoef = 1;

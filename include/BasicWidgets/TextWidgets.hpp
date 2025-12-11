@@ -10,6 +10,59 @@
 namespace roa
 {
 
+
+// class TextLabel final : public hui::Widget {
+//     std::unique_ptr<dr4::Text> label;
+//     dr4::Color BGColor = FULL_TRANSPARENT;
+//     int borderRadius = 2;
+
+// public:
+//     TextLabel(hui::UI *ui) : hui::Widget(ui), label(ui->GetWindow()->CreateText()) {
+//         assert(ui);
+    
+//         label->SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
+//         label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
+//     }
+
+//     ~TextLabel() = default;
+
+//     void SetLabel(const std::string &content) { 
+//         label->SetText(content); 
+//         ForceRedraw();
+//     }
+
+//     void SetLabelColor(const dr4::Color color) { 
+//         label->SetColor(color); 
+//         ForceRedraw();
+//     }
+
+//     void SetFontSize(const float size) { 
+//         label->SetFontSize(size);
+//         ForceRedraw();
+//     }
+
+//     void SetVAlign(const dr4::Text::VAlign align) {
+//         label->SetVAlign(align); 
+//         ForceRedraw();
+//     }
+
+//     void SetFont(const dr4::Font *font) {
+//         assert(font); 
+//         label->SetFont(font); 
+//     }
+
+//     void SetBGColor(const dr4::Color color) { 
+//         BGColor = color; 
+//     }
+
+// protected:
+//     void Redraw() const override {
+//         GetTexture().Clear(BGColor);
+//         label->DrawOn(GetTexture());        
+//     }
+// };
+
+
 class TextWidget : public hui::Widget {
 protected:
     std::unique_ptr<dr4::Text> text;
