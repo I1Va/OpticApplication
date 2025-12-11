@@ -10,59 +10,6 @@
 namespace roa
 {
 
-
-// class TextLabel final : public hui::Widget {
-//     std::unique_ptr<dr4::Text> label;
-//     dr4::Color BGColor = FULL_TRANSPARENT;
-//     int borderRadius = 2;
-
-// public:
-//     TextLabel(hui::UI *ui) : hui::Widget(ui), label(ui->GetWindow()->CreateText()) {
-//         assert(ui);
-    
-//         label->SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
-//         label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
-//     }
-
-//     ~TextLabel() = default;
-
-//     void SetLabel(const std::string &content) { 
-//         label->SetText(content); 
-//         ForceRedraw();
-//     }
-
-//     void SetLabelColor(const dr4::Color color) { 
-//         label->SetColor(color); 
-//         ForceRedraw();
-//     }
-
-//     void SetFontSize(const float size) { 
-//         label->SetFontSize(size);
-//         ForceRedraw();
-//     }
-
-//     void SetVAlign(const dr4::Text::VAlign align) {
-//         label->SetVAlign(align); 
-//         ForceRedraw();
-//     }
-
-//     void SetFont(const dr4::Font *font) {
-//         assert(font); 
-//         label->SetFont(font); 
-//     }
-
-//     void SetBGColor(const dr4::Color color) { 
-//         BGColor = color; 
-//     }
-
-// protected:
-//     void Redraw() const override {
-//         GetTexture().Clear(BGColor);
-//         label->DrawOn(GetTexture());        
-//     }
-// };
-
-
 class TextWidget : public hui::Widget {
 protected:
     std::unique_ptr<dr4::Text> text;
@@ -70,6 +17,7 @@ protected:
     std::unique_ptr<dr4::Line> caret;
     int caretPos = 0;
     bool drawCaret = false;
+    dr4::Color BGColor = FULL_TRANSPARENT;
 
 public:
     TextWidget(hui::UI *ui): hui::Widget(ui), text(GetUI()->GetWindow()->CreateText()), caret(GetUI()->GetWindow()->CreateLine()) { 
@@ -104,6 +52,15 @@ public:
         ForceRedraw();
     }
 
+    void SetVAlign(const dr4::Text::VAlign align) {
+        text->SetVAlign(align); 
+        ForceRedraw();
+    }
+
+    void SetBGColor(const dr4::Color color) { 
+        BGColor = color; 
+    }
+
     void SetCaretPos(const int pos) { 
         caretPos = pos; 
         relayoutCaret();
@@ -124,7 +81,7 @@ public:
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
+        GetTexture().Clear(BGColor);
         text->DrawOn(GetTexture());
         if (drawCaret) {
             caret->DrawOn(GetTexture());
@@ -153,7 +110,7 @@ protected:
 };
 
 class TextInputWidget : public TextWidget {
-    static constexpr double CARET_BLINK_DELTA_SECS = 0.5; 
+    static constexpr double CARET_BLINK_DELTA_SECS = 0.3; 
     
     double curCaretBlinkDeltaSecs = CARET_BLINK_DELTA_SECS; 
     bool caretBlinkState = false;

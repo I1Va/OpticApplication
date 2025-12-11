@@ -35,6 +35,7 @@ public:
     }
     void SetBGColor(const dr4::Color color) {
         BGColor = color;
+        inputField->SetBGColor(BGColor);
         ForceRedraw();
     }
 
@@ -53,6 +54,7 @@ protected:
 
         inputField->SetSize({inputFieldWidth, inputFieldWidthHeight}); 
         inputField->SetPos({labelWIdth, 0});
+        inputField->SetBGColor(BGColor);
 
         inputField->ForceRedraw();
         ForceRedraw();

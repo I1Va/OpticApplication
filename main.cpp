@@ -138,20 +138,6 @@ int main(int argc, const char *argv[]) {
     
  // SETUP SCENE OBJECTS
 
-    // roa::DropDownButton *button = new roa::DropDownButton(&ui);
-    // button->SetSize(100, 100);
-    // button->SetPos({100, 300});
-    // button->SetLabel("Transform");
-    // mainWindow->AddWidget(button);
-
-
-    // mainWindow->AddWidget(label);
-
-
-
-
-
-
     RTMaterialManager materialManager;
 
     roa::EditorWidget *editor = new roa::EditorWidget(&ui);
