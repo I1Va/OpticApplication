@@ -47,7 +47,7 @@ public:
     void SetMode(const Mode m) { mode = m; }
 
 protected:
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override final { 
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override { 
         if (!GetRect().Contains(event.pos)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
         
@@ -75,7 +75,7 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnMouseUp(hui::MouseButtonEvent &event) override final { 
+    hui::EventResult OnMouseUp(hui::MouseButtonEvent &event) override { 
         if (!GetRect().Contains(event.pos) && (GetUI()->GetCaptured() != this)) return hui::EventResult::UNHANDLED;
         if (!(event.button == dr4::MouseButtonType::LEFT)) return hui::EventResult::UNHANDLED;
 
@@ -98,7 +98,7 @@ protected:
         return hui::EventResult::HANDLED;
     }
 
-    hui::EventResult OnIdle(hui::IdleEvent &evt) override final {
+    hui::EventResult OnIdle(hui::IdleEvent &evt) override {
         OnIdleSelfAction(evt);
         
         switch (mode) {

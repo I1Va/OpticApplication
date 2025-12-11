@@ -266,8 +266,8 @@ private:
         auto &m = *selectedObject->material();
 
         std::string XLabel = "Diffuse X";
-        std::string YLabel = "                 Y";
-        std::string ZLabel = "                 Z";
+        std::string YLabel = "              Y";
+        std::string ZLabel = "              Z";
 
         std::string XContent = std::to_string(m.diffuse().x());
         std::string YContent = std::to_string(m.diffuse().y());
@@ -301,8 +301,8 @@ private:
         auto &m = *selectedObject->material();
 
         std::string XLabel = "Emitted X";
-        std::string YLabel = "                 Y";
-        std::string ZLabel = "                 Z";
+        std::string YLabel = "              Y";
+        std::string ZLabel = "              Z";
 
         std::string XContent = std::to_string(m.emitted().x());
         std::string YContent = std::to_string(m.emitted().y());
@@ -354,8 +354,8 @@ private:
         assert(property);
 
         std::string XLabel = "Normal X";
-        std::string YLabel = "                 Y";
-        std::string ZLabel = "                 Z";
+        std::string YLabel = "               Y";
+        std::string ZLabel = "               Z";
 
         std::string XContent = std::to_string(seletedPlane->getNormal().x());
         std::string YContent = std::to_string(seletedPlane->getNormal().y());
