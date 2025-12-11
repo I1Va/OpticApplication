@@ -72,7 +72,7 @@ void createSceneObjects
         editor->AddRecord(sphere);
     }
 
-    ground->setPosition({0, 0, -100});
+    ground->setPosition({0, 0, -2});
     glassSphere->setPosition({0, 0, 1});
     midSphere->setPosition({0, 4, 3});
     rightSphere->setPosition({2, 0, 1});
@@ -82,10 +82,11 @@ void createSceneObjects
 
     editor->AddRecord(ground);
     editor->AddRecord(glassSphere);
+
     editor->AddRecord(midSphere);
     editor->AddRecord(sun);
-    editor->AddRecord(rightSphere);
 
+    editor->AddRecord(rightSphere);
     editor->AddLight(light);
 }
 

@@ -58,7 +58,8 @@ public:
         for (auto widget : records) {
             EraseWidget(widget);
         }
-        records.clear();    
+        records.clear();
+        ForceRedraw();
     }
     
     void relayout() {
