@@ -9,13 +9,14 @@
 #include "hui/widget.hpp"
 
 #include "BasicWidgets/Containers.hpp"
+#include "PPColorPicker.hpp"
 #include "DropDownMenu.hpp"
 #include "RecordsPanel.hpp"
 #include "RecordsPanel.hpp"
+#include "PPColorPicker.hpp"
 
 namespace roa
 {
-
 
 class PPToolButton final : public TextButton {
     pp::Tool *const tool;
@@ -69,71 +70,11 @@ protected:
     }
 };
 
-
-class PPToolsMenu final : public LinContainer<roa::DropDownMenu> {
-
-public:
-    
-};
-
-class PPMenuWindow final : public Window {
-    const int BORDER_RADIUS = 3;
-    const int BORDER_THICKNESS = 3;
-    const dr4::Color BORDER_COLOR = dr4::Color(255, 255, 0, 255);
-
-    roa::DropDownMenu *toolsMenu;
-    roa::Outliner<pp::Tool *> *toolsList;
-
-    roa::DropDownMenu *pluginsMenu;
-    roa::Outliner<cum::PPToolPlugin *> *pluginsList;
-
-
-public:
-    PPMenuWindow(hui::UI *ui):
-        Window(ui),
-        toolsMenu(new roa::DropDownMenu(ui)),
-        toolsList(new roa::Outliner<pp::Tool *>(ui)),
-        pluginsMenu(new roa::DropDownMenu(ui)),
-        pluginsList(new roa::Outliner<cum::PPToolPlugin *>(ui))
-    {
-        toolsMenu->SetLabel("Tools");
-        pluginsMenu->SetLabel("Plugins");
-
-        toolsMenu->SetDropDownWidget(toolsList);
-        pluginsMenu->SetDropDownWidget(pluginsList);
-
-        AddWidget(toolsMenu);
-        AddWidget(pluginsMenu);
-    }
-
-    ~PPMenuWindow() {
-        if (toolsList) delete toolsList;
-        if (pluginsList) delete pluginsList;
-    }
-
-protected:
-    void OnSizeChanged() override { 
-        layout(); 
-    }
-
-    void layout() {
-        toolsMenu->SetSize(GetSize().x / 2, GetSize().y);
-    
-        pluginsMenu->SetPos({GetSize().x / 2, 0});
-        pluginsMenu->SetSize(GetSize().x / 2, GetSize().y);
-
-        toolsList->SetSize(GetSize().x / 2, 200);
-        pluginsList->SetSize(GetSize().x / 2, 100);
-
-        ForceRedraw();
-    }
-};
-
 class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
     const int BORDER_RADIUS = 3;
     const int BORDER_THICKNESS = 3;
     const dr4::Color BORDER_COLOR = dr4::Color(255, 255, 0, 255);
-    const pp::ControlsTheme theme = 
+    pp::ControlsTheme theme = 
     {
         .shapeFillColor = RED,
         .shapeBorderColor = BLACK,
@@ -145,7 +86,8 @@ class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
     };
 
     OutlinerWindow<pp::Tool *> *toolsMenu;
-    
+    roa::ColorPicker           *colorPicker;
+
     std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
     std::vector<std::unique_ptr<pp::Tool>> tools;
 
@@ -159,12 +101,23 @@ public:
         std::vector<cum::PPToolPlugin*> &toolPlugins
     ) : 
         LinContainer(ui),
-        toolsMenu(new OutlinerWindow<pp::Tool *>(ui))
+        toolsMenu(new OutlinerWindow<pp::Tool *>(ui)),
+        colorPicker(new roa::ColorPicker(ui, theme))
     {
         assert(ui);
 
         SetSize({GetUI()->GetWindow()->GetSize()});
 
+
+        colorPicker->SetPos({50, 50});
+        
+        colorPicker->onColorChanged = [&](dr4::Color c){
+            theme.shapeFillColor = c;
+        };
+    
+        AddWidget(colorPicker);
+     
+            
         toolsMenu->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
         AddWidget(toolsMenu);
@@ -184,15 +137,6 @@ public:
                 tools.push_back(std::move(tool));
             }
         }
-
-        // for (auto &tool : tools) {
-        //     // crete buttons
-        //     roa::PPToolButton *toolButton = new roa::PPToolButton(ui, tool.get(), &selectedTool);
-        //     toolButton->SetMode(Button::Mode::STICK_MODE);
-            
-        //     AddWidget(toolButton);
-        // }
-
     }
 
 protected:
