@@ -48,7 +48,7 @@ public:
         outliner->AddRecord(
             object, object->typeString() + std::to_string(AddObjectIter),
             [this, object](){ object->setSelectFlag(true); },
-            [this, object](){ object->setSelectFlag(false); }    
+            [this, object](){ object->setSelectFlag(false); }   
         );
     }
 

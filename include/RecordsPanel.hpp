@@ -224,6 +224,8 @@ class Outliner final : public RecordsPanel<ObjectButton> {
     static constexpr float RECORD_HEIGHT = 20;
     std::optional<std::pair<std::string, T>> currentSelected = std::nullopt;
     std::function<void()> onSelectChangedAction = nullptr;
+    Button::Mode recordButtonMode = Button::Mode::STICK_MODE;
+
 public:
     using RecordsPanel::RecordsPanel;
     ~Outliner() = default;
@@ -236,17 +238,19 @@ public:
         T object,
         const std::string &name,
         std::function<void()> onSelect,
-        std::function<void()> onUnSelect
+        std::function<void()> onUnSelect,
+        std::string iconPath=""
     ) {
         ObjectButton *record = new ObjectButton(GetUI()); assert(record);
         record->SetSize({GetSize().x, RECORD_HEIGHT});
     
         record->SetLabel(name);
-        record->SetMode(Button::Mode::STICK_MODE);
+        record->SetMode(recordButtonMode);
 
         UI *ui = static_cast<UI *>(GetUI()); assert(ui);
-        record->LoadSVGMainIcon(ui->GetTexturePack().outlinerObMeshSvgPath);
-        record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
+        if (iconPath == "") record->LoadSVGMainIcon(ui->GetTexturePack().outlinerObMeshSvgPath);
+        else                record->LoadSVGMainIcon(iconPath);
+            record->SetOnPressAction([this, name, object, onSelect, onUnSelect]()
             {
                 if (onSelect) onSelect();     
                 if (!currentSelected.has_value() || currentSelected.value().second != object) {
@@ -270,11 +274,19 @@ public:
         
         RecordsPanel<ObjectButton>::AddRecord(record);
     }
+
+    void SetRecordButtonMode(const Button::Mode mode) {
+        recordButtonMode = mode;
+        for (auto record : records) {
+            record->SetMode(mode);
+        }
+        ForceRedraw();
+    }
 };
 
 template <IsPointer T>
 class OutlinerWindow final : public Window {
-    static constexpr float TITLE_BAR_HEIGHT = 20;
+    static constexpr float TITLE_BAR_HEIGHT = 0;
     Outliner<T> *outliner;
 
 public:
@@ -290,14 +302,18 @@ public:
         T object,
         const std::string &name,
         std::function<void()> onSelect,
-        std::function<void()> onUnSelect
-    ) { outliner->AddRecord(object, name, onSelect, onUnSelect); }
+        std::function<void()> onUnSelect,
+        std::string iconPath=""
+    ) { outliner->AddRecord(object, name, onSelect, onUnSelect, iconPath); }
 
     void SetOnSelectChangedAction(std::function<void()> action) { 
         outliner->SetOnSelectChangedAction(action); 
     }
     std::optional<std::pair<std::string, T>> GetSelected() { 
         return outliner->GetSelected(); 
+    }
+    void SetRecordButtonMode(const Button::Mode mode) {
+        outliner->SetRecordButtonMode(mode);
     }
 
 protected:
