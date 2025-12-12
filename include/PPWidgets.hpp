@@ -86,7 +86,7 @@ class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
     };
 
     OutlinerWindow<pp::Tool *> *toolsMenu;
-    roa::ColorPicker           *colorPicker;
+    ColorPickerWindow          *colorPicker;
 
     std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
     std::vector<std::unique_ptr<pp::Tool>> tools;
@@ -102,7 +102,7 @@ public:
     ) : 
         LinContainer(ui),
         toolsMenu(new OutlinerWindow<pp::Tool *>(ui)),
-        colorPicker(new roa::ColorPicker(ui, theme))
+        colorPicker(new roa::ColorPickerWindow(ui, theme))
     {
         assert(ui);
 
@@ -110,10 +110,11 @@ public:
 
 
         colorPicker->SetPos({50, 50});
+        colorPicker->SetSize({300, 300});
         
-        colorPicker->onColorChanged = [&](dr4::Color c){
+        colorPicker->SetOnColorChangedAction([&](dr4::Color c){
             theme.shapeFillColor = c;
-        };
+        });
     
         AddWidget(colorPicker);
      

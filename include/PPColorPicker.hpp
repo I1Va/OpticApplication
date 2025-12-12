@@ -1,10 +1,9 @@
 #pragma once
-// roa/ColorPicker.hpp
-// Header-only ColorPicker widget for ROA GUI system (hui::Widget)
 
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <memory>
 #include <cassert>
 
 #include "hui/widget.hpp"
@@ -12,205 +11,173 @@
 #include "dr4/math/color.hpp"
 #include "dr4/texture.hpp"
 #include "dr4/event.hpp"
-#include "pp/canvas.hpp" // for ControlsTheme (used for handle color)
+#include "pp/canvas.hpp"
 #include "Utilities/ROACommon.hpp"
+#include "BasicWidgets/Window.hpp"
 
-namespace roa {
+namespace roa
+{
 
 class ColorPicker : public hui::Widget {
 public:
-    // Callback called whenever color changes (after interaction).
-    // Receives dr4::Color (RGBA).
     std::function<void(dr4::Color)> onColorChanged;
 
-    // ctor: ui must be valid. theme supplies handle color / accent.
     ColorPicker(hui::UI *ui, const pp::ControlsTheme &theme = DefaultTheme())
-        : hui::Widget(ui),
-          theme_(theme),
-          colorRectPos_{8, 8},
-          hueRectGap_{8},
-          hueRectWidth_{18},
-          cornerPadding_{8},
-          handleRadius_{7.0f},
-          hueLineY_{0.0f},
-          hue_{0.0f},
-          saturation_{1.0f},
-          value_{1.0f},
-          isPointDragged_{false},
-          isLineDragged_{false}
+        : hui::Widget(ui)
     {
-        // sensible default size
+        theme_ = theme;
+        margin_ = 8.0f;
+        gap_ = 8.0f;
+        sliderWidth_ = 18.0f;
+        knobRadius_ = 7.0f;
+        hueCursorY_ = 0.0f;
+        hueDegrees_ = 0.0f;
+        sat_ = 1.0f;
+        val_ = 1.0f;
+        draggingSelector_ = false;
+        draggingSlider_ = false;
         SetSize({260.0f, 160.0f});
         ComputeLayout();
-        // init hueLineY for initial hue of 0
-        hueLineY_ = 0.0f;
+        hueCursorY_ = 0.0f;
     }
 
     ~ColorPicker() override = default;
 
-    // Set/get color from outside (color in dr4::Color, 0..255 channels)
-    void SetColor(const dr4::Color &c) {
+    void SetColor(const dr4::Color &c)
+    {
         float h, s, v;
-        RGB2HSV(c, h, s, v);
-        hue_ = h;
-        saturation_ = s;
-        value_ = v;
-        // update handles accordingly and request redraw
-        UpdateHandlesFromHSV();
+        RGBtoHSV(c, h, s, v);
+        hueDegrees_ = h;
+        sat_ = s;
+        val_ = v;
+        UpdateControlsFromHSV();
         ForceRedraw();
         if (onColorChanged) onColorChanged(GetColor());
     }
 
-    dr4::Color GetColor() const {
-        return HSV2RGB(hue_, saturation_, value_);
+    dr4::Color GetColor() const
+    {
+        return HSVtoRGB(hueDegrees_, sat_, val_);
     }
 
 protected:
-    // Widget overrides
-    void OnSizeChanged() override {
-        ComputeLayout();
-    }
+    void OnSizeChanged() override { ComputeLayout(); }
 
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &evt) override {
-        if (!GetRect().Contains(evt.pos)) return hui::EventResult::UNHANDLED;
-    
-        // evt.pos is local to this widget already (PropagateToChildren handles transformations)
-        const dr4::Vec2f pos = dr4::Vec2f(evt.pos.x, evt.pos.y) - GetPos();
-
-        if (evt.button == dr4::MouseButtonType::LEFT) {
-            // point handle
-            if (PointHitTest(pos)) {
-                isPointDragged_ = true;
+    hui::EventResult OnMouseDown(hui::MouseButtonEvent &ev) override
+    {
+        if (!GetRect().Contains(ev.pos)) return hui::EventResult::UNHANDLED;
+        dr4::Vec2f local = dr4::Vec2f(ev.pos.x, ev.pos.y) - GetPos();
+        if (ev.button == dr4::MouseButtonType::LEFT) {
+            if (SelectorHit(local)) {
+                draggingSelector_ = true;
+                GetUI()->ReportFocus(this);
+                GetUI()->SetCaptured(this);
                 return hui::EventResult::HANDLED;
             }
-            // hue line
-            if (HueLineHitTest(pos)) {
-                isLineDragged_ = true;
-                // move immediately to clicked position
-                float localY = pos.y - hueRectPos_.y;
-                hueLineY_ = std::clamp(localY, 0.0f, hueRectSize_.y - 1.0f);
-                UpdateHSVFromHandles();
+            if (SliderHit(local)) {
+                draggingSlider_ = true;
+                float y = local.y - sliderOrigin_.y;
+                hueCursorY_ = std::clamp(y, 0.0f, sliderSize_.y - 1.0f);
+                UpdateHSVFromControls();
                 ForceRedraw();
                 if (onColorChanged) onColorChanged(GetColor());
+                GetUI()->ReportFocus(this);
+                GetUI()->SetCaptured(this);
                 return hui::EventResult::HANDLED;
             }
-            // clicking color rect moves point there
-            if (ColorRectHitTest(pos)) {
-                dr4::Vec2f clamped = pos;
-                clamped.x = std::clamp(clamped.x, colorRectPos_.x, colorRectPos_.x + colorRectSize_.x - 1.0f);
-                clamped.y = std::clamp(clamped.y, colorRectPos_.y, colorRectPos_.y + colorRectSize_.y - 1.0f);
-                colorPointCenter_ = clamped;
-                UpdateHSVFromHandles();
+            if (PaletteHit(local)) {
+                dr4::Vec2f p = local;
+                p.x = std::clamp(p.x, paletteOrigin_.x, paletteOrigin_.x + paletteSize_.x - 1.0f);
+                p.y = std::clamp(p.y, paletteOrigin_.y, paletteOrigin_.y + paletteSize_.y - 1.0f);
+                selectorCenter_ = p;
+                UpdateHSVFromControls();
                 ForceRedraw();
                 if (onColorChanged) onColorChanged(GetColor());
+                GetUI()->ReportFocus(this);
+                GetUI()->SetCaptured(this);
                 return hui::EventResult::HANDLED;
             }
         }
         return hui::EventResult::UNHANDLED;
     }
 
-    hui::EventResult OnMouseUp(hui::MouseButtonEvent &evt) override {
-        if (evt.button == dr4::MouseButtonType::LEFT) {
-            if (isPointDragged_) { isPointDragged_ = false; return hui::EventResult::HANDLED; }
-            if (isLineDragged_)  { isLineDragged_ = false;  return hui::EventResult::HANDLED; }
+    hui::EventResult OnMouseUp(hui::MouseButtonEvent &ev) override
+    {
+        if (ev.button == dr4::MouseButtonType::LEFT) {
+            if (draggingSelector_) { draggingSelector_ = false; GetUI()->SetCaptured(nullptr); return hui::EventResult::HANDLED; }
+            if (draggingSlider_)  { draggingSlider_  = false; GetUI()->SetCaptured(nullptr); return hui::EventResult::HANDLED; }
         }
         return hui::EventResult::UNHANDLED;
     }
 
-    hui::EventResult OnMouseMove(hui::MouseMoveEvent &evt) override {
-        // evt.pos is local; evt.rel is relative movement
-        dr4::Vec2f pos(evt.pos.x, evt.pos.y);
-        dr4::Vec2f rel(evt.rel.x, evt.rel.y);
-
-        if (isPointDragged_) {
-            colorPointCenter_ = (colorPointCenter_ + rel).Clamped(colorRectPos_, colorRectPos_ + colorRectSize_ - dr4::Vec2f{1.0f,1.0f});
-            UpdateHSVFromHandles();
+    hui::EventResult OnMouseMove(hui::MouseMoveEvent &ev) override
+    {
+        if (!(GetUI()->GetCaptured() == this || GetRect().Contains(ev.pos))) return hui::EventResult::UNHANDLED;
+        dr4::Vec2f rel(ev.rel.x, ev.rel.y);
+        if (draggingSelector_) {
+            selectorCenter_ = (selectorCenter_ + rel).Clamped(paletteOrigin_, paletteOrigin_ + paletteSize_ - dr4::Vec2f{1.0f,1.0f});
+            UpdateHSVFromControls();
             ForceRedraw();
             if (onColorChanged) onColorChanged(GetColor());
             return hui::EventResult::HANDLED;
         }
-
-        if (isLineDragged_) {
-            float localY = hueLineY_ + rel.y;
-            hueLineY_ = std::clamp(localY, 0.0f, hueRectSize_.y - 1.0f);
-            UpdateHSVFromHandles();
+        if (draggingSlider_) {
+            float y = hueCursorY_ + rel.y;
+            hueCursorY_ = std::clamp(y, 0.0f, sliderSize_.y - 1.0f);
+            UpdateHSVFromControls();
             ForceRedraw();
             if (onColorChanged) onColorChanged(GetColor());
             return hui::EventResult::HANDLED;
         }
-
         return hui::EventResult::UNHANDLED;
     }
 
-    void Redraw() const override {
-        // draw background and controls into our widget texture
+    void Redraw() const override
+    {
         dr4::Texture &tex = GetTexture();
         tex.Clear(FULL_TRANSPARENT);
-
         dr4::Image *img = tex.GetImage();
         if (!img) return;
-
-        const int W = img->GetWidth();
-        const int H = img->GetHeight();
-
-        // background fill
-        for (int y = 0; y < H; ++y) {
-            for (int x = 0; x < W; ++x) {
-                img->SetPixel(x, y, dr4::Color(48, 48, 48, 255));
-            }
-        }
-
-        // draw color rectangle (left)
-        DrawColorRect(*img);
-
-        // draw hue rectangle (right)
-        DrawHueRect(*img);
-
-        // draw border outlines
-        DrawRectOutline(*img, colorRectPos_, colorRectSize_);
-        DrawRectOutline(*img, hueRectPos_, hueRectSize_);
-
-        // draw color point handle (circle with border)
-        DrawHandleCircle(*img, colorPointCenter_, handleRadius_, theme_.handleColor, dr4::Color(255,255,255,200));
-
-        // draw hue line indicator (thin horizontal band across hueRect)
-        dr4::Vec2f hlStart = hueRectPos_ + dr4::Vec2f{0.0f, hueLineY_};
-        DrawRectFilled(*img, hlStart, dr4::Vec2f{hueRectSize_.x, 3.0f}, theme_.handleColor);
-
-        // small preview square for current color
-        dr4::Vec2f pvPos = dr4::Vec2f{cornerPadding_, colorRectPos_.y + colorRectSize_.y + cornerPadding_};
-        dr4::Vec2f pvSize = dr4::Vec2f{48.0f, 24.0f};
-        DrawRectFilled(*img, pvPos, pvSize, GetColor());
-        DrawRectOutline(*img, pvPos, pvSize);
-
+        int W = img->GetWidth();
+        int H = img->GetHeight();
+        for (int y = 0; y < H; ++y)
+            for (int x = 0; x < W; ++x)
+                img->SetPixel(x, y, dr4::Color(48,48,48,255));
+        PaintPalette(*img);
+        PaintSlider(*img);
+        DrawOutline(*img, paletteOrigin_, paletteSize_);
+        DrawOutline(*img, sliderOrigin_, sliderSize_);
+        PaintKnob(*img, selectorCenter_, knobRadius_, theme_.handleColor, dr4::Color(255,255,255,220));
+        dr4::Vec2f lineStart = sliderOrigin_ + dr4::Vec2f{0.0f, hueCursorY_};
+        FillRect(*img, lineStart, dr4::Vec2f{sliderSize_.x, 3.0f}, theme_.handleColor);
+        dr4::Vec2f previewPos = dr4::Vec2f{margin_, paletteOrigin_.y + paletteSize_.y + margin_};
+        dr4::Vec2f previewSize = dr4::Vec2f{48.0f, 24.0f};
+        FillRect(*img, previewPos, previewSize, GetColor());
+        DrawOutline(*img, previewPos, previewSize);
         img->DrawOn(tex);
     }
 
 private:
-    // Layout / config
     pp::ControlsTheme theme_;
-    dr4::Vec2f colorRectPos_;
-    dr4::Vec2f colorRectSize_;
-    float hueRectGap_;
-    float hueRectWidth_;
-    dr4::Vec2f hueRectPos_;
-    dr4::Vec2f hueRectSize_;
-    float cornerPadding_;
-    float handleRadius_;
+    dr4::Vec2f paletteOrigin_;
+    dr4::Vec2f paletteSize_;
+    float margin_;
+    float gap_;
+    float sliderWidth_;
+    dr4::Vec2f sliderOrigin_;
+    dr4::Vec2f sliderSize_;
+    float knobRadius_;
 
-    // Interaction state
-    dr4::Vec2f colorPointCenter_; // absolute (local widget coords)
-    float hueLineY_; // relative to hueRect (0..hueRectSize_.y)
-    float hue_;       // 0..360
-    float saturation_; // 0..1
-    float value_;      // 0..1
+    dr4::Vec2f selectorCenter_;
+    float hueCursorY_;
+    float hueDegrees_;
+    float sat_;
+    float val_;
+    bool draggingSelector_;
+    bool draggingSlider_;
 
-    bool isPointDragged_;
-    bool isLineDragged_;
-
-private:
-    // Default theme fallback
-    static pp::ControlsTheme DefaultTheme() {
+    static pp::ControlsTheme DefaultTheme()
+    {
         pp::ControlsTheme t;
         t.shapeFillColor = dr4::Color(200,200,200,255);
         t.shapeBorderColor = dr4::Color(80,80,80,255);
@@ -222,61 +189,50 @@ private:
         return t;
     }
 
-    // compute layout rectangles based on widget size
-    void ComputeLayout() {
-        dr4::Vec2f sz = GetSize();
-        // leave padding around
-        colorRectPos_ = dr4::Vec2f{cornerPadding_, cornerPadding_};
-        colorRectSize_ = dr4::Vec2f{ sz.x - cornerPadding_ * 2 - hueRectGap_ - hueRectWidth_, sz.y - cornerPadding_ * 3 - 40.0f };
-        if (colorRectSize_.x < 10.0f) colorRectSize_.x = 10.0f;
-        if (colorRectSize_.y < 10.0f) colorRectSize_.y = 10.0f;
-
-        hueRectPos_ = colorRectPos_ + dr4::Vec2f{ colorRectSize_.x + hueRectGap_, 0.0f };
-        hueRectSize_ = dr4::Vec2f{ hueRectWidth_, colorRectSize_.y };
-
-        // place color point according to current HSV
-        UpdateHandlesFromHSV();
+    void ComputeLayout()
+    {
+        dr4::Vec2f s = GetSize();
+        paletteOrigin_ = dr4::Vec2f{margin_, margin_};
+        paletteSize_ = dr4::Vec2f{ s.x - margin_ * 2 - gap_ - sliderWidth_, s.y - margin_ * 3 - 40.0f };
+        if (paletteSize_.x < 10.0f) paletteSize_.x = 10.0f;
+        if (paletteSize_.y < 10.0f) paletteSize_.y = 10.0f;
+        sliderOrigin_ = paletteOrigin_ + dr4::Vec2f{ paletteSize_.x + gap_, 0.0f };
+        sliderSize_ = dr4::Vec2f{ sliderWidth_, paletteSize_.y };
+        UpdateControlsFromHSV();
     }
 
-    // drawing helpers
-    void DrawColorRect(dr4::Image &img) const {
-        int w = static_cast<int>(colorRectSize_.x);
-        int h = static_cast<int>(colorRectSize_.y);
-        int ox = static_cast<int>(colorRectPos_.x);
-        int oy = static_cast<int>(colorRectPos_.y);
-
+    void PaintPalette(dr4::Image &img) const
+    {
+        int w = static_cast<int>(paletteSize_.x);
+        int h = static_cast<int>(paletteSize_.y);
+        int ox = static_cast<int>(paletteOrigin_.x);
+        int oy = static_cast<int>(paletteOrigin_.y);
         if (w <= 0 || h <= 0) return;
-
-        // For each pixel compute saturation (x: 0..1) and value (y: top -> 1, bottom -> 0)
         for (int yy = 0; yy < h; ++yy) {
             float v = 1.0f - (static_cast<float>(yy) / std::max(1, h - 1));
             for (int xx = 0; xx < w; ++xx) {
                 float s = static_cast<float>(xx) / std::max(1, w - 1);
-                dr4::Color c = HSV2RGB(hue_, s, v);
-                img.SetPixel(ox + xx, oy + yy, c);
+                img.SetPixel(ox + xx, oy + yy, HSVtoRGB(hueDegrees_, s, v));
             }
         }
     }
 
-    void DrawHueRect(dr4::Image &img) const {
-        int w = static_cast<int>(hueRectSize_.x);
-        int h = static_cast<int>(hueRectSize_.y);
-        int ox = static_cast<int>(hueRectPos_.x);
-        int oy = static_cast<int>(hueRectPos_.y);
-
+    void PaintSlider(dr4::Image &img) const
+    {
+        int w = static_cast<int>(sliderSize_.x);
+        int h = static_cast<int>(sliderSize_.y);
+        int ox = static_cast<int>(sliderOrigin_.x);
+        int oy = static_cast<int>(sliderOrigin_.y);
         if (w <= 0 || h <= 0) return;
-
-        // vertical hue: top -> hue=0, bottom-> hue=360
         for (int yy = 0; yy < h; ++yy) {
-            float hue = (static_cast<float>(yy) / std::max(1, h - 1)) * 360.0f;
-            dr4::Color col = HSV2RGB(hue, 1.0f, 1.0f);
-            for (int xx = 0; xx < w; ++xx) {
-                img.SetPixel(ox + xx, oy + yy, col);
-            }
+            float hh = (static_cast<float>(yy) / std::max(1, h - 1)) * 360.0f;
+            dr4::Color c = HSVtoRGB(hh, 1.0f, 1.0f);
+            for (int xx = 0; xx < w; ++xx) img.SetPixel(ox + xx, oy + yy, c);
         }
     }
 
-    void DrawRectOutline(dr4::Image &img, dr4::Vec2f pos, dr4::Vec2f size) const {
+    void DrawOutline(dr4::Image &img, dr4::Vec2f pos, dr4::Vec2f size) const
+    {
         int x0 = static_cast<int>(pos.x);
         int y0 = static_cast<int>(pos.y);
         int x1 = static_cast<int>(pos.x + size.x) - 1;
@@ -286,136 +242,141 @@ private:
         for (int y = y0; y <= y1; ++y) { if (x0 >= 0 && x0 < img.GetWidth()) img.SetPixel(x0, y, c); if (x1 >= 0 && x1 < img.GetWidth()) img.SetPixel(x1, y, c); }
     }
 
-    void DrawRectFilled(dr4::Image &img, dr4::Vec2f pos, dr4::Vec2f size, const dr4::Color &c) const {
+    void FillRect(dr4::Image &img, dr4::Vec2f pos, dr4::Vec2f size, const dr4::Color &c) const
+    {
         int ox = static_cast<int>(pos.x);
         int oy = static_cast<int>(pos.y);
         int w = static_cast<int>(size.x);
         int h = static_cast<int>(size.y);
-        for (int yy = 0; yy < h; ++yy) {
-            for (int xx = 0; xx < w; ++xx) {
-                img.SetPixel(ox + xx, oy + yy, c);
-            }
-        }
+        for (int yy = 0; yy < h; ++yy) for (int xx = 0; xx < w; ++xx) img.SetPixel(ox + xx, oy + yy, c);
     }
 
-    void DrawHandleCircle(dr4::Image &img, dr4::Vec2f center, float radius, const dr4::Color &fill, const dr4::Color &border) const {
+    void PaintKnob(dr4::Image &img, dr4::Vec2f center, float radius, const dr4::Color &fill, const dr4::Color &border) const
+    {
         int cx = static_cast<int>(center.x);
         int cy = static_cast<int>(center.y);
         int r = static_cast<int>(std::ceil(radius));
-        int x0 = cx - r;
-        int x1 = cx + r;
-        int y0 = cy - r;
-        int y1 = cy + r;
-        for (int y = y0; y <= y1; ++y) {
-            for (int x = x0; x <= x1; ++x) {
+        for (int y = cy - r; y <= cy + r; ++y) {
+            for (int x = cx - r; x <= cx + r; ++x) {
                 float dx = static_cast<float>(x) - center.x;
                 float dy = static_cast<float>(y) - center.y;
                 float d2 = dx*dx + dy*dy;
-                if (d2 <= radius*radius) {
-                    img.SetPixel(x, y, fill);
-                } else if (d2 <= (radius+1.5f)*(radius+1.5f)) {
-                    img.SetPixel(x, y, border);
-                }
+                if (d2 <= radius*radius) img.SetPixel(x, y, fill);
+                else if (d2 <= (radius + 1.5f)*(radius + 1.5f)) img.SetPixel(x, y, border);
             }
         }
+        int inner = std::max(1, r/2);
+        dr4::Color innerColor = dr4::Color(0,0,0,120);
+        for (int y = cy - inner; y <= cy + inner; ++y) for (int x = cx - inner; x <= cx + inner; ++x) img.SetPixel(x, y, innerColor);
+        DrawOutline(img, dr4::Vec2f{float(cx - r), float(cy - r)}, dr4::Vec2f{float(r*2+1), float(r*2+1)});
     }
 
-    // Hit tests
-    bool ColorRectHitTest(const dr4::Vec2f &p) const {
-        return p.x >= colorRectPos_.x && p.x < colorRectPos_.x + colorRectSize_.x &&
-               p.y >= colorRectPos_.y && p.y < colorRectPos_.y + colorRectSize_.y;
+    bool PaletteHit(const dr4::Vec2f &p) const
+    {
+        return p.x >= paletteOrigin_.x && p.x < paletteOrigin_.x + paletteSize_.x && p.y >= paletteOrigin_.y && p.y < paletteOrigin_.y + paletteSize_.y;
     }
 
-    bool PointHitTest(const dr4::Vec2f &p) const {
-        dr4::Vec2f c = colorPointCenter_;
+    bool SelectorHit(const dr4::Vec2f &p) const
+    {
+        dr4::Vec2f c = selectorCenter_;
         float dx = p.x - c.x;
         float dy = p.y - c.y;
-        float r = handleRadius_;
+        float r = knobRadius_;
         return (dx*dx + dy*dy) <= (r * r);
     }
 
-    bool HueLineHitTest(const dr4::Vec2f &p) const {
-        // a slightly larger hit band around the visible hue line
-        dr4::Vec2f hlPos = hueRectPos_ + dr4::Vec2f{0.0f, hueLineY_};
-        return p.x >= hueRectPos_.x && p.x < hueRectPos_.x + hueRectSize_.x &&
-               p.y >= hlPos.y - 6.0f && p.y <= hlPos.y + 6.0f;
+    bool SliderHit(const dr4::Vec2f &p) const
+    {
+        dr4::Vec2f linePos = sliderOrigin_ + dr4::Vec2f{0.0f, hueCursorY_};
+        return p.x >= sliderOrigin_.x && p.x < sliderOrigin_.x + sliderSize_.x && p.y >= linePos.y - 6.0f && p.y <= linePos.y + 6.0f;
     }
 
-    // Convert handle positions -> HSV, and vice versa
-    void UpdateHSVFromHandles() {
-        // saturation: left->0, right->1
-        float sx = (colorPointCenter_.x - colorRectPos_.x) / std::max(1.0f, colorRectSize_.x - 1.0f);
-        float vy = (colorPointCenter_.y - colorRectPos_.y) / std::max(1.0f, colorRectSize_.y - 1.0f);
-        // invert Y: top = value 1
-        saturation_ = std::clamp(sx, 0.0f, 1.0f);
-        value_ = std::clamp(1.0f - vy, 0.0f, 1.0f);
-
-        // hue: hueLineY_ from 0..hueRectSize_.y maps to 0..360
-        float hr = hueRectSize_.y > 1.0f ? (hueLineY_ / (hueRectSize_.y - 1.0f)) : 0.0f;
-        hue_ = std::clamp(hr, 0.0f, 1.0f) * 360.0f;
+    void UpdateHSVFromControls()
+    {
+        float sx = (selectorCenter_.x - paletteOrigin_.x) / std::max(1.0f, paletteSize_.x - 1.0f);
+        float vy = (selectorCenter_.y - paletteOrigin_.y) / std::max(1.0f, paletteSize_.y - 1.0f);
+        sat_ = std::clamp(sx, 0.0f, 1.0f);
+        val_ = std::clamp(1.0f - vy, 0.0f, 1.0f);
+        float hr = sliderSize_.y > 1.0f ? (hueCursorY_ / (sliderSize_.y - 1.0f)) : 0.0f;
+        hueDegrees_ = std::clamp(hr, 0.0f, 1.0f) * 360.0f;
     }
 
-    void UpdateHandlesFromHSV() {
-        // color point: x from saturation, y from value (inverted)
-        colorPointCenter_.x = colorRectPos_.x + saturation_ * std::max(1.0f, colorRectSize_.x - 1.0f);
-        colorPointCenter_.y = colorRectPos_.y + (1.0f - value_) * std::max(1.0f, colorRectSize_.y - 1.0f);
-
-        // hue line y from hue
-        float hr = hue_ / 360.0f;
-        hueLineY_ = hr * std::max(1.0f, hueRectSize_.y - 1.0f);
+    void UpdateControlsFromHSV()
+    {
+        selectorCenter_.x = paletteOrigin_.x + sat_ * std::max(1.0f, paletteSize_.x - 1.0f);
+        selectorCenter_.y = paletteOrigin_.y + (1.0f - val_) * std::max(1.0f, paletteSize_.y - 1.0f);
+        float hr = hueDegrees_ / 360.0f;
+        hueCursorY_ = hr * std::max(1.0f, sliderSize_.y - 1.0f);
     }
 
-    // Color conversions
-    static dr4::Color HSV2RGB(float hue, float saturation, float value) {
-        if (saturation <= 1e-6f) {
-            unsigned char v = static_cast<unsigned char>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
-            return dr4::Color(v, v, v, 255);
+    static dr4::Color HSVtoRGB(float h, float s, float v)
+    {
+        if (s <= 1e-6f) {
+            unsigned char vv = static_cast<unsigned char>(std::clamp(v, 0.0f, 1.0f) * 255.0f);
+            return dr4::Color(vv, vv, vv, 255);
         }
-        // normalize
-        hue = std::fmod(hue, 360.0f);
-        if (hue < 0.0f) hue += 360.0f;
-
-        float h = hue / 60.0f;
-        int sector = static_cast<int>(std::floor(h)) % 6;
-        float f = h - std::floor(h);
-
-        float p = value * (1.0f - saturation);
-        float q = value * (1.0f - saturation * f);
-        float t = value * (1.0f - saturation * (1.0f - f));
-
+        h = std::fmod(h, 360.0f);
+        if (h < 0.0f) h += 360.0f;
+        float hf = h / 60.0f;
+        int i = static_cast<int>(std::floor(hf)) % 6;
+        float f = hf - std::floor(hf);
+        float p = v * (1.0f - s);
+        float q = v * (1.0f - s * f);
+        float t = v * (1.0f - s * (1.0f - f));
         float r=0,g=0,b=0;
-        switch (sector) {
-            case 0: r = value; g = t;     b = p;     break;
-            case 1: r = q;     g = value; b = p;     break;
-            case 2: r = p;     g = value; b = t;     break;
-            case 3: r = p;     g = q;     b = value; break;
-            case 4: r = t;     g = p;     b = value; break;
-            case 5: r = value; g = p;     b = q;     break;
+        switch (i) {
+            case 0: r = v; g = t; b = p; break;
+            case 1: r = q; g = v; b = p; break;
+            case 2: r = p; g = v; b = t; break;
+            case 3: r = p; g = q; b = v; break;
+            case 4: r = t; g = p; b = v; break;
+            default: r = v; g = p; b = q; break;
         }
         auto to8 = [](float c){ return static_cast<unsigned char>(std::clamp(c, 0.0f, 1.0f) * 255.0f); };
         return dr4::Color(to8(r), to8(g), to8(b), 255);
     }
 
-    // Convert 0..255 RGB to HSV (h in degrees 0..360)
-    static void RGB2HSV(const dr4::Color &c, float &outH, float &outS, float &outV) {
-        float r = c.r / 255.0f;
-        float g = c.g / 255.0f;
-        float b = c.b / 255.0f;
-        float mx = std::max({r,g,b});
-        float mn = std::min({r,g,b});
+    static void RGBtoHSV(const dr4::Color &c, float &h, float &s, float &v)
+    {
+        float rr = c.r / 255.0f;
+        float gg = c.g / 255.0f;
+        float bb = c.b / 255.0f;
+        float mx = std::max({rr,gg,bb});
+        float mn = std::min({rr,gg,bb});
         float d = mx - mn;
-        outV = mx;
-        outS = (mx <= 1e-6f) ? 0.0f : (d / mx);
+        v = mx;
+        s = (mx <= 1e-6f) ? 0.0f : (d / mx);
+        if (d <= 1e-6f) { h = 0.0f; return; }
+        if (mx == rr) h = 60.0f * (std::fmod(((gg - bb) / d), 6.0f));
+        else if (mx == gg) h = 60.0f * (((bb - rr) / d) + 2.0f);
+        else h = 60.0f * (((rr - gg) / d) + 4.0f);
+        if (h < 0.0f) h += 360.0f;
+    }
+};
 
-        if (d <= 1e-6f) {
-            outH = 0.0f;
-            return;
-        }
-        if (mx == r) outH = 60.0f * (std::fmod(((g - b) / d), 6.0f));
-        else if (mx == g) outH = 60.0f * (((b - r) / d) + 2.0f);
-        else outH = 60.0f * (((r - g) / d) + 4.0f);
+class ColorPickerWindow final : public Window {
+    static constexpr float TOOL_AREA = 0;
+    ColorPicker *picker_;
+public:
+    ColorPickerWindow(hui::UI *ui, const pp::ControlsTheme &theme = pp::ControlsTheme{})
+        : Window(ui)
+    {
+        picker_ = new ColorPicker(ui, theme);
+        AddWidget(picker_);
+    }
+    ~ColorPickerWindow() override = default;
 
-        if (outH < 0.0f) outH += 360.0f;
+    void OnSizeChanged() override { Arrange(); }
+
+    void SetOnColorChangedAction(std::function<void(dr4::Color)> action) {
+        picker_->onColorChanged = action;
+    }
+
+private:
+    void Arrange()
+    {
+        picker_->SetPos({0.0f, TOOL_AREA});
+        picker_->SetSize(GetSize() - picker_->GetPos());
     }
 };
 
