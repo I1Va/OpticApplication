@@ -28,7 +28,9 @@ public:
         propertiesPanel(new PropertiesWindow(ui))
     {
         assert(ui);
-    
+
+        layout();
+
         outliner->SetOnSelectChangedAction([this](){ updateRecords(); });
 
         AddWidget(viewport3D);
@@ -82,10 +84,6 @@ public:
     void BringToFront(hui::Widget *) override {}
 
 protected:
-    void OnSizeChanged() override { 
-        layout(); 
-    }    
-
     void Redraw() const override {
         GetTexture().Clear({FULL_TRANSPARENT});
         viewport3D->DrawOn(GetTexture());        
@@ -95,27 +93,25 @@ protected:
 
 private:
     void layout() {
-        float padding = 3;
+        float borderPadding = 30;
+        float innerPadding = 3;
     
-        float viewport3DWHCoef = 1.8;
-        float viewport3DHeight = 350;
-        viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
+        float sumWidth = GetUI()->GetWindow()->GetSize().x - borderPadding * 2 - innerPadding;
+        float viewport3DWidth = sumWidth / 3 * 2;
+        
+        float menuWidth = sumWidth - viewport3DWidth - borderPadding;
+        float viewport3DHeight = GetUI()->GetWindow()->GetSize().y - borderPadding * 2;
+        float menuHeight = (viewport3DHeight - innerPadding) / 2;
 
-        float outlinerHWCoef = 1;
-        float outlinerHeight = (viewport3DHeight - padding) / 2;
-        outliner->SetSize({outlinerHWCoef * outlinerHeight, outlinerHeight});
+        viewport3D->SetSize({viewport3DHeight, viewport3DHeight});
+        outliner->SetSize({menuWidth, menuHeight});
+        propertiesPanel->SetSize({menuWidth, menuHeight});
 
-        float propertiesWindowHWCoef = 1;
-        float propertiesWindowHeight = (viewport3DHeight - padding) / 2;
-        propertiesPanel->SetSize({propertiesWindowHWCoef * propertiesWindowHeight, propertiesWindowHeight});
+        viewport3D->SetPos({borderPadding, borderPadding});
+        outliner->SetPos({viewport3D->GetPos().x + viewport3D->GetSize().x + innerPadding, viewport3D->GetPos().y});
 
-        dr4::Vec2f outlinerPos = {viewport3D->GetSize().x + padding, 0};
-        outliner->SetPos(outlinerPos);
-
-        dr4::Vec2f propertiesPanelPos = outlinerPos + dr4::Vec2f(0, propertiesWindowHeight + padding);
+        dr4::Vec2f propertiesPanelPos = outliner->GetPos() + dr4::Vec2f(0, menuHeight + innerPadding);
         propertiesPanel->SetPos(propertiesPanelPos);
-
-        viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
     }
 
     void updateRecords() {

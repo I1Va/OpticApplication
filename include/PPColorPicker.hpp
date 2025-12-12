@@ -36,7 +36,7 @@ public:
         val_ = 1.0f;
         draggingSelector_ = false;
         draggingSlider_ = false;
-        SetSize({260.0f, 160.0f});
+        SetSize({150.0f, 150.0f});
         ComputeLayout();
         hueCursorY_ = 0.0f;
     }

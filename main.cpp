@@ -106,7 +106,7 @@ int main(int argc, const char *argv[]) {
     dr4::Window *window = dr4Backend->CreateWindow(); assert(window);
     window->Open();
     window->StartTextInput();
-    window->SetSize({810, 500});
+    window->SetSize({800, 600});
 
     dr4::Font *defaultFont = window->CreateFont();
     defaultFont->LoadFromFile("./assets/Inter.ttf");

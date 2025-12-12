@@ -107,18 +107,16 @@ public:
         assert(ui);
 
         SetSize({GetUI()->GetWindow()->GetSize()});
-
-
-        colorPicker->SetPos({50, 50});
-        colorPicker->SetSize({300, 300});
+        
+        colorPicker->SetSize({200, 200});
+        colorPicker->SetPos(GetSize() - colorPicker->GetSize() - dr4::Vec2f(BORDER_THICKNESS, BORDER_THICKNESS));
         
         colorPicker->SetOnColorChangedAction([&](dr4::Color c){
             theme.shapeFillColor = c;
         });
     
         AddWidget(colorPicker);
-     
-            
+              
         toolsMenu->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
         AddWidget(toolsMenu);
@@ -148,7 +146,7 @@ protected:
                                 + dr4::Vec2f(0, -toolButtonSz);
                             
         toolsMenu->SetSize(100, 100);
-        toolsMenu->SetPos(GetSize().x - BORDER_THICKNESS * 2 - toolsMenu->GetSize().x, BORDER_THICKNESS);
+        toolsMenu->SetPos(GetSize().x - BORDER_THICKNESS * 3 - toolsMenu->GetSize().x, BORDER_THICKNESS * 3);
 
         ForceRedraw();
     }
