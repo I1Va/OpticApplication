@@ -8,6 +8,7 @@
 #include "BasicWidgets/ScrollBar.hpp"
 #include "BasicWidgets/TextWidgets.hpp"
 #include "BasicWidgets/Window.hpp"
+#include "DropDownMenu.hpp"
 
 namespace roa
 {
@@ -25,7 +26,7 @@ class RecordsPanel : public LinContainer<hui::Widget> {
     
     float recordsPadding = 0;
     dr4::Vec2f recordsStartPos = dr4::Vec2f(0, 0);
-    dr4::Color BGColor = BLACK;
+    dr4::Color BGColor = {61, 61, 61};
 
 protected:
     VerticalScrollBar            *scrollBar; 
@@ -286,7 +287,6 @@ public:
 
 template <IsPointer T>
 class OutlinerWindow final : public Window {
-    static constexpr float TITLE_BAR_HEIGHT = 0;
     Outliner<T> *outliner;
 
 public:
@@ -321,7 +321,7 @@ protected:
 
 private:
     void layout() {
-        outliner->SetPos({0, TITLE_BAR_HEIGHT});
+        outliner->SetPos({0, Window::TOOL_BAR_HEIGHT});
         outliner->SetSize(GetSize() - outliner->GetPos());
     }
 };

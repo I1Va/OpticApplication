@@ -65,12 +65,12 @@ void createSceneObjects
     SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &editor->GetSceneManager());
 
 
-    for (int i = 0; i < 10; i++) {
-        RTMaterial *sphereMaterial = materialManager.MakeMetal({0.8, 0.8, 0.8}, 0.3);
-        SphereObject *sphere = new SphereObject(1, sphereMaterial, &editor->GetSceneManager());
-        sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
-        editor->AddRecord(sphere);
-    }
+    // for (int i = 0; i < 3; i++) {
+    //     RTMaterial *sphereMaterial = materialManager.MakeMetal({0.1 + 0.2 * i, 0.2 + 0.2 * i, 0.3 +0.2 * i}, 0.3);
+    //     SphereObject *sphere = new SphereObject(1, sphereMaterial, &editor->GetSceneManager());
+    //     sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
+    //     editor->AddRecord(sphere);
+    // }
 
     ground->setPosition({0, 0, -2});
     glassSphere->setPosition({0, 0, 1});

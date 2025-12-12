@@ -19,6 +19,8 @@ class EditorWidget final : public LinContainer<hui::Widget> {
     Viewport3DWindow             *viewport3D;
     OutlinerWindow<Primitives *> *outliner;
     PropertiesWindow             *propertiesPanel;
+    
+    RTMaterialManager materialManager;
 
 public:
     EditorWidget(hui::UI *ui): 
@@ -32,6 +34,44 @@ public:
         layout();
 
         outliner->SetOnSelectChangedAction([this](){ updateRecords(); });
+        
+        Outliner<Primitives *> *addObjectDropDown = new Outliner<Primitives *>(ui);
+
+        addObjectDropDown->SetSize({400, 50});
+        addObjectDropDown->SetBGColor({61, 61, 61});
+        addObjectDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
+        addObjectDropDown->AddRecord
+        (
+            nullptr,
+            "S",
+            [this]()
+            {
+                RTMaterial *sphereMaterial = materialManager.MakeLambertian({0.0, 0.8, 1.0}); 
+                SphereObject *sphere = new SphereObject(1, sphereMaterial, &GetSceneManager());
+                AddRecord(sphere);
+            },
+            nullptr
+        );
+        
+        addObjectDropDown->AddRecord
+        (
+            nullptr,
+            "P",
+            [this]()
+            {
+                RTMaterial *planeMaterial = materialManager.MakeLambertian({0.0, 0.8, 1.0}); 
+                PlaneObject *plane = new PlaneObject({0, 0, 0}, {0, 0, 1}, planeMaterial, &GetSceneManager());
+                AddRecord(plane);
+            },
+            nullptr
+        );
+
+
+        DropDownMenu *addObjectMenu = new DropDownMenu(ui);
+        addObjectMenu->SetLabel("add");
+        addObjectMenu->SetDropDownWidget(addObjectDropDown);
+        viewport3D->AddTool(addObjectMenu);
+
 
         AddWidget(viewport3D);
         AddWidget(outliner);

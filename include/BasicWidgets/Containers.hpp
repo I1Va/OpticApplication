@@ -59,7 +59,7 @@ public:
 
     void AddWidget(T *widget) {
         hui::Container::BecomeParentOf(widget);
-        children.emplace(children.begin(), widget);
+        children.emplace(children.end(), widget);
     }
 
     void EraseWidget(T *widget) {
