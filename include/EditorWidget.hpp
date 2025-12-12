@@ -98,15 +98,15 @@ private:
         float padding = 3;
     
         float viewport3DWHCoef = 1.8;
-        float viewport3DHeight = 300;
+        float viewport3DHeight = 350;
         viewport3D->SetSize({viewport3DWHCoef * viewport3DHeight, viewport3DHeight});
 
         float outlinerHWCoef = 1;
-        float outlinerHeight = 200;
+        float outlinerHeight = (viewport3DHeight - padding) / 2;
         outliner->SetSize({outlinerHWCoef * outlinerHeight, outlinerHeight});
 
         float propertiesWindowHWCoef = 1;
-        float propertiesWindowHeight = 200;
+        float propertiesWindowHeight = (viewport3DHeight - padding) / 2;
         propertiesPanel->SetSize({propertiesWindowHWCoef * propertiesWindowHeight, propertiesWindowHeight});
 
         dr4::Vec2f outlinerPos = {viewport3D->GetSize().x + padding, 0};
@@ -181,12 +181,6 @@ private:
         transformProperty->AddPropertyField(XLabel, XContent, XCordFunction);
         transformProperty->AddPropertyField(YLabel, YContent, YCordFunction);
         transformProperty->AddPropertyField(ZLabel, ZContent, ZCordFunction);
-
-        // roa::Property *MaterialProperty = new roa::Property(GetUI());
-        // MaterialProperty->SetLabel("Material");
-        // MaterialProperty->AddPropertyField("Diffuse  X", "11", nullptr);
-        // MaterialProperty->AddPropertyField("         Y", "3", nullptr);
-        // MaterialProperty->AddPropertyField("         Z", "12", nullptr);
 
         propertiesPanel->AddProperty(transformProperty);
     }
