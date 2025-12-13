@@ -5,7 +5,6 @@
 namespace roa
 {
 
-
 class DropDownButton final : public Button {
     const dr4::Color buttonColor = dr4::Color(61, 61, 61);
     int borderRadius = 2;

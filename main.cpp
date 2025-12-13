@@ -23,6 +23,7 @@
 #include "BasicWidgets/Window.hpp"
 
 #include "EditorWidget.hpp"
+#include "BasicWidgets/Buttons.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 

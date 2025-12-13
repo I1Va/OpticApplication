@@ -160,96 +160,6 @@ private:
     }
 };
 
-class SimpButton : public Button {
-protected:
-    dr4::Color pressedColor     = GRAY;
-    dr4::Color unpressedColor   = WHITE;
-public:
-    using Button::Button;
-    virtual ~SimpButton() = default;
-
-    void SetPressedColor(const dr4::Color color) { pressedColor = color; } 
-    void SetUnpressedColor(const dr4::Color color) { unpressedColor = color; }
-
-protected:
-    void Redraw() const override {
-        if (pressed) GetTexture().Clear(pressedColor);
-        else GetTexture().Clear(unpressedColor);
-    }
-};
-
-class TextureButton : public Button { 
-protected:
-    const dr4::Texture *pressedTexture = nullptr;
-    const dr4::Texture *unpressedTexture = nullptr;
-public:
-    using Button::Button;
-    virtual ~TextureButton() = default;
-
-    void SetpressedTexture(const dr4::Texture *texture) { 
-        assert(texture);
-        pressedTexture = texture; 
-    } 
-
-    void SetUnpressedTexture(const dr4::Texture *texture) { 
-        assert(texture);
-        unpressedTexture = texture; 
-    }
-protected:
-    void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
-    
-        if (pressed) {
-            if (pressedTexture) pressedTexture->DrawOn(GetTexture());
-            else GetTexture().Clear(GRAY);
-            return;
-        }
-
-        if (unpressedTexture) unpressedTexture->DrawOn(GetTexture());
-        else GetTexture().Clear(WHITE);
-    }
-
-};
-
-class TextButton : public SimpButton {
-protected:
-    std::unique_ptr<dr4::Text> text;
-public:
-    TextButton(hui::UI *ui) : SimpButton(ui), text(GetUI()->GetWindow()->CreateText()) {
-        assert(ui);
-
-        text->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
-    }
-
-    virtual ~TextButton() = default;
-
-    void SetText(const std::string &content) {
-        text->SetText(content);
-    }
-
-    void SetFont(dr4::Font *font) {
-        assert(font);
-
-        text->SetFont(font);
-        ForceRedraw();
-    }
-
-protected:
-
-    void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
-
-        if (pressed) GetTexture().Clear(pressedColor);
-        else GetTexture().Clear(unpressedColor);
-        text->DrawOn(GetTexture());
-    }   
-
-    void OnSizeChanged() override { relayout(); }
-
-private: 
-    void relayout() { text->SetFontSize(GetSize().y); }    
-};
-
 class RoundedBlenderButton : public Button {
     dr4::Color nonActiveColor = dr4::Color(44, 44, 44);
     dr4::Color hoverColor     = dr4::Color(54, 54, 54);
@@ -289,6 +199,9 @@ protected:
         backSurface->DrawOn(GetTexture());
     }
 };
+
+
+
 
 
 }
