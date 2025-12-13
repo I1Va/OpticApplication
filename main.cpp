@@ -14,14 +14,16 @@
 #include "cum/ifc/dr4.hpp"
 #include "cum/ifc/pp.hpp"
 
+// core container definitions must come first so other widgets see them
+#include "BasicWidgets/Containers.hpp"
+#include "BasicWidgets/Buttons.hpp"
+#include "BasicWidgets/ScrollBar.hpp"
+#include "BasicWidgets/TextWidgets.hpp"
 #include "BasicWidgets/Desktop.hpp"
-#include "RayTracerWidgets/Viewport3D.hpp"
-// #include "RecordsPanel.hpp"
-// #include "DropDownMenu.hpp"
-// #include "PropertiesPanel.hpp"
+#include "BasicWidgets/Window.hpp"
 
 // #include "PPWidgets.hpp"
-// #include "EditorWidget.hpp"
+#include "CompositeWidgets/EditorWidget.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -37,6 +39,47 @@ const static roa::TexturePack ICONS_TEXTURE_PACK =
 
     .propertiesPanelBGColor = dr4::Color(48, 48, 48)
 };
+
+void createSceneObjects
+(
+    RTMaterialManager &materialManager,
+    roa::EditorWidget *editor
+) {
+    RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0});
+    RTMaterial *midSphereMaterial   = materialManager.MakeLambertian({0.1, 0.2, 0.5});
+    RTMaterial *rightSphereMaterial = materialManager.MakeMetal({0.8, 0.8, 0.8}, 0.3);
+    RTMaterial *glassMaterial       = materialManager.MakeDielectric({1.0, 1.0, 1.0}, 1.50);
+    RTMaterial *sunMaterial         = materialManager.MakeEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
+
+    SphereObject *sun = new SphereObject(1, sunMaterial, &editor->GetSceneManager());
+    Light *light = new Light
+    (
+        /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
+        /* defuseIntensity   */  gm::IVec3f(0.8, 0.7, 0.6),
+        /* specularIntensity */  gm::IVec3f(0.7, 0.7, 0),
+        /* viewLightPow      */  15.0
+    );
+
+    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
+    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &editor->GetSceneManager());
+    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &editor->GetSceneManager());
+    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &editor->GetSceneManager());
+
+    ground->setPosition({0, 0, -2});
+    glassSphere->setPosition({0, 0, 1});
+    midSphere->setPosition({0, 4, 3});
+    rightSphere->setPosition({2, 0, 1});
+    sun->setPosition({-2, 0, 4});
+
+    light->setPosition({0, 0, 10});
+
+    editor->AddRecord(ground);
+    editor->AddRecord(glassSphere);
+    editor->AddRecord(midSphere);
+    editor->AddRecord(sun);
+    editor->AddRecord(rightSphere);
+    editor->AddLight(light);
+}
 
 int main(int argc, const char *argv[]) {
     if (argc != 2) {
@@ -65,16 +108,37 @@ int main(int argc, const char *argv[]) {
     roa::UI ui(window, FONT_PATH);
     ui.SetTexturePack(ICONS_TEXTURE_PACK);
 
-    roa::Desktop *desktop = new roa::Desktop(&ui);
-    desktop->SetSize(window->GetSize());
-    ui.SetRoot(desktop);    
+    roa::Desktop *Desktop = new roa::Desktop(&ui);
+    Desktop->SetSize({window->GetSize().x, window->GetSize().y});
+    ui.SetRoot(Desktop);
 
-    auto viewPort3D = std::make_unique<roa::Viewport3DWindow>(&ui);
-    viewPort3D->SetSize({100, 100});
-    viewPort3D->SetPos({100, 100});
+// SETUP PP PLUGIN
+    std::vector<cum::PPToolPlugin*> ppPlugins;
+    std::vector<std::string> ppPluginsPathes =
+    {
+        "./external/plugins/pp/libIADorisovkaPlugin.so",
+        "./external/plugins/pp/libArtemLine.so",
+        "external/plugins/pp/libSeva.so"
+    };
 
-    desktop->AddWidget(std::move(viewPort3D));
+    for (auto &path : ppPluginsPathes) {
+        auto plugin = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile(path));
+        assert(plugin);
+        ppPlugins.push_back(plugin);
+    }
 
+// SETUP SCENE OBJECTS
+    RTMaterialManager materialManager;
+
+// create editor as unique_ptr, use raw pointer for scene creation, then move into Desktop
+    auto editor = std::make_unique<roa::EditorWidget>(&ui);
+    editor->SetSize(Desktop->GetSize());
+
+    createSceneObjects(materialManager, editor.get());
+
+    Desktop->AddWidget(std::move(editor)); // ownership transferred
+
+// MAIN LOOP
     ui.Run(0.01);
 
 // CLEANUP

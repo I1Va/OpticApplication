@@ -4,7 +4,7 @@
 #include "Utilities/ROACommon.hpp"
 #include "ROAUI.hpp"
 #include "Utilities/ROAGUIRender.hpp"
-#include "SVGParser/SVGImageConverter.hpp"
+#include "Utilities/SVGImageConverter.hpp"
 
 namespace roa
 {

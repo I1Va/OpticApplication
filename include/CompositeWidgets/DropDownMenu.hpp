@@ -49,7 +49,7 @@ public:
         LoadSVGDropDownIcons();
     }
 
-    ~DropDownButton() = default;
+    virtual ~DropDownButton() = default;
 
     void SetLabel(const std::string &text) { label->SetText(text); }
     void SetLabelFontSize(int fontSize) { label->SetFontSize(fontSize); }
@@ -116,7 +116,12 @@ public:
     }
 
     void SetLabel(const std::string& label) { topButton->SetLabel(label); }
-    void SetDropDownWidget(hui::Widget* wgt) { dropDown = wgt; ForceRedraw(); }
+    void SetDropDownWidget(std::unique_ptr<hui::Widget> wgt) { 
+        dropDown = wgt.get(); 
+        AddWidget(std::move(wgt));
+        ForceRedraw(); 
+    }
+
     void SetOnSizeChangedAction(std::function<void()> action) { onSizeChangedAction = action; }
 
 protected:

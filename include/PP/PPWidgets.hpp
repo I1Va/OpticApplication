@@ -10,9 +10,9 @@
 
 #include "BasicWidgets/Containers.hpp"
 #include "PPColorPicker.hpp"
-#include "DropDownMenu.hpp"
-#include "RecordsPanel.hpp"
-#include "RecordsPanel.hpp"
+#include "CompositeWidgets/DropDownMenu.hpp"
+#include "CompositeWidgets/RecordsPanel.hpp"
+#include "CompositeWidgets/RecordsPanel.hpp"
 #include "PPColorPicker.hpp"
 
 namespace roa

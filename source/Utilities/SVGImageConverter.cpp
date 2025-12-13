@@ -3,13 +3,13 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "SVGParser/SVGImageConverter.hpp"
+#include "Utilities/SVGImageConverter.hpp"
 
 #define NANOSVG_IMPLEMENTATION
-#include "SVGParser/nanosvg.h"
+#include "Utilities/nanosvg.h"
 
 #define NANOSVGRAST_IMPLEMENTATION
-#include "SVGParser/nanosvgrast.h"
+#include "Utilities/nanosvgrast.h"
 
 void ExtractSVG(const std::string &path, dr4::Vec2f pixelSize, std::function<void(int,int,dr4::Color)> putPixel) {
     assert(putPixel);

@@ -5,3 +5,4 @@ release.sh
 debug.sh
 
 gdb.sh
+output.txt
