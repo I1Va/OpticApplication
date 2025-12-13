@@ -5,15 +5,19 @@
 namespace roa
 {
 
-class MainWindow final : public ZContainer<hui::Widget> {
+class Desktop final : public Container {
     std::unique_ptr<hui::Widget> modal;
     bool modalActivated = false;
 
     std::vector<std::unique_ptr<hui::Widget>> widgets;
 
 public:
-    MainWindow(hui::UI *ui): ZContainer<hui::Widget>(ui) {}
-    ~MainWindow() = default;
+    using Container::Container;
+    Desktop(const Container&) = delete;
+    ~Desktop() = default;  
+    Desktop& operator=(const Desktop&) = delete;
+    Desktop(Desktop&&) = default;
+    Desktop& operator=(Desktop&&) = default;
 
     hui::EventResult PropagateToChildren(hui::Event &event) override {
         if (modal && modalActivated) return event.Apply(*modal);
@@ -27,19 +31,14 @@ public:
         return hui::EventResult::UNHANDLED;
     }
 
-    void AddWidget(hui::Widget *widget) {
-        BecomeParentOf(widget);
-        widgets.emplace(widgets.begin(), widget);
-    }
-
-    void SetModal(hui::Widget *widget) {
+    void SetModal(std::unique_ptr<hui::Widget> widget) {
         if (modal) {
             std::cerr << "modal widget has been already set\n";
             return;
         }
     
-        BecomeParentOf(widget);
-        modal.reset(widget);
+        BecomeParentOf(widget.get());
+        modal.reset(widget.release());
     }
 
     void ActivateModal() { 
@@ -55,19 +54,8 @@ public:
         ForceRedraw(); 
     }
 
-    void BringToFront(hui::Widget *widget) override {
-        auto it = std::find_if(widgets.begin(), widgets.end(),
-                            [widget](const auto &w){ return w.get() == widget; });
-        if (it == widgets.end()) return;
-
-        auto up = std::move(*it);          
-        widgets.erase(it);             
-        widgets.insert(widgets.begin(), std::move(up)); 
-}
-
 protected:
     void Redraw() const override {
-        //GetTexture().Clear({20, 20, 20, 255});
         GetTexture().Clear({61, 61, 61, 255});
 
         for (auto &widget : widgets) widget->DrawOn(GetTexture());

@@ -4,6 +4,9 @@
 #include <list>
 #include <cmath>
 #include <algorithm>
+#include <memory>
+#include <vector>
+#include <string>
 
 #include "hui/ui.hpp"
 #include "cum/manager.hpp"
@@ -11,23 +14,24 @@
 #include "cum/ifc/dr4.hpp"
 #include "cum/ifc/pp.hpp"
 
+// core container definitions must come first so other widgets see them
+#include "BasicWidgets/Containers.hpp"
 #include "BasicWidgets/Buttons.hpp"
-#include "BasicWidgets/MainWindow.hpp"
 #include "BasicWidgets/ScrollBar.hpp"
 #include "BasicWidgets/TextWidgets.hpp"
+#include "BasicWidgets/Desktop.hpp"
+#include "BasicWidgets/Window.hpp"
+
 #include "RecordsPanel.hpp"
 #include "DropDownMenu.hpp"
 #include "PropertiesPanel.hpp"
 
 #include "PPWidgets.hpp"
-#include "BasicWidgets/Window.hpp"
-
 #include "EditorWidget.hpp"
-#include "BasicWidgets/Buttons.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
-const static roa::TexturePack ICONS_TEXTURE_PACK = 
+const static roa::TexturePack ICONS_TEXTURE_PACK =
 {
     .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg",
     .collectionSvgPath     = "assets/icons/Collection.svg",
@@ -45,7 +49,7 @@ void createSceneObjects
     RTMaterialManager &materialManager,
     roa::EditorWidget *editor
 ) {
-    RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0}); 
+    RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0});
     RTMaterial *midSphereMaterial   = materialManager.MakeLambertian({0.1, 0.2, 0.5});
     RTMaterial *rightSphereMaterial = materialManager.MakeMetal({0.8, 0.8, 0.8}, 0.3);
     RTMaterial *glassMaterial       = materialManager.MakeDielectric({1.0, 1.0, 1.0}, 1.50);
@@ -65,14 +69,6 @@ void createSceneObjects
     PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &editor->GetSceneManager());
     SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &editor->GetSceneManager());
 
-
-    // for (int i = 0; i < 3; i++) {
-    //     RTMaterial *sphereMaterial = materialManager.MakeMetal({0.1 + 0.2 * i, 0.2 + 0.2 * i, 0.3 +0.2 * i}, 0.3);
-    //     SphereObject *sphere = new SphereObject(1, sphereMaterial, &editor->GetSceneManager());
-    //     sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
-    //     editor->AddRecord(sphere);
-    // }
-
     ground->setPosition({0, 0, -2});
     glassSphere->setPosition({0, 0, 1});
     midSphere->setPosition({0, 4, 3});
@@ -83,10 +79,8 @@ void createSceneObjects
 
     editor->AddRecord(ground);
     editor->AddRecord(glassSphere);
-
     editor->AddRecord(midSphere);
     editor->AddRecord(sun);
-
     editor->AddRecord(rightSphere);
     editor->AddLight(light);
 }
@@ -96,6 +90,7 @@ int main(int argc, const char *argv[]) {
         std::cerr << "Expected one argument: dr4 backend path\n";
         return 1;
     }
+
     cum::Manager pluginManager;
 
 // SETUP DR4 PLUGIN
@@ -116,53 +111,44 @@ int main(int argc, const char *argv[]) {
 // SETUP UI, MAIN WINDOW
     roa::UI ui(window, FONT_PATH);
     ui.SetTexturePack(ICONS_TEXTURE_PACK);
-    roa::MainWindow *mainWindow = new roa::MainWindow(&ui);
-    mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
-    ui.SetRoot(mainWindow);
 
-    
+    roa::Desktop *Desktop = new roa::Desktop(&ui);
+    Desktop->SetSize({window->GetSize().x, window->GetSize().y});
+    ui.SetRoot(Desktop);
+
 // SETUP PP PLUGIN
-    std::vector<cum::PPToolPlugin*> ppPlugins = {};
-    
-    std::vector<std::string> ppPluginsPathes = 
+    std::vector<cum::PPToolPlugin*> ppPlugins;
+    std::vector<std::string> ppPluginsPathes =
     {
         "./external/plugins/pp/libIADorisovkaPlugin.so",
         "./external/plugins/pp/libArtemLine.so",
         "external/plugins/pp/libSeva.so"
     };
-    
-    for (auto path : ppPluginsPathes) {
+
+    for (auto &path : ppPluginsPathes) {
         auto plugin = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile(path));
         assert(plugin);
         ppPlugins.push_back(plugin);
     }
 
-    
- // SETUP SCENE OBJECTS
-
+// SETUP SCENE OBJECTS
     RTMaterialManager materialManager;
 
-    roa::EditorWidget *editor = new roa::EditorWidget(&ui);
-    editor->SetSize(mainWindow->GetSize());
+// create editor as unique_ptr, use raw pointer for scene creation, then move into Desktop
+    auto editor = std::make_unique<roa::EditorWidget>(&ui);
+    editor->SetSize(Desktop->GetSize());
 
-    createSceneObjects(materialManager, editor);
-    
-   
-    mainWindow->AddWidget(editor);
+    createSceneObjects(materialManager, editor.get());
 
-    
+    Desktop->AddWidget(std::move(editor)); // ownership transferred
 
+// MODALS: create as unique_ptr and transfer ownership to Desktop->SetModal
+    auto ppCanvas = std::make_unique<roa::PPCanvasWidget>(&ui, ppPlugins);
+    Desktop->SetModal(std::move(ppCanvas));
 
-
-
-// MODALS
-
-    roa::PPCanvasWidget *ppCanvas = new roa::PPCanvasWidget(&ui, ppPlugins);
-    mainWindow->SetModal(ppCanvas);
-    ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [mainWindow](){mainWindow->SwitchModalActiveFlag(); });
+    ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [Desktop](){ Desktop->SwitchModalActiveFlag(); });
 
 // MAIN LOOP
-
     ui.Run(0.01);
 
 // CLEANUP

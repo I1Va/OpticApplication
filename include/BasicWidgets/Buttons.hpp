@@ -38,6 +38,10 @@ protected:
 public:
     using hui::Widget::Widget;
     virtual ~Button() = default;
+    Button(const Button&) = delete;
+    Button& operator=(const Button&) = delete;
+    Button(Button&&) = default;
+    Button& operator=(Button&&) = default;
 
     void SetOnPressAction(std::function<void()> action) { onPressAction = action; }
     void SetOnUnpressAction(std::function<void()> action) { onUnpressAction = action; }
@@ -199,9 +203,5 @@ protected:
         backSurface->DrawOn(GetTexture());
     }
 };
-
-
-
-
 
 }
