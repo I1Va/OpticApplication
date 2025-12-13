@@ -8,10 +8,15 @@
 
 #include "hui/widget.hpp"
 
-#include "Containers.hpp"
+#include "BasicWidgets/Containers.hpp"
+#include "PPColorPicker.hpp"
+#include "DropDownMenu.hpp"
+#include "RecordsPanel.hpp"
+#include "RecordsPanel.hpp"
+#include "PPColorPicker.hpp"
+
 namespace roa
 {
-
 
 class PPToolButton final : public TextButton {
     pp::Tool *const tool;
@@ -19,7 +24,7 @@ class PPToolButton final : public TextButton {
 
 public:
     PPToolButton(hui::UI *ui, pp::Tool* const inpTool, pp::Tool **inpSelectedToolSlot): TextButton(ui), tool(inpTool), selectedToolSlot(inpSelectedToolSlot) {
-        assert(ui);
+        assert(ui); 
         SetText(std::string(inpTool->Icon()));
     }
     ~PPToolButton() = default;
@@ -47,29 +52,28 @@ protected:
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
         TextButton::OnIdle(event);
 
-        // if (*selectedToolSlot == tool) {
-        //     if (!pressed) {
-        //         ForceRedraw();
-        //         if (onPressAction) onPressAction();
-        //     }
-        //     pressed = true;    
-        // } else {
-        //     if (pressed) {
-        //         ForceRedraw();
-        //         if (onUnpressAction) onUnpressAction();
-        //     }
-        //     pressed = false;    
-        // }
+        if (*selectedToolSlot == tool) {
+            if (!pressed) {
+                ForceRedraw();
+                if (onPressAction) onPressAction();
+            }
+            pressed = true;    
+        } else {
+            if (pressed) {
+                ForceRedraw();
+                if (onUnpressAction) onUnpressAction();
+            }
+            pressed = false;    
+        }
 
         return hui::EventResult::UNHANDLED;
     }
 };
 
-
-class PPCanvasWidget : public LinContainer<PPToolButton>, public pp::Canvas {
-    std::vector<std::unique_ptr<pp::Tool>> tools;
-    std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
-
+class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
+    const int BORDER_RADIUS = 3;
+    const int BORDER_THICKNESS = 3;
+    const dr4::Color BORDER_COLOR = dr4::Color(255, 255, 0, 255);
     pp::ControlsTheme theme = 
     {
         .shapeFillColor = RED,
@@ -81,46 +85,88 @@ class PPCanvasWidget : public LinContainer<PPToolButton>, public pp::Canvas {
         .handleActiveColor = { 255, 105, 180, 255 }
     };
 
+    OutlinerWindow<pp::Tool *> *toolsMenu;
+    ColorPickerWindow          *colorPicker;
+
+    std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
+    std::vector<std::unique_ptr<pp::Tool>> tools;
+
     pp::Tool* selectedTool = nullptr;
     pp::Shape* selectedShape = nullptr;
-
-// Redraw decoration primitives
-    float borderSz = 10;
-    std::unique_ptr<dr4::Rectangle> borders;
 
 public:
     PPCanvasWidget
     (
         hui::UI *ui,
         std::vector<cum::PPToolPlugin*> &toolPlugins
-    ) : LinContainer(ui)
+    ) : 
+        LinContainer(ui),
+        toolsMenu(new OutlinerWindow<pp::Tool *>(ui)),
+        colorPicker(new roa::ColorPickerWindow(ui, theme))
     {
         assert(ui);
 
+        SetSize({GetUI()->GetWindow()->GetSize()});
+        
+        colorPicker->SetSize({200, 200});
+        colorPicker->SetPos(GetSize() - colorPicker->GetSize() - dr4::Vec2f(BORDER_THICKNESS, BORDER_THICKNESS));
+        
+        colorPicker->SetOnColorChangedAction([&](dr4::Color c){
+            theme.shapeFillColor = c;
+        });
+    
+        AddWidget(colorPicker);
+              
+        toolsMenu->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
+
+        AddWidget(toolsMenu);
+        
         for (auto* plugin : toolPlugins) {
             for (auto& tool : plugin->CreateTools(this)) {
+                pp::Tool *toolPtr = tool.get();
+                toolsMenu->AddRecord
+                (
+                    toolPtr, std::string(tool->Icon()),
+                    [this, toolPtr]() { 
+                        selectedTool = toolPtr; 
+                    },
+                    nullptr,
+                    "./assets/icons/sculptmode_hlt.svg"
+                );
                 tools.push_back(std::move(tool));
             }
         }
-
-        for (auto &tool : tools) {
-            // crete buttons
-            roa::PPToolButton *toolButton = new roa::PPToolButton(ui, tool.get(), &selectedTool);
-            toolButton->SetMode(Button::Mode::STICKING);
-            
-            addWidget(toolButton);
-        }
-        
-        SetSize({GetUI()->GetWindow()->GetSize() - dr4::Vec2f(borderSz * 2, borderSz * 2)});
-        SetPos({borderSz, borderSz});
-        layout();
     }
 
 protected:
+    void layout() {
+        float toolButtonSz = 40;
+        dr4::Vec2f toolsInitPos = dr4::Vec2f(0, GetSize().y)
+                                + dr4::Vec2f(BORDER_THICKNESS, -BORDER_THICKNESS)
+                                + dr4::Vec2f(0, -toolButtonSz);
+                            
+        toolsMenu->SetSize(100, 100);
+        toolsMenu->SetPos(GetSize().x - BORDER_THICKNESS * 3 - toolsMenu->GetSize().x, BORDER_THICKNESS * 3);
+
+        ForceRedraw();
+    }
 
     void Redraw() const override {
         GetTexture().Clear(FULL_TRANSPARENT);
-        borders->DrawOn(GetTexture());
+
+        
+        dr4::Image *backSurface = GetTexture().GetImage(); assert(backSurface);
+
+        DrawBlenderRoundedFrame(
+            backSurface->GetWidth(),
+            backSurface->GetHeight(),
+            BORDER_RADIUS,               
+            BORDER_THICKNESS,                 
+            BORDER_COLOR,
+            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
+        );
+
+        backSurface->DrawOn(GetTexture());
         
         for (auto &child : children) {
             child->DrawOn(GetTexture());
@@ -130,7 +176,6 @@ protected:
             shape.second->DrawOn(GetTexture());
         }   
     }
-
 
     void OnSizeChanged() override { layout(); }
 
@@ -200,6 +245,7 @@ protected:
             } else {
                 dr4::Event::MouseButton dr4ChildEvent(event.button, event.pos);
 
+             
                 if (selectedTool) {
                     if (selectedTool->OnMouseDown(dr4ChildEvent)) {
                         ForceRedraw();
@@ -209,7 +255,6 @@ protected:
 
                 for (auto& shape : shapes) {
                     if (shape.second->OnMouseDown(dr4ChildEvent)) {
-                        std::cout << "shape\n";
                         ForceRedraw();
                         return hui::EventResult::HANDLED;
                     }
@@ -331,29 +376,6 @@ protected:
     }
 
 private:
-
-    void layout() {
-        if (!borders) {
-            borders.reset(GetUI()->GetWindow()->CreateRectangle());
-            borders->SetSize(GetSize());
-            borders->SetBorderColor(RED);
-            borders->SetBorderThickness(borderSz);
-            borders->SetFillColor(FULL_TRANSPARENT);    
-        }
-
-        float toolButtonSz = 40;
-        dr4::Vec2f toolsInitPos = dr4::Vec2f(0, GetSize().y)
-                                + dr4::Vec2f(borderSz, -borderSz)
-                                + dr4::Vec2f(0, -toolButtonSz);
-                            
-        for (size_t i = 0; i < children.size(); i++) {
-            auto &child = children[i];
-            child->SetPos(toolsInitPos + dr4::Vec2f(toolButtonSz * i, 0));
-            child->SetSize({toolButtonSz, toolButtonSz});
-        }
-
-        ForceRedraw();
-    }
 };
 
 

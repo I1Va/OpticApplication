@@ -11,18 +11,33 @@
 #include "cum/ifc/dr4.hpp"
 #include "cum/ifc/pp.hpp"
 
-#include "Buttons.hpp"
-#include "MainWindow.hpp"
-#include "ScrollBar.hpp"
-#include "TextWidgets.hpp"
-#include "SceneWidgets.hpp"
-#include "ObjectsPanel.hpp"
-#include "EditorWidget.hpp"
+#include "BasicWidgets/Buttons.hpp"
+#include "BasicWidgets/MainWindow.hpp"
+#include "BasicWidgets/ScrollBar.hpp"
+#include "BasicWidgets/TextWidgets.hpp"
+#include "RecordsPanel.hpp"
+#include "DropDownMenu.hpp"
+#include "PropertiesPanel.hpp"
+
 #include "PPWidgets.hpp"
-#include "Window.hpp"
+#include "BasicWidgets/Window.hpp"
 
-const char FONT_PATH[] = "assets/RobotoFont.ttf";
+#include "EditorWidget.hpp"
 
+const static char FONT_PATH[] = "assets/RobotoFont.ttf";
+
+const static roa::TexturePack ICONS_TEXTURE_PACK = 
+{
+    .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg",
+    .collectionSvgPath     = "assets/icons/Collection.svg",
+    .triaDownSvgPath       = "assets/icons/TriaDown.svg",
+    .triaRightSvgPath      = "assets/icons/TriaRight.svg",
+
+    .whiteTextColor = dr4::Color(222, 222, 222),
+    .fontSize = 11,
+
+    .propertiesPanelBGColor = dr4::Color(48, 48, 48)
+};
 
 void createSceneObjects
 (
@@ -50,14 +65,14 @@ void createSceneObjects
     SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &editor->GetSceneManager());
 
 
-    for (int i = 0; i < 10; i++) {
-        SphereObject *sphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
-        sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
-        editor->AddObject(sphere);
-    }
+    // for (int i = 0; i < 3; i++) {
+    //     RTMaterial *sphereMaterial = materialManager.MakeMetal({0.1 + 0.2 * i, 0.2 + 0.2 * i, 0.3 +0.2 * i}, 0.3);
+    //     SphereObject *sphere = new SphereObject(1, sphereMaterial, &editor->GetSceneManager());
+    //     sphere->setPosition({static_cast<float>(i), static_cast<float>(i), static_cast<float>(i)});
+    //     editor->AddRecord(sphere);
+    // }
 
-
-    ground->setPosition({0, 0, -100});
+    ground->setPosition({0, 0, -2});
     glassSphere->setPosition({0, 0, 1});
     midSphere->setPosition({0, 4, 3});
     rightSphere->setPosition({2, 0, 1});
@@ -65,12 +80,13 @@ void createSceneObjects
 
     light->setPosition({0, 0, 10});
 
-    editor->AddObject(ground);
-    editor->AddObject(glassSphere);
-    editor->AddObject(midSphere);
-    editor->AddObject(sun);
-    editor->AddObject(rightSphere);
+    editor->AddRecord(ground);
+    editor->AddRecord(glassSphere);
 
+    editor->AddRecord(midSphere);
+    editor->AddRecord(sun);
+
+    editor->AddRecord(rightSphere);
     editor->AddLight(light);
 }
 
@@ -93,50 +109,17 @@ int main(int argc, const char *argv[]) {
     window->SetSize({800, 600});
 
     dr4::Font *defaultFont = window->CreateFont();
-    defaultFont->LoadFromFile("/usr/share/fonts/TTF/Hack-Bold.ttf");
+    defaultFont->LoadFromFile("./assets/Inter.ttf");
     window->SetDefaultFont(defaultFont);
 
 // SETUP UI, MAIN WINDOW
     roa::UI ui(window, FONT_PATH);
+    ui.SetTexturePack(ICONS_TEXTURE_PACK);
     roa::MainWindow *mainWindow = new roa::MainWindow(&ui);
     mainWindow->SetSize({window->GetSize().x, window->GetSize().y});
     ui.SetRoot(mainWindow);
 
-
-
-    roa::Window *editorWindow = new roa::Window(&ui);
-    editorWindow->SetSize({560, 420});
-    editorWindow->SetPos({100, 100});
-
-    mainWindow->AddWidget(editorWindow);
-
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // SETUP PP PLUGIN
     std::vector<cum::PPToolPlugin*> ppPlugins = {};
     
@@ -155,12 +138,21 @@ int main(int argc, const char *argv[]) {
 
     
  // SETUP SCENE OBJECTS
+
     RTMaterialManager materialManager;
+
     roa::EditorWidget *editor = new roa::EditorWidget(&ui);
-    // createSceneObjects(materialManager, editor);
-    // editor->SetSize({760, 560});
-    // editor->SetPos({20, 20});     
-    // mainWindow->AddWidget(editor);
+    editor->SetSize(mainWindow->GetSize());
+
+    createSceneObjects(materialManager, editor);
+    
+   
+    mainWindow->AddWidget(editor);
+
+    
+
+
+
 
 // MODALS
 
@@ -170,7 +162,7 @@ int main(int argc, const char *argv[]) {
 
 // MAIN LOOP
 
-    ui.Run();
+    ui.Run(0.01);
 
 // CLEANUP
     delete window;

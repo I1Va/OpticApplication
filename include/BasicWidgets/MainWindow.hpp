@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
-
-#include "Containers.hpp"
+#include "BasicWidgets/Containers.hpp"
 
 namespace roa
 {
@@ -19,9 +18,10 @@ public:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
         if (modal && modalActivated) return event.Apply(*modal);
         
-
         for (auto &child : widgets) {
-            if (event.Apply(*child) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
+            if (event.Apply(*child) == hui::EventResult::HANDLED) {
+                return hui::EventResult::HANDLED;
+            }
         }
     
         return hui::EventResult::UNHANDLED;
@@ -56,16 +56,19 @@ public:
     }
 
     void BringToFront(hui::Widget *widget) override {
-        auto widgetsIt = std::find_if(widgets.begin(), widgets.end(), [widget](const auto &w){ return w.get() == widget; } );
-        if(widgetsIt != widgets.end()) {
-            widgets.erase(widgetsIt);       
-            widgets.emplace(widgets.begin(), widget);
-        }
-    }
+        auto it = std::find_if(widgets.begin(), widgets.end(),
+                            [widget](const auto &w){ return w.get() == widget; });
+        if (it == widgets.end()) return;
+
+        auto up = std::move(*it);          
+        widgets.erase(it);             
+        widgets.insert(widgets.begin(), std::move(up)); 
+}
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear({50, 50, 50, 255});
+        //GetTexture().Clear({20, 20, 20, 255});
+        GetTexture().Clear({61, 61, 61, 255});
 
         for (auto &widget : widgets) widget->DrawOn(GetTexture());
 

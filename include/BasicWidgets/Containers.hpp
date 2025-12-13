@@ -2,7 +2,8 @@
 #include <concepts>
 
 #include "hui/container.hpp"
-#include "Buttons.hpp"
+#include "BasicWidgets/Buttons.hpp"
+#include "Utilities/ROACommon.hpp"
 
 namespace roa
 {
@@ -31,7 +32,7 @@ public:
     ListContainer(hui::UI *ui): ZContainer<T>(ui) {}
     virtual ~ListContainer() = default;
 
-    void addWidget(T  *widget) {
+    void AddWidget(T  *widget) {
         BecomeParentOf(widget);
         children.emplace_front(widget);
     }
@@ -51,13 +52,22 @@ template <WidgetDerived T>
 class LinContainer : public ZContainer<T> {
 protected:
     std::vector<std::unique_ptr<T>> children; 
+    std::vector<std::unique_ptr<T>> erasable;
 public:
     LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
     virtual ~LinContainer() = default;
 
-    void addWidget(T *widget) {
+    void AddWidget(T *widget) {
         hui::Container::BecomeParentOf(widget);
-        children.emplace(children.begin(), widget);
+        children.emplace(children.end(), widget);
+    }
+
+    void EraseWidget(T *widget) {
+        auto it = std::find_if(children.begin(), children.end(), [widget](const auto &ptr){ return ptr.get() == widget; });
+        if (it != children.end()) {
+            erasable.push_back(std::move(*it));
+            children.erase(it);
+        }
     }
 
     void BringToFront(T *widget) override {
@@ -76,7 +86,6 @@ protected:
         }
         return hui::EventResult::UNHANDLED;
     }
-
 
 };
 

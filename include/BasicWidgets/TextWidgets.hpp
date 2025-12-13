@@ -5,7 +5,7 @@
 #include "hui/widget.hpp"
 
 #include "ROAUI.hpp"
-#include "ROACommon.hpp"
+#include "Utilities/ROACommon.hpp"
 
 namespace roa
 {
@@ -17,23 +17,27 @@ protected:
     std::unique_ptr<dr4::Line> caret;
     int caretPos = 0;
     bool drawCaret = false;
-    
-    dr4::Color backColor = WHITE;
+    dr4::Color BGColor = FULL_TRANSPARENT;
 
 public:
     TextWidget(hui::UI *ui): hui::Widget(ui), text(GetUI()->GetWindow()->CreateText()), caret(GetUI()->GetWindow()->CreateLine()) { 
         assert(ui); 
-        text->SetFont(static_cast<UI *>(GetUI())->GetDefaultFont());
+        text->SetFont(ui->GetWindow()->GetDefaultFont());
         caret->SetColor(BLACK);
         caret->SetThickness(2);
     }
 
     ~TextWidget() = default;
 
-    void SetFont(dr4::Font *font) {
+    void SetFont(const dr4::Font *font) {
         assert(font);
 
         text->SetFont(font);
+        ForceRedraw();
+    }
+
+    void SetFontSize(const int fontSize) {
+        text->SetFontSize(fontSize);
         ForceRedraw();
     }
 
@@ -41,6 +45,20 @@ public:
         text->SetText(content);
         relayoutCaret();
         ForceRedraw();
+    }
+
+    void SetColor(const dr4::Color color) {
+        text->SetColor(color);
+        ForceRedraw();
+    }
+
+    void SetVAlign(const dr4::Text::VAlign align) {
+        text->SetVAlign(align); 
+        ForceRedraw();
+    }
+
+    void SetBGColor(const dr4::Color color) { 
+        BGColor = color; 
     }
 
     void SetCaretPos(const int pos) { 
@@ -63,7 +81,7 @@ public:
 
 protected:
     void Redraw() const override {
-        GetTexture().Clear(backColor);
+        GetTexture().Clear(BGColor);
         text->DrawOn(GetTexture());
         if (drawCaret) {
             caret->DrawOn(GetTexture());
@@ -72,10 +90,7 @@ protected:
     
     void OnSizeChanged() override { 
         relayoutCaret(); 
-        relayoutText();
     }
-
-    void relayoutText() { text->SetFontSize(GetSize().y); }
 
     void relayoutCaret() {
         caretPos = std::clamp(caretPos, 0, static_cast<int>(text->GetText().size()));
@@ -95,7 +110,7 @@ protected:
 };
 
 class TextInputWidget : public TextWidget {
-    static constexpr double CARET_BLINK_DELTA_SECS = 0.5; 
+    static constexpr double CARET_BLINK_DELTA_SECS = 0.3; 
     
     double curCaretBlinkDeltaSecs = CARET_BLINK_DELTA_SECS; 
     bool caretBlinkState = false;
@@ -111,7 +126,10 @@ class TextInputWidget : public TextWidget {
 public:
     TextInputWidget(hui::UI *ui) : TextWidget(ui) {
         assert(ui);
-        SetText(" ");
+        SetText("");
+        SetFont(GetUI()->GetWindow()->GetDefaultFont());
+        SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
+        SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
     }
 
     ~TextInputWidget() = default;
@@ -190,62 +208,6 @@ protected:
     }
 };
 
-class TextInputField : public ZContainer<hui::Widget> {
-    std::unique_ptr<TextWidget> label;
-    std::unique_ptr<TextInputWidget> inputField;
 
-public:
-    TextInputField(hui::UI *ui) : ZContainer(ui), label(new TextWidget(ui)), inputField(new TextInputWidget(ui)) { 
-        assert(ui); 
-        BecomeParentOf(label.get());
-        BecomeParentOf(inputField.get());
-    }
-    ~TextInputField() = default;
-
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        if (event.Apply(*inputField) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-
-        return hui::EventResult::UNHANDLED;
-    }
-
-    void SetLabel(const std::string &content) {
-        label->SetText(content);
-    }
-    void SetText(const std::string &content) {
-        inputField->SetText(content);
-    }
-
-    void SetOnEnterAction(std::function<void(const std::string &)> action) { inputField->SetOnEnterAction(action); }
-
-    void BringToFront(hui::Widget *) override {}
-
-protected:
-
-    void OnSizeChanged() override {
-        relayout();
-    }
-
-    void relayout() {
-        float labelWIdth = GetSize().x / 2;
-        float labelHeight = GetSize().y;
-    
-        float inputFieldWidth = labelWIdth;
-        float inputFieldWidthHeight = GetSize().y;
-
-        label->SetSize({labelWIdth, labelHeight});
-        inputField->SetSize({inputFieldWidth, inputFieldWidthHeight});    
-        inputField->SetPos({labelWIdth, 0});
-
-        inputField->ForceRedraw();
-        label->ForceRedraw();
-    }
-    
-    void Redraw() const override {
-        GetTexture().Clear(FULL_TRANSPARENT);
-        
-        label->DrawOn(GetTexture());
-        inputField->DrawOn(GetTexture());
-    }
-};
 
 }

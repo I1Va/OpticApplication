@@ -6,11 +6,13 @@
 #include "hui/widget.hpp"
 #include "Camera.h"
 #include "RayTracer.h"
+#include "Utilities/ROAGUIRender.hpp"
+#include "BasicWidgets/Window.hpp"
 
 namespace roa
 {
 
-class SceneWidget : public hui::Widget {
+class Viewport3D : public hui::Widget {
     static inline constexpr int CAMERA_KEY_CONTROL_DELTA = 10;
     static inline constexpr int CAMERA_MOUSE_RELOCATION_SCALE = 2;
     static constexpr double CAMERA_ZOOM_DELTA = 0.1;
@@ -32,8 +34,8 @@ class SceneWidget : public hui::Widget {
     bool       cameraNeedZoom            = false;
 
 public:
-    SceneWidget(hui::UI *ui): 
-        hui::Widget(ui), 
+    Viewport3D(hui::UI *ui): 
+        hui::Widget(ui),
         sceneImage(ui->GetWindow()->CreateImage())
     { 
         camera.setCenter({0, -6, 1});
@@ -42,12 +44,13 @@ public:
         camera.renderProperties.samplesPerScatter = 1;
         camera.renderProperties.samplesPerPixel = 1;
         camera.renderProperties.enableLDirect = true;
+        camera.renderProperties.enableParallelRender = true;
         camera.renderProperties.maxRayDepth = 5;
     }
 
-    void AddObject(Primitives *object) { sceneManager.addObject(object); }
+    void AddRecord(Primitives *object) { sceneManager.addObject(object); }
     void AddLight(Light *light) { sceneManager.addLight(light); }
-    void AddObject(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
+    void AddRecord(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
     void AddLight(gm::IPoint3 position, Light *light) { sceneManager.addLight(position, light); }
 
     std::vector<::Primitives *> &GetPrimitives() { return sceneManager.primitives(); }
@@ -188,6 +191,10 @@ protected:
     }
 
     hui::EventResult OnMouseMove(hui::MouseMoveEvent &event) {
+        if (!(GetUI()->GetCaptured() == this || GetRect().Contains(event.pos))) return hui::EventResult::UNHANDLED;
+    
+        GetUI()->ReportHover(this);
+    
         if (mouseMiddleKeyPressed) {
             accumulatedCameraRotation += event.rel;
             cameraNeedRotation = true;
@@ -203,7 +210,7 @@ protected:
     }
 
     hui::EventResult OnMouseWheel(hui::MouseWheelEvent &event) override {
-        if (GetUI()->GetFocused() != this) return hui::EventResult::UNHANDLED;
+        if (GetUI()->GetFocused() != this || GetUI()->GetHovered() != this) return hui::EventResult::UNHANDLED;
 
         accumulatedCameraZoom += event.delta.y;
         cameraNeedZoom = true;
@@ -246,5 +253,47 @@ protected:
         cameraNeedZoom = false;
     }
 };
+
+class Viewport3DWindow final : public Window {
+    static constexpr float TOOL_BAR_HEIGHT = 20;
+    Viewport3D *viewport3D;
+
+public:
+    Viewport3DWindow(hui::UI *ui): Window(ui), viewport3D(new Viewport3D(ui)) {
+        assert(ui);
+        AddWidget(viewport3D);
+    } 
+    ~Viewport3DWindow() = default;
+
+    void AddRecord(Primitives *object) { viewport3D->AddRecord(object); }
+    void AddLight(Light *light)        { viewport3D->AddLight(light); }
+    void AddRecord(gm::IPoint3 position, Primitives *object) { viewport3D->AddRecord(position, object); }
+    void AddLight(gm::IPoint3 position, Light *light)        { viewport3D->AddLight(position, light); }
+
+    std::vector<::Primitives *> &GetPrimitives() { return viewport3D->GetPrimitives(); }
+    std::vector<::Light *>      &GetLights()     { return viewport3D->GetLights(); }
+
+    int GetScreenResolutionWidth()  const { return viewport3D->GetScreenResolutionWidth();  }
+    int GetScreenResolutionHeight() const { return viewport3D->GetScreenResolutionHeight(); }
+
+    Camera &GetCamera() { return viewport3D->GetCamera(); }
+    SceneManager &GetSceneManager() { return viewport3D->GetSceneManager(); }
+
+    double MeasureRenderTime(const std::size_t MEASURE_COUNT=1) {
+        return viewport3D->MeasureRenderTime(MEASURE_COUNT);
+    }
+
+protected:
+    void OnSizeChanged() override {
+        layout();
+    }
+
+    void layout() {
+        viewport3D->SetPos({0, TOOL_BAR_HEIGHT});
+        viewport3D->SetSize(GetSize() - viewport3D->GetPos());
+    }
+};
+
+
 
 } // namespace roa

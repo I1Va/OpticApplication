@@ -4,4 +4,4 @@ notes/
 release.sh
 debug.sh
 
-lsan.supp
+gdb.sh
