@@ -17,8 +17,11 @@ public:
     static constexpr float TOOL_WIDTH = 60;
 
     using Container::Container;
-    using Container::operator=;
-    virtual ~Window() = default;
+    Window(const Window &) = delete;
+    Window& operator=(const Window&) = delete;
+    Window(Window&&) = default;
+    Window& operator=(Window&&) = default;
+    virtual ~Window() = default;   
 
     void AddTool(std::unique_ptr<DropDownMenu> menu) {
         menu->SetSize(TOOL_WIDTH, TOOL_BAR_HEIGHT);

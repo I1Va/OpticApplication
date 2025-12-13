@@ -256,13 +256,16 @@ protected:
 
 class Viewport3DWindow final : public Window {
     static constexpr float TOOL_BAR_HEIGHT = 20;
-    Viewport3D *viewport3D;
+    Viewport3D *viewport3D = nullptr;
 
 public:
-    Viewport3DWindow(hui::UI *ui): Window(ui), viewport3D(new Viewport3D(ui)) {
+    Viewport3DWindow(hui::UI *ui): Window(ui) {
         assert(ui);
-        AddWidget(viewport3D);
-    } 
+
+        auto viewport3DUnique = std::make_unique<Viewport3D>(ui);
+        viewport3D = viewport3DUnique.get();
+        AddWidget(std::move(viewport3DUnique));
+    }
     ~Viewport3DWindow() = default;
 
     void AddRecord(Primitives *object) { viewport3D->AddRecord(object); }

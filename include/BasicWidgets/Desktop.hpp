@@ -6,6 +6,7 @@ namespace roa
 {
 
 class Desktop final : public Container {
+    // TODO: add main menu
 public:
     using Container::Container;
     Desktop(const Container&) = delete;

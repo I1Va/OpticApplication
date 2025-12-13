@@ -14,13 +14,8 @@
 #include "cum/ifc/dr4.hpp"
 #include "cum/ifc/pp.hpp"
 
-// core container definitions must come first so other widgets see them
-#include "BasicWidgets/Buttons.hpp"
-#include "BasicWidgets/ScrollBar.hpp"
-#include "BasicWidgets/TextWidgets.hpp"
 #include "BasicWidgets/Desktop.hpp"
-#include "BasicWidgets/Window.hpp"
-
+#include "RayTracerWidgets/Viewport3D.hpp"
 // #include "RecordsPanel.hpp"
 // #include "DropDownMenu.hpp"
 // #include "PropertiesPanel.hpp"
@@ -71,31 +66,14 @@ int main(int argc, const char *argv[]) {
     ui.SetTexturePack(ICONS_TEXTURE_PACK);
 
     roa::Desktop *desktop = new roa::Desktop(&ui);
-    desktop->SetSize({window->GetSize().x, window->GetSize().y});
-    ui.SetRoot(desktop);
+    desktop->SetSize(window->GetSize());
+    ui.SetRoot(desktop);    
 
+    auto viewPort3D = std::make_unique<roa::Viewport3DWindow>(&ui);
+    viewPort3D->SetSize({100, 100});
+    viewPort3D->SetPos({100, 100});
 
-    float padding = 3; 
-    auto scrollBar = std::make_unique<roa::VerticalScrollBar>(&ui);
-    scrollBar->SetSize({10, 100});
-    scrollBar->SetPos({100, 100});
-
-    auto textInputWidget = std::make_unique<roa::TextInputWidget>(&ui);
-    textInputWidget->SetPos(scrollBar->GetPos() + dr4::Vec2f(scrollBar->GetSize().x + padding, 0));
-    textInputWidget->SetSize({200, 200});
-
-    auto panelWindow = std::make_unique<roa::Window>(&ui);
-    panelWindow->SetSize({50, 200});
-    panelWindow->SetPos(textInputWidget->GetPos() + dr4::Vec2f(textInputWidget->GetSize().x + padding, 0));
-
-    auto button = std::make_unique<roa::RoundedBlenderButton>(&ui);
-    button->SetSize({200, 200});
-    button->SetPos(textInputWidget->GetPos() + dr4::Vec2f(textInputWidget->GetSize().x + padding, 0));
-
-    desktop->AddWidget(std::move(scrollBar));
-    desktop->AddWidget(std::move(textInputWidget));
-    desktop->AddWidget(std::move(panelWindow));
-    desktop->AddWidget(std::move(button));
+    desktop->AddWidget(std::move(viewPort3D));
 
     ui.Run(0.01);
 
