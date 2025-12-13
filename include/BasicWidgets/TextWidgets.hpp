@@ -17,7 +17,7 @@ protected:
     std::unique_ptr<dr4::Line> caret;
     int caretPos = 0;
     bool drawCaret = false;
-    dr4::Color BGColor = FULL_TRANSPARENT;
+    dr4::Color BGColor = RED;
 
 public:
     TextWidget(hui::UI *ui): hui::Widget(ui), text(GetUI()->GetWindow()->CreateText()), caret(GetUI()->GetWindow()->CreateLine()) { 
@@ -207,7 +207,5 @@ protected:
         return hui::EventResult::UNHANDLED;
     }
 };
-
-
 
 }

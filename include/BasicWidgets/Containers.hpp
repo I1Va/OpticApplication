@@ -23,6 +23,7 @@ public:
     void AddWidget(std::unique_ptr<hui::Widget> widget) {
         hui::Container::BecomeParentOf(widget.get());
         children.push_back(std::move(widget));
+        ForceRedraw();
     }
 
     void EraseWidget(hui::Widget *widget) {

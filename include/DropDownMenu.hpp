@@ -96,8 +96,8 @@ private:
 
 class DropDownMenu : public Container {
 protected:
-    DropDownButton* topButton;
-    hui::Widget* dropDown = nullptr;
+    DropDownButton* topButton = nullptr;
+    hui::Widget*    dropDown = nullptr;
 
     bool detailResize = false;
     dr4::Vec2f originSize = {0, 0};
@@ -105,13 +105,14 @@ protected:
     std::function<void()> onSizeChangedAction = nullptr;
 
 public:
-    DropDownMenu(hui::UI* ui) : Container(ui), topButton(new DropDownButton(ui)) {
+    DropDownMenu(hui::UI* ui) : Container(ui) {
         assert(ui);
 
-        topButton->SetOnPressAction([this]() { layout(); });
-        topButton->SetOnUnpressAction([this]() { layout(); });
-
-        AddWidget(topButton);
+        auto topButtonUnique = std::make_unique<DropDownButton>(ui);
+        topButtonUnique->SetOnPressAction([this]() { layout(); });
+        topButtonUnique->SetOnUnpressAction([this]() { layout(); });
+        topButton = topButtonUnique.get();
+        AddWidget(std::move(topButtonUnique));
     }
 
     void SetLabel(const std::string& label) { topButton->SetLabel(label); }
