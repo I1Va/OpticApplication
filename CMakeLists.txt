@@ -23,8 +23,8 @@ add_subdirectory(external/GeomLib)
 add_subdirectory(external/RayTracer)
 
 add_executable(${PROJECT_NAME} 
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/ROACommon.cpp    
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/SVGParser/SVGImageConverter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/Utilities/ROACommon.cpp    
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/Utilities/SVGImageConverter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 

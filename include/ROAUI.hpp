@@ -10,6 +10,9 @@
 namespace roa
 {
 
+template<typename T>
+concept IsPointer = std::is_pointer_v<T>;
+
 struct TexturePack {
 // SVG
     std::string outlinerObMeshSvgPath;

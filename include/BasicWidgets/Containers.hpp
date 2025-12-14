@@ -8,61 +8,25 @@
 namespace roa
 {
 
-
-template <WidgetDerived T> 
-class ZContainer : public hui::Container {
-public:
-    ZContainer(hui::UI *ui): hui::Container(ui) {}
-    virtual ~ZContainer() = default;
-    virtual void BringToFront(T *widget) = 0;
-};
-
-template <WidgetDerived T>
-class ListContainer : public ZContainer<T> {
+class Container : public hui::Container {
 protected:
-    std::list<std::unique_ptr<T>> children;
-
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto it = children.rbegin(); it != children.rend(); it++) {
-            if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-        }
-        return hui::EventResult::UNHANDLED;
-    }
+    std::vector<std::unique_ptr<hui::Widget>> children; 
+    std::vector<std::unique_ptr<hui::Widget>> erasable;
 public:
-    ListContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    virtual ~ListContainer() = default;
+    using hui::Container::Container;
+    Container(const Container&) = delete;
+    virtual ~Container() = default;   
+    Container& operator=(const Container&) = delete;
+    Container(Container&&) = default;
+    Container& operator=(Container&&) = default;
 
-    void AddWidget(T  *widget) {
-        BecomeParentOf(widget);
-        children.emplace_front(widget);
-    }
-    
-    void BringToFront(T *widget) override {
-        assert(widget);
-    
-        auto it = std::find(children.begin(), children.end(), widget);
-        if(it != children.end()) {
-            children.erase(it);
-            children.emplace_front(widget);
-        }
-    }
-};
-
-template <WidgetDerived T>
-class LinContainer : public ZContainer<T> {
-protected:
-    std::vector<std::unique_ptr<T>> children; 
-    std::vector<std::unique_ptr<T>> erasable;
-public:
-    LinContainer(hui::UI *ui): ZContainer<T>(ui) {}
-    virtual ~LinContainer() = default;
-
-    void AddWidget(T *widget) {
-        hui::Container::BecomeParentOf(widget);
-        children.emplace(children.end(), widget);
+    void AddWidget(std::unique_ptr<hui::Widget> widget) {
+        hui::Container::BecomeParentOf(widget.get());
+        children.push_back(std::move(widget));
+        ForceRedraw();
     }
 
-    void EraseWidget(T *widget) {
+    void EraseWidget(hui::Widget *widget) {
         auto it = std::find_if(children.begin(), children.end(), [widget](const auto &ptr){ return ptr.get() == widget; });
         if (it != children.end()) {
             erasable.push_back(std::move(*it));
@@ -70,7 +34,7 @@ public:
         }
     }
 
-    void BringToFront(T *widget) override {
+    void BringToFront(hui::Widget *widget) {
         auto it = std::find_if(children.begin(), children.end(), [widget](const auto &ptr){ return ptr.get() == widget; });
         if (it != children.end()) {
             auto uptr = std::move(*it);
@@ -81,13 +45,17 @@ public:
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto it = children.rbegin(); it != children.rend(); it++) {
+        for (auto it = children.begin(); it != children.end(); it++) {
             if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }
         return hui::EventResult::UNHANDLED;
     }
 
+    hui::EventResult OnIdle(hui::IdleEvent &evt) {
+        PropagateToChildren(evt);
+        erasable.clear();
+        return hui::EventResult::UNHANDLED;
+    }
 };
-
 
 } // namespace roa

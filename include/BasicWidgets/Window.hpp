@@ -4,27 +4,34 @@
 #include "Utilities/ROACommon.hpp"
 
 #include "BasicWidgets/Containers.hpp"
-#include "DropDownMenu.hpp"
+#include "CompositeWidgets/DropDownMenu.hpp"
 
 namespace roa
 {
  
-class Window : public LinContainer<hui::Widget> {
+class Window : public Container  {
     bool implicitHovered = false;
     std::vector<DropDownMenu *> tools;
 public:
     static constexpr float TOOL_BAR_HEIGHT = 20;
     static constexpr float TOOL_WIDTH = 60;
 
-    using LinContainer::LinContainer;
-    virtual ~Window() = default;
+    using Container::Container;
+    Window(const Window &) = delete;
+    Window& operator=(const Window&) = delete;
+    Window(Window&&) = default;
+    Window& operator=(Window&&) = default;
+    virtual ~Window() = default;   
 
-    void AddTool(DropDownMenu *menu) {
+    void AddTool(std::unique_ptr<DropDownMenu> menu) {
         menu->SetSize(TOOL_WIDTH, TOOL_BAR_HEIGHT);
         menu->SetPos(dr4::Vec2f(TOOL_WIDTH, 0) * tools.size());
 
-        tools.push_back(menu);
-        AddWidget(menu);
+        tools.push_back(menu.get());
+        
+        auto *menuRaw = menu.get();
+        AddWidget(std::move(menu));
+        BringToFront(menuRaw);
     }
 
 protected:

@@ -11,7 +11,7 @@
 namespace roa
 {
 
-class ThumbButton : public RoundedBlenderButton  {
+class ThumbButton final : public RoundedBlenderButton  {
     dr4::Rect2f movingArea = {};
 
     dr4::Vec2f accumulatedRel = {};
@@ -72,30 +72,30 @@ private:
     }
 };
 
-class VerticalScrollBar : public ZContainer<hui::Widget> {
+class VerticalScrollBar final : public Container {
     static constexpr float MOUSEWHEEL_THUMB_MOVE_COEF = 0.1;
-
-    std::function<void(double)> onScrollAction=nullptr;
-
-    std::unique_ptr<ThumbButton> thumbButton  = nullptr;
     float thumbLayoutShare = 0.5;
 
+    ThumbButton *thumbButton = nullptr;
+    std::function<void(double)> onScrollAction=nullptr;
+   
     bool hiden = false;
 
 public:
-    VerticalScrollBar(hui::UI *ui): ZContainer(ui) {
-        thumbButton = std::make_unique<ThumbButton>(ui);
-        BecomeParentOf(thumbButton.get());
-        thumbButton->SetOnReplaceAction([this] { percantageChanged(); });
-    }
+    VerticalScrollBar(hui::UI *ui): Container(ui) {
+        auto thumbButtonUnique = std::make_unique<ThumbButton>(ui); 
+        thumbButton = thumbButtonUnique.get();
 
+        thumbButtonUnique->SetOnReplaceAction([this] { percantageChanged(); });
+        AddWidget(std::move(thumbButtonUnique));   
+    }
+    VerticalScrollBar(VerticalScrollBar &other) = delete;
+    VerticalScrollBar& operator=(const VerticalScrollBar&) = delete;
+    VerticalScrollBar(VerticalScrollBar&&) = default;
+    VerticalScrollBar& operator=(VerticalScrollBar&&) = default;
     ~VerticalScrollBar() = default;
 
-    void BringToFront(hui::Widget *) override {}
-
-    void SetOnScrollAction(std::function<void(double)> action) {
-        onScrollAction = action;
-    }
+    void SetOnScrollAction(std::function<void(double)> action) { onScrollAction = action; }
 
     void SetThumbLayoutShare(float share) {
         thumbLayoutShare = share;
@@ -116,14 +116,6 @@ public:
     }
 
 protected:
-    hui::EventResult PropagateToChildren(hui::Event &event) override {
-        assert(thumbButton);
-
-        if (event.Apply(*thumbButton) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
-
-        return hui::EventResult::UNHANDLED;
-    }
-
     void OnSizeChanged() override { relayout(); }
 
 protected:

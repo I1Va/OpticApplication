@@ -10,65 +10,13 @@
 
 #include "BasicWidgets/Containers.hpp"
 #include "PPColorPicker.hpp"
-#include "DropDownMenu.hpp"
-#include "RecordsPanel.hpp"
-#include "RecordsPanel.hpp"
+#include "CompositeWidgets/DropDownMenu.hpp"
+#include "CompositeWidgets/RecordsPanel.hpp"
+#include "CompositeWidgets/RecordsPanel.hpp"
 #include "PPColorPicker.hpp"
 
 namespace roa
 {
-
-class PPToolButton final : public TextButton {
-    pp::Tool *const tool;
-    pp::Tool **selectedToolSlot = nullptr;
-
-public:
-    PPToolButton(hui::UI *ui, pp::Tool* const inpTool, pp::Tool **inpSelectedToolSlot): TextButton(ui), tool(inpTool), selectedToolSlot(inpSelectedToolSlot) {
-        assert(ui); 
-        SetText(std::string(inpTool->Icon()));
-    }
-    ~PPToolButton() = default;
-
-protected:
-    hui::EventResult OnMouseDown(hui::MouseButtonEvent &event) override {        
-        if (TextButton::OnMouseDown(event) == hui::EventResult::HANDLED) {
-            if (*selectedToolSlot) (*selectedToolSlot)->OnEnd();    
-            if (pressed) *selectedToolSlot = tool;
-            else *selectedToolSlot = nullptr;
-            
-            return hui::EventResult::HANDLED;
-        }
-        return hui::EventResult::UNHANDLED;
-    }
-
-    hui::EventResult OnKeyDown(hui::KeyEvent &event) override {
-        if (event.key == dr4::KeyCode::KEYCODE_ESCAPE && *selectedToolSlot == tool && tool->IsCurrentlyDrawing()) {
-            (*selectedToolSlot)->OnBreak();
-            return hui::EventResult::HANDLED;
-        }
-        return TextButton::OnKeyDown(event);
-    }
-
-    hui::EventResult OnIdle(hui::IdleEvent &event) override {
-        TextButton::OnIdle(event);
-
-        if (*selectedToolSlot == tool) {
-            if (!pressed) {
-                ForceRedraw();
-                if (onPressAction) onPressAction();
-            }
-            pressed = true;    
-        } else {
-            if (pressed) {
-                ForceRedraw();
-                if (onUnpressAction) onUnpressAction();
-            }
-            pressed = false;    
-        }
-
-        return hui::EventResult::UNHANDLED;
-    }
-};
 
 class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
     const int BORDER_RADIUS = 3;
@@ -140,11 +88,6 @@ public:
 
 protected:
     void layout() {
-        float toolButtonSz = 40;
-        dr4::Vec2f toolsInitPos = dr4::Vec2f(0, GetSize().y)
-                                + dr4::Vec2f(BORDER_THICKNESS, -BORDER_THICKNESS)
-                                + dr4::Vec2f(0, -toolButtonSz);
-                            
         toolsMenu->SetSize(100, 100);
         toolsMenu->SetPos(GetSize().x - BORDER_THICKNESS * 3 - toolsMenu->GetSize().x, BORDER_THICKNESS * 3);
 
@@ -377,7 +320,6 @@ protected:
 
 private:
 };
-
 
 } // namespace roa
 
