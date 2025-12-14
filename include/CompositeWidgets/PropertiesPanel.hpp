@@ -116,14 +116,10 @@ protected:
 
 private:
     void layout() {
-        float height = fieldsPanel->calculateTotalHeight() + PANEL_PADDING;
+        float height = fieldsPanel->CalculateRecordsSumHeight() + PANEL_PADDING;
         fieldsPanel->SetSize(GetSize().x, height);
 
-        for (auto field : fieldsPanel->GetRecords()) {
-            field->SetSize(GetSize().x - 2 * recordsStartPos.x, 25);
-        }
-
-        fieldsPanel->relayout();
+        fieldsPanel->SetAllRecordsSize({GetSize().x - 2 * recordsStartPos.x, 25});
         ForceRedraw();
     }
 };

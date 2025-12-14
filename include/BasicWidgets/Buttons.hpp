@@ -19,6 +19,8 @@ public:
     };
 
 protected:
+    using hui::Widget::Widget;
+
     enum class StateProperty : uint8_t {
         NON_ACTIVE  = 0b00000000,
         HOVERED     = 0b10000000,
@@ -36,7 +38,6 @@ protected:
     uint8_t state = static_cast<uint8_t>(StateProperty::NON_ACTIVE); 
 
 public:
-    using hui::Widget::Widget;
     virtual ~Button() = default;
     Button(const Button&) = delete;
     Button& operator=(const Button&) = delete;

@@ -14,15 +14,10 @@
 #include "cum/ifc/dr4.hpp"
 #include "cum/ifc/pp.hpp"
 
-// core container definitions must come first so other widgets see them
-#include "BasicWidgets/Containers.hpp"
-#include "BasicWidgets/Buttons.hpp"
-#include "BasicWidgets/ScrollBar.hpp"
-#include "BasicWidgets/TextWidgets.hpp"
-#include "BasicWidgets/Desktop.hpp"
-#include "BasicWidgets/Window.hpp"
-
 // #include "PPWidgets.hpp"
+#include "BasicWidgets/Desktop.hpp"
+
+#include "CompositeWidgets/Outliner.hpp"
 #include "CompositeWidgets/EditorWidget.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
@@ -108,9 +103,9 @@ int main(int argc, const char *argv[]) {
     roa::UI ui(window, FONT_PATH);
     ui.SetTexturePack(ICONS_TEXTURE_PACK);
 
-    roa::Desktop *Desktop = new roa::Desktop(&ui);
-    Desktop->SetSize({window->GetSize().x, window->GetSize().y});
-    ui.SetRoot(Desktop);
+    roa::Desktop *desktop = new roa::Desktop(&ui);
+    desktop->SetSize({window->GetSize().x, window->GetSize().y});
+    ui.SetRoot(desktop);
 
 // SETUP PP PLUGIN
     std::vector<cum::PPToolPlugin*> ppPlugins;
@@ -128,15 +123,19 @@ int main(int argc, const char *argv[]) {
     }
 
 // SETUP SCENE OBJECTS
+
+
+
+
+
+
+
+
     RTMaterialManager materialManager;
-
-// create editor as unique_ptr, use raw pointer for scene creation, then move into Desktop
     auto editor = std::make_unique<roa::EditorWidget>(&ui);
-    editor->SetSize(Desktop->GetSize());
-
+    editor->SetSize(desktop->GetSize());
     createSceneObjects(materialManager, editor.get());
-
-    Desktop->AddWidget(std::move(editor)); // ownership transferred
+    desktop->AddWidget(std::move(editor)); 
 
 // MAIN LOOP
     ui.Run(0.01);

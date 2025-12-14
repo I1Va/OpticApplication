@@ -42,7 +42,6 @@ public:
         outliner = outlinerUnique.get();
         propertiesPanel = propertiesPanelUnique.get();
         
-
         layout();
 
         outliner->SetOnSelectChangedAction([this](){ updateRecords(); });

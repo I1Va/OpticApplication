@@ -45,7 +45,7 @@ public:
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        for (auto it = children.rbegin(); it != children.rend(); it++) {
+        for (auto it = children.begin(); it != children.end(); it++) {
             if (event.Apply(**it) == hui::EventResult::HANDLED) return hui::EventResult::HANDLED;
         }
         return hui::EventResult::UNHANDLED;
