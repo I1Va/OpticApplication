@@ -28,7 +28,10 @@ public:
         menu->SetPos(dr4::Vec2f(TOOL_WIDTH, 0) * tools.size());
 
         tools.push_back(menu.get());
+        
+        auto *menuRaw = menu.get();
         AddWidget(std::move(menu));
+        BringToFront(menuRaw);
     }
 
 protected:
