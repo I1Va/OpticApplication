@@ -37,7 +37,7 @@ public:
 protected:
     hui::EventResult OnIdle(hui::IdleEvent &evt) override final {
         PropagateToChildren(evt);
-        bool newImplicitHovered = checkImplicitHover();
+        bool newImplicitHovered = CheckImplicitHover();
         if (newImplicitHovered != implicitHovered) ForceRedraw();
         implicitHovered = newImplicitHovered;
         
@@ -62,20 +62,11 @@ protected:
             [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
         );
 
-        GetTexture().Clear({61, 61, 61});
+        GetTexture().Clear(FULL_TRANSPARENT);
         backSurface->DrawOn(GetTexture());
     }
 
 private:
-    bool checkImplicitHover() const {
-        hui::Widget *hover = GetUI()->GetHovered();
-        while (hover && (hover != this)) {
-            if (hover == hover->GetParent()) break;
-            hover = hover->GetParent();
-        }
-
-        return hover == this;
-    }
 };
 
 

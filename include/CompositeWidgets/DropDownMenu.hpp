@@ -12,6 +12,8 @@ namespace roa
 class DropDownButton final : public Button {
     const dr4::Color buttonColor = dr4::Color(61, 61, 61);
     int borderRadius = 2;
+    int borderThickness = 0;
+    dr4::Color borderColor = FULL_TRANSPARENT;
 
     std::unique_ptr<dr4::Text> label;
     std::unique_ptr<dr4::Image> dropDownActiveIcon;
@@ -51,6 +53,22 @@ public:
 
     virtual ~DropDownButton() = default;
 
+    void SetBorderThinkess(const int thikness) {
+        borderThickness = thikness;
+        ForceRedraw();
+    }
+
+    void SetBorderColor(const dr4::Color color) {
+        borderColor = color;
+        ForceRedraw();
+    }
+
+    void Hide() { 
+        pressed = false;
+        if (onUnpressAction) onUnpressAction();
+        ForceRedraw();
+    }
+
     void SetLabel(const std::string &text) { label->SetText(text); }
     void SetLabelFontSize(int fontSize) { label->SetFontSize(fontSize); }
 
@@ -67,8 +85,8 @@ protected:
             backSurface->GetWidth(),
             backSurface->GetHeight(),
             borderRadius,
-            0,
-            FULL_TRANSPARENT,
+            borderThickness,
+            borderColor,
             buttonColor,
             [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x, y, c); }
         );
@@ -115,7 +133,18 @@ public:
         AddWidget(std::move(topButtonUnique));
     }
 
-    void SetLabel(const std::string& label) { topButton->SetLabel(label); }
+    void SetBorderThinkess(const int thikness) {
+        topButton->SetBorderThinkess(thikness);
+    }
+
+    void SetBorderColor(const dr4::Color color) {
+        topButton->SetBorderColor(color);
+    }
+
+    void SetLabel(const std::string& label) { 
+        topButton->SetLabel(label); 
+        ForceRedraw();
+    }
     void SetDropDownWidget(std::unique_ptr<hui::Widget> wgt) { 
         dropDown = wgt.get(); 
         AddWidget(std::move(wgt));
@@ -145,7 +174,12 @@ protected:
         GetTexture().Clear(FULL_TRANSPARENT);
         topButton->DrawOn(GetTexture());
 
-        if (dropDown) dropDown->DrawOn(GetTexture());
+        if (dropDown && topButton->IsDropDownActive()) dropDown->DrawOn(GetTexture());
+    }
+
+    hui::EventResult OnIdle(hui::IdleEvent &evt) override {
+        if (!CheckImplicitHover()) topButton->Hide();
+        return Container::OnIdle(evt);
     }
 
 private:
@@ -155,7 +189,7 @@ private:
         if (dropDown) dropDown->SetPos({0, topButton->GetSize().y});
 
         if (topButton->IsDropDownActive() && dropDown) {
-            dr4::Vec2f extendedSize = {originSize.x, std::fmax(originSize.y, dropDown->GetPos().y + dropDown->GetSize().y)};
+            dr4::Vec2f extendedSize = {std::fmax(originSize.x, dropDown->GetPos().x + dropDown->GetSize().x), std::fmax(originSize.y, dropDown->GetPos().y + dropDown->GetSize().y)};
             SetSize(extendedSize);
         } else {
             SetSize(originSize);

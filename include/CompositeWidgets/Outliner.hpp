@@ -25,7 +25,12 @@ inline const ObjectButtonColorPack GRAY_OBJECT_PACK = {
 };
 
 class ObjectButton final : public Button {
+    static constexpr float PADDING = 4;
+
     ObjectButtonColorPack colorPack = BLACK_OBJECT_PACK;
+
+    dr4::Vec2f iconStartPos = {20, 3};
+    dr4::Vec2f  iconSize = {16, 16};
     std::unique_ptr<dr4::Text> label;
     std::unique_ptr<dr4::Image> mainIcon;
 
@@ -34,12 +39,17 @@ public:
         label(ui->GetWindow()->CreateText()),
         mainIcon(ui->GetWindow()->CreateImage())
     {
-        label->SetPos({40,3});
-        label->SetFontSize(11);
+        layout();
         label->SetText("Figure.000");
+    }
 
-        mainIcon->SetPos({20,2});
-        mainIcon->SetSize({16,16});
+    void SetIconStartPos(const dr4::Vec2f pos) {
+        iconStartPos = pos;
+        layout();
+    }
+    void SetIconSize(const dr4::Vec2f size) {
+        iconSize = size;
+        layout(); 
     }
 
     void SetLabel(const std::string& text) { label->SetText(text); }
@@ -71,12 +81,26 @@ protected:
         mainIcon->DrawOn(GetTexture());
         label->DrawOn(GetTexture());
     }
+
+private:
+    void layout() {
+        mainIcon->SetPos(iconStartPos);
+        mainIcon->SetSize(iconSize);
+
+        label->SetPos({mainIcon->GetSize().x + mainIcon->GetPos().x + PADDING, 3});
+        label->SetFontSize(11);
+
+        ForceRedraw();
+    }
 };
 
 // ---------------- Outliner ----------------
 template <IsPointer T>
 class Outliner final : public RecordsPanel<ObjectButton> {
     static constexpr float RECORD_HEIGHT = 20.0f;
+
+    dr4::Vec2f recordIconStartPos = {20, 3};
+    dr4::Vec2f recordIconSize = {16, 16};
 
     std::optional<std::pair<std::string,T>> currentSelected = std::nullopt;
     std::function<void()> onSelectChangedAction = nullptr;
@@ -95,6 +119,8 @@ public:
         auto record = std::make_unique<ObjectButton>(GetUI());
         record->SetLabel(name);
         record->SetMode(recordButtonMode);
+        record->SetIconSize(recordIconSize);
+        record->SetIconStartPos(recordIconStartPos);
         record->SetSize(GetSize().x, RECORD_HEIGHT);
 
         if (iconPath.empty())
@@ -127,6 +153,17 @@ public:
     void SetRecordButtonMode(Button::Mode mode) {
         recordButtonMode = mode;
         for (auto record : records) record->SetMode(mode);
+        ForceRedraw();
+    }
+
+    void SetRecordIconStartPos(const dr4::Vec2f pos) {
+        recordIconStartPos = pos;
+        for (auto record : records) record->SetIconStartPos(recordIconStartPos);
+        ForceRedraw();
+    }
+    void SetRecordIconSize(const dr4::Vec2f size) {
+        recordIconSize = size;
+        for (auto record : records) record->SetIconSize(recordIconSize);
         ForceRedraw();
     }
 

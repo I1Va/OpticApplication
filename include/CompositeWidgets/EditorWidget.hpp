@@ -47,17 +47,17 @@ public:
         outliner->SetOnSelectChangedAction([this](){ updateRecords(); });
         
         auto addObjectDropDown = std::make_unique<Outliner<Primitives *>>(ui);
-        addObjectDropDown->SetSize({400, 50});
+        addObjectDropDown->SetSize({100, 30});
         addObjectDropDown->SetBGColor({61, 61, 61});
         addObjectDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
-        addObjectDropDown->AddRecord(nullptr, "S", [this](){
+        addObjectDropDown->AddRecord(nullptr, "Sphere", [this](){
             auto sphereMaterial = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
             auto sphere = new SphereObject(1.0f, sphereMaterial, &GetSceneManager());
             AddRecord(sphere);
         }, nullptr);
 
-        addObjectDropDown->AddRecord(nullptr, "P", [this](){
+        addObjectDropDown->AddRecord(nullptr, "Plane", [this](){
             auto planeMaterial = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
             auto plane = new PlaneObject({0,0,0}, {0,0,1}, planeMaterial, &GetSceneManager());
             AddRecord(plane);
