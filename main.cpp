@@ -39,49 +39,6 @@ const static roa::TexturePack ICONS_TEXTURE_PACK =
     .propertiesPanelBGColor = dr4::Color(48, 48, 48)
 };
 
-
-
-void createSceneObjects
-(
-    RTMaterialManager &materialManager,
-    roa::EditorWidget *editor
-) {
-    RTMaterial *groundMaterial      = materialManager.MakeLambertian({0.8, 0.8, 0.0});
-    RTMaterial *midSphereMaterial   = materialManager.MakeLambertian({0.1, 0.2, 0.5});
-    RTMaterial *rightSphereMaterial = materialManager.MakeMetal({0.8, 0.8, 0.8}, 0.3);
-    RTMaterial *glassMaterial       = materialManager.MakeDielectric({1.0, 1.0, 1.0}, 1.50);
-    RTMaterial *sunMaterial         = materialManager.MakeEmissive(gm::IVec3f(1.0, 0.95, 0.9) * 10);
-
-    SphereObject *sun = new SphereObject(1, sunMaterial, &editor->GetSceneManager());
-    Light *light = new Light
-    (
-        /* ambientIntensity  */  gm::IVec3f(0.2, 0.2, 0.2),
-        /* defuseIntensity   */  gm::IVec3f(0.8, 0.7, 0.6),
-        /* specularIntensity */  gm::IVec3f(0.7, 0.7, 0),
-        /* viewLightPow      */  15.0
-    );
-
-    SphereObject    *midSphere = new SphereObject(1, midSphereMaterial, &editor->GetSceneManager());
-    SphereObject    *rightSphere = new SphereObject(1, rightSphereMaterial, &editor->GetSceneManager());
-    PlaneObject     *ground = new PlaneObject({0, 0, 0}, {0, 0, 1}, groundMaterial, &editor->GetSceneManager());
-    SphereObject    *glassSphere = new SphereObject(1, glassMaterial, &editor->GetSceneManager());
-
-    ground->setPosition({0, 0, -2});
-    glassSphere->setPosition({0, 0, 1});
-    midSphere->setPosition({0, 4, 3});
-    rightSphere->setPosition({2, 0, 1});
-    sun->setPosition({-2, 0, 4});
-
-    light->setPosition({0, 0, 10});
-
-    editor->AddRecord(ground);
-    editor->AddRecord(glassSphere);
-    editor->AddRecord(midSphere);
-    editor->AddRecord(sun);
-    editor->AddRecord(rightSphere);
-    editor->AddLight(light);
-}
-
 int main(int argc, const char *argv[]) {
     if (argc != 2) {
         std::cerr << "Expected one argument: dr4 backend path\n";
@@ -132,9 +89,7 @@ int main(int argc, const char *argv[]) {
     auto editor = std::make_unique<roa::EditorWidget>(&ui);
     roa::EditorWidget *editorPtr = editor.get();
     editor->SetSize(desktop->GetSize());
-    // createGeometricSteelComposition(materialManager, editor.get());
     desktop->AddWidget(std::move(editor)); 
-    
 
 
 // MAIN MENU

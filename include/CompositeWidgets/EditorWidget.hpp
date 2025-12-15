@@ -161,6 +161,16 @@ public:
             return;        
         }
 
+        if (primitiveName == "Polygon") {
+            PolygonObject *polygon = new PolygonObject(&viewport3D->GetSceneManager());
+            iss >> *polygon;
+            RTMaterial *material = materialManager.deserializeMaterial(iss);
+            polygon->setMaterial(material);
+
+            AddRecord(polygon);
+            return;        
+        }
+
         std::cerr << "deserializeString failed\n";
     }
 
