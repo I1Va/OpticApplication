@@ -8,12 +8,19 @@ namespace roa
 
 
 class Desktop final : public Container {
+    std::unique_ptr<dr4::Rectangle> mainMenuBackGround;
     std::vector<DropDownMenu *> mainMenu;
 public:
     static constexpr float MAIN_MENU_HEIGHT = 20;
-    const dr4::Color BGColor = dr4::Color(24, 24, 24, 255);
-    Desktop(hui::UI *ui) : Container(ui) {
+    const dr4::Color mainMenuColor = dr4::Color(24, 24, 24, 255);
+    const dr4::Color BGColor = dr4::Color(61, 61, 61, 255);
+    
+    Desktop(hui::UI *ui) : Container(ui), mainMenuBackGround(ui->GetWindow()->CreateRectangle()) {
+        assert(ui);
+    
         SetSize(ui->GetWindow()->GetSize());
+        mainMenuBackGround->SetSize({GetSize().x, MAIN_MENU_HEIGHT});
+        mainMenuBackGround->SetFillColor(mainMenuColor);
     }
 
     Desktop(const Container&) = delete;
@@ -34,7 +41,7 @@ public:
 protected:
     void Redraw() const override {
         GetTexture().Clear(BGColor);
-
+        mainMenuBackGround->DrawOn(GetTexture());
         for (auto it = children.rbegin(); it != children.rend(); it++) {
             (*it)->DrawOn(GetTexture());
         }
