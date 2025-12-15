@@ -147,8 +147,29 @@ int main(int argc, const char *argv[]) {
     saveDropDown->SetBGColor(desktop->BGColor);
     saveDropDown->SetRecordButtonMode(roa::Button::Mode::CAPTURE_MODE);
     
-    saveDropDown->AddRecord(nullptr, "Save", [](){
+    saveDropDown->AddRecord(nullptr, "Save", [desktop](){
+        auto saveWindow = std::make_unique<roa::TextWindow>(desktop->GetUI());
+        saveWindow->SetPos({(desktop->GetSize().x - saveWindow->GetSize().x) / 2, (desktop->GetSize().y - saveWindow->GetSize().y) / 2});
+        
+        auto *saveWindowPtr = saveWindow.get();
+        saveWindow->SetInputFieldOnEnterAction([saveWindowPtr](const std::string &text){
+            try {
+                namespace fs = std::filesystem;
+                if (text.empty()) {
+                    saveWindowPtr->DisplayMessage("Provide filename", {200, 120, 0, 255});
+                } else if (fs::exists(fs::path(text))) {
+                    saveWindowPtr->DisplayMessage("Exists", {0, 200, 0, 255});
+                } else {
+                    saveWindowPtr->DisplayMessage("Not found", {200, 0, 0, 255});
+                }
+            } catch (...) {
+                saveWindowPtr->DisplayMessage("Error", {200, 0, 0, 255});
+            }
+        });
+
+        desktop->AddWidget(std::move(saveWindow));
         std::cout << "save!\n";
+        
     }, nullptr, ui.GetTexturePack().fileSaveIconPath);
 
     saveDropDown->AddRecord(nullptr, "Load", [](){

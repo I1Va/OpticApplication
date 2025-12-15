@@ -30,8 +30,18 @@ public:
     TextWindow(TextWindow&&) = default;
     TextWindow& operator=(TextWindow&&) = default;
 
+    void DisplayMessage(const std::string &message, const dr4::Color color=WHITE) {
+        messageField->SetText(message);
+        messageField->SetColor(color);
+        ForceRedraw();
+    }
+    
+    void SetInputFieldOnEnterAction(std::function<void(const std::string &text)> action) {
+        inputField->SetOnEnterAction(action);
+    }
+
     void InitLayout() {
-        SetSize({400, 120});
+        SetSize({200, 120});
 
         auto delBtn = std::make_unique<RoundedBlenderButton>(GetUI());
         deleteBtn = delBtn.get();
@@ -52,24 +62,7 @@ public:
         inputField->SetPos({6, 36});
         inputField->SetText("");
         inputField->SetBGColor({61, 61, 61, 255});
-        inputField->SetOnEnterAction([this](const std::string &text){
-            try {
-                namespace fs = std::filesystem;
-                if (text.empty()) {
-                    messageField->SetText("Provide filename");
-                    messageField->SetColor(dr4::Color(200, 120, 0));
-                } else if (fs::exists(fs::path(text))) {
-                    messageField->SetText("Exists");
-                    messageField->SetColor(dr4::Color(0, 200, 0));
-                } else {
-                    messageField->SetText("Not found");
-                    messageField->SetColor(dr4::Color(200, 0, 0));
-                }
-            } catch (...) {
-                messageField->SetText("Error checking file");
-                messageField->SetColor(dr4::Color(200, 0, 0));
-            }
-        });
+
         AddWidget(std::move(in));
 
         auto msg = std::make_unique<TextWidget>(GetUI());
