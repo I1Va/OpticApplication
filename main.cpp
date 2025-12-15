@@ -158,8 +158,6 @@ int main(int argc, const char *argv[]) {
                 namespace fs = std::filesystem;
                 if (text.empty()) {
                     saveWindowPtr->DisplayMessage("Provide filename", {200, 120, 0, 255});
-                } else if (fs::exists(fs::path(text))) {
-                    saveWindowPtr->DisplayMessage("`" + text + "` already exists", {200, 0, 0, 255});
                 } else if (editorPtr->SerializeScene(text)) {
                     saveWindowPtr->DisplayMessage("Scene is saved to `" + text + "`", {0, 200, 0, 255});
                 } else {

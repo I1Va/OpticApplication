@@ -151,6 +151,15 @@ public:
             AddRecord(sphere);
             return;        
         }
+        if (primitiveName == "Plane") {
+            PlaneObject *plane = new PlaneObject(&viewport3D->GetSceneManager());
+            iss >> *plane;
+            RTMaterial *material = materialManager.deserializeMaterial(iss);
+            plane->setMaterial(material);
+
+            AddRecord(plane);
+            return;        
+        }
 
         std::cerr << "deserializeString failed\n";
     }
