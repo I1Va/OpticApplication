@@ -150,6 +150,12 @@ public:
         RecordsPanel<ObjectButton>::AddRecord(std::move(record));
     }
 
+    void ClearRecords() {
+        currentSelected = std::nullopt;
+        if (onSelectChangedAction) onSelectChangedAction();
+        RecordsPanel::ClearRecords();
+    }
+
     void SetRecordButtonMode(Button::Mode mode) {
         recordButtonMode = mode;
         for (auto record : records) record->SetMode(mode);
@@ -202,6 +208,8 @@ public:
     {
         outliner->AddRecord(object,name,onSelect,onUnSelect,iconPath);
     }
+
+    void ClearRecords() { outliner->ClearRecords(); }
 
     std::optional<std::pair<std::string,T>> GetSelected() { return outliner->GetSelected(); }
     void SetOnSelectChangedAction(std::function<void()> action) { outliner->SetOnSelectChangedAction(action); }

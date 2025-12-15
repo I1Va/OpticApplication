@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 
 #include "hui/widget.hpp"
 #include "Camera.h"
@@ -19,6 +21,7 @@ class Viewport3D : public hui::Widget {
 
     std::unique_ptr<dr4::Image> sceneImage;
     SceneManager sceneManager;
+    RTMaterialManager materialManager;
 
     Camera camera;
     bool mouseMiddleKeyPressed  = false;
@@ -52,6 +55,8 @@ public:
     void AddLight(Light *light) { sceneManager.addLight(light); }
     void AddRecord(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
     void AddLight(gm::IPoint3 position, Light *light) { sceneManager.addLight(position, light); }
+
+    void ClearRecords() { sceneManager.clear(); }
 
     std::vector<::Primitives *> &GetPrimitives() { return sceneManager.primitives(); }
     std::vector<::Light *>      &GetLights()     { return sceneManager.lights(); }
@@ -251,7 +256,8 @@ protected:
 
         accumulatedCameraZoom = 0;
         cameraNeedZoom = false;
-    }
+    }   
+
 };
 
 class Viewport3DWindow final : public Window {
@@ -272,6 +278,8 @@ public:
     void AddLight(Light *light)        { viewport3D->AddLight(light); }
     void AddRecord(gm::IPoint3 position, Primitives *object) { viewport3D->AddRecord(position, object); }
     void AddLight(gm::IPoint3 position, Light *light)        { viewport3D->AddLight(position, light); }
+
+    void ClearRecords() { viewport3D->ClearRecords(); }
 
     std::vector<::Primitives *> &GetPrimitives() { return viewport3D->GetPrimitives(); }
     std::vector<::Light *>      &GetLights()     { return viewport3D->GetLights(); }

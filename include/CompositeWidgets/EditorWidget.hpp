@@ -105,6 +105,59 @@ public:
         viewport3D->AddLight(position, light);
     }
 
+    void ClearRecords() {
+        viewport3D->ClearRecords();
+        outliner->ClearRecords();
+    }
+
+    bool SerializeScene(const std::string &path) {
+        std::ofstream file(path, std::ios::out | std::ios::trunc);
+        if (!file) {
+            return false;
+        }
+        for (auto primitive : viewport3D->GetPrimitives()) {
+            file << *primitive << " " << *primitive->material() << "\n";
+        }
+        return true;
+    }
+
+    bool DeserializeScene(const std::string &path) {
+        std::ifstream file(path);
+        if (!file) {
+            return false;
+        }
+
+        std::string line;
+        std::istringstream iss(line);
+        
+        ClearRecords();
+        while (std::getline(file, line)) {
+            deserializeString(line);
+        }
+        return true;
+    }
+
+     void deserializeString(const std::string str) {
+        std::istringstream iss(str);
+
+        std::string primitiveName;
+        iss >> primitiveName;
+        if (primitiveName == "Sphere") {
+            SphereObject *sphere = new SphereObject(&viewport3D->GetSceneManager());
+            iss >> *sphere;
+            RTMaterial *material = materialManager.deserializeMaterial(iss);
+            sphere->setMaterial(material);
+
+            AddRecord(sphere);
+            return;        
+        }
+
+        std::cerr << "deserializeString failed\n";
+    }
+
+
+
+
     std::vector<::Primitives *> &GetPrimitives() { return viewport3D->GetPrimitives(); }
     std::vector<::Light *>      &GetLights()     { return viewport3D->GetLights(); }
     SceneManager &GetSceneManager() { return viewport3D->GetSceneManager(); }
@@ -128,7 +181,7 @@ private:
         float viewport3DHeight = GetUI()->GetWindow()->GetSize().y - borderPadding * 2;
         float menuHeight = (viewport3DHeight - innerPadding) / 2;
 
-        viewport3D->SetSize({viewport3DWidth, viewport3DHeight});
+        viewport3D->SetSize({200, 200}); //viewport3D->SetSize({viewport3DWidth, viewport3DHeight});
         outliner->SetSize({menuWidth, menuHeight});
         propertiesPanel->SetSize({menuWidth, menuHeight});
 

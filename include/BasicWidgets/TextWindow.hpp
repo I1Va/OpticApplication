@@ -14,8 +14,10 @@ class TextWindow final : public Window {
     RoundedBlenderButton *deleteBtn = nullptr;
     TextInputWidget *inputField = nullptr;
     TextWidget *messageField = nullptr;
+    TextWidget *titleWidget = nullptr;
 
     bool requestBringToFront = true;
+    std::string pendingTitle;
 
 public:
     TextWindow(hui::UI *ui): Window(ui) {
@@ -30,6 +32,12 @@ public:
     TextWindow(TextWindow&&) = default;
     TextWindow& operator=(TextWindow&&) = default;
 
+    void SetTitle(const std::string &t) {
+        pendingTitle = t;
+        if (titleWidget) titleWidget->SetText(t);
+        ForceRedraw();
+    }
+
     void DisplayMessage(const std::string &message, const dr4::Color color=WHITE) {
         messageField->SetText(message);
         messageField->SetColor(color);
@@ -42,6 +50,17 @@ public:
 
     void InitLayout() {
         SetSize({200, 120});
+
+        auto title = std::make_unique<TextWidget>(GetUI());
+        titleWidget = title.get();
+        titleWidget->SetPos({6, 6});
+        titleWidget->SetSize({GetSize().x - 12, 20});
+        titleWidget->SetBGColor({45, 45, 45, 255});
+        titleWidget->SetColor(static_cast<UI*>(GetUI())->GetTexturePack().whiteTextColor);
+        titleWidget->SetFont(GetUI()->GetWindow()->GetDefaultFont());
+        titleWidget->SetFontSize(static_cast<UI*>(GetUI())->GetTexturePack().fontSize);
+        if (!pendingTitle.empty()) titleWidget->SetText(pendingTitle);
+        AddWidget(std::move(title));
 
         auto delBtn = std::make_unique<RoundedBlenderButton>(GetUI());
         deleteBtn = delBtn.get();
@@ -61,20 +80,22 @@ public:
         inputField->SetSize({GetSize().x - 12, 24});
         inputField->SetPos({6, 36});
         inputField->SetText("");
-        inputField->SetBGColor({61, 61, 61, 255});
+        inputField->SetBGColor({45, 45, 45, 255});
 
         AddWidget(std::move(in));
 
+        // Message field
         auto msg = std::make_unique<TextWidget>(GetUI());
         messageField = msg.get();
         messageField->SetSize({GetSize().x - 12, 24});
         messageField->SetPos({6, 70});
         messageField->SetText("");
-        messageField->SetBGColor({61, 61, 61, 255});
+        messageField->SetBGColor({45, 45, 45, 255});
         messageField->SetFont(GetUI()->GetWindow()->GetDefaultFont());
         messageField->SetFontSize(static_cast<UI*>(GetUI())->GetTexturePack().fontSize);
         AddWidget(std::move(msg));
 
+        SetSize(GetSize());
         ForceRedraw();
     }
 
@@ -94,6 +115,7 @@ protected:
 
     void OnSizeChanged() override {
         if (deleteBtn) deleteBtn->SetPos({GetSize().x - deleteBtn->GetSize().x - 6, 6});
+        if (titleWidget) titleWidget->SetSize({GetSize().x - deleteBtn->GetSize().x - 18, 20});
         if (inputField) {
             inputField->SetSize({GetSize().x - 12, 24});
         }
@@ -104,7 +126,10 @@ protected:
     }
 
     void WindowDrawSelfAction() const override {
+        // main background
         GetTexture().Clear({61, 61, 61});
+
+        // draw title background area (kept inside titleWidget which has its own BG)
     }
 };
 
