@@ -19,6 +19,9 @@ struct TexturePack {
     std::string collectionSvgPath;
     std::string triaDownSvgPath;
     std::string triaRightSvgPath;
+    std::string fileSaveIconPath;
+    std::string fileLoadIconPath;
+    std::string addIconPath;
 // TEXT
     dr4::Color whiteTextColor;
     int fontSize;

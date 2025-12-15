@@ -26,6 +26,16 @@ public:
         ForceRedraw();
     }
 
+    bool CheckImplicitHover() const {
+        hui::Widget *hover = GetUI()->GetHovered();
+        while (hover && (hover != this)) {
+            if (hover == hover->GetParent()) break;
+            hover = hover->GetParent();
+        }
+
+        return hover == this;
+    }
+
     void EraseWidget(hui::Widget *widget) {
         auto it = std::find_if(children.begin(), children.end(), [widget](const auto &ptr){ return ptr.get() == widget; });
         if (it != children.end()) {
