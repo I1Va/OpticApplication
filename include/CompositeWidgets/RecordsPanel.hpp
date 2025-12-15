@@ -118,7 +118,7 @@ private:
     void relayoutScrollBar() {
         float totalHeight = CalculateRecordsSumHeight();
         scrollBar->Show();
-        scrollBar->SetSize(SCROLL_BAR_WIDTH, GetSize().y * SCROLL_BAR_HEIGHT_SHARE);
+        scrollBar->SetSize(SCROLL_BAR_WIDTH, std::max(1.0f, GetSize().y * SCROLL_BAR_HEIGHT_SHARE));
         float posY = (GetSize().y - scrollBar->GetSize().y) / 2;
         scrollBar->SetPos({GetSize().x - SCROLL_BAR_WIDTH - SCROLL_BAR_RIGHT_PADDING, posY});
 

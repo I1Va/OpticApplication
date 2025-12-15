@@ -190,7 +190,7 @@ private:
         float viewport3DHeight = GetUI()->GetWindow()->GetSize().y - borderPadding * 2;
         float menuHeight = (viewport3DHeight - innerPadding) / 2;
 
-        viewport3D->SetSize({200, 200}); //viewport3D->SetSize({viewport3DWidth, viewport3DHeight});
+        viewport3D->SetSize({viewport3DWidth, viewport3DHeight});
         outliner->SetSize({menuWidth, menuHeight});
         propertiesPanel->SetSize({menuWidth, menuHeight});
 

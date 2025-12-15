@@ -39,6 +39,8 @@ const static roa::TexturePack ICONS_TEXTURE_PACK =
     .propertiesPanelBGColor = dr4::Color(48, 48, 48)
 };
 
+
+
 void createSceneObjects
 (
     RTMaterialManager &materialManager,
@@ -130,7 +132,7 @@ int main(int argc, const char *argv[]) {
     auto editor = std::make_unique<roa::EditorWidget>(&ui);
     roa::EditorWidget *editorPtr = editor.get();
     editor->SetSize(desktop->GetSize());
-    createSceneObjects(materialManager, editor.get());
+    // createGeometricSteelComposition(materialManager, editor.get());
     desktop->AddWidget(std::move(editor)); 
     
 
