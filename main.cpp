@@ -19,6 +19,7 @@
 #include "BasicWidgets/Buttons.hpp"
 #include "CompositeWidgets/Outliner.hpp"
 #include "CompositeWidgets/EditorWidget.hpp"
+#include "BasicWidgets/TextWindow.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -178,8 +179,14 @@ int main(int argc, const char *argv[]) {
 
     pluginItem->SetDropDownWidget(std::move(pluginDropDown));
     desktop->AddMaiMenuItem(std::move(pluginItem));
+// TEST
 
-// 
+    auto textWindow = std::make_unique<roa::TextWindow>(&ui);
+    textWindow->SetPos({100, 100});
+    textWindow->SetSize({200, 200});
+    desktop->AddWidget(std::move(textWindow));
+
+
 
 // MAIN LOOP
     ui.Run(0.01);

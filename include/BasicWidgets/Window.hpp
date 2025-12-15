@@ -35,7 +35,7 @@ public:
     }
 
 protected:
-    hui::EventResult OnIdle(hui::IdleEvent &evt) override final {
+    hui::EventResult OnIdle(hui::IdleEvent &evt) override {
         PropagateToChildren(evt);
         bool newImplicitHovered = CheckImplicitHover();
         if (newImplicitHovered != implicitHovered) ForceRedraw();
@@ -43,10 +43,13 @@ protected:
         
         return hui::EventResult::UNHANDLED;
     }
+    
+    virtual void WindowDrawSelfAction() const {}
 
-    void Redraw() const override final {
+    void Redraw() const override {
         GetTexture().Clear(FULL_TRANSPARENT);
         
+        WindowDrawSelfAction();
         for (auto &child : children) child->DrawOn(GetTexture());
         for (auto &tool : tools) tool->DrawOn(GetTexture());
         
