@@ -47,7 +47,7 @@ public:
         outliner->SetOnSelectChangedAction([this](){ updateRecords(); });
         
         auto addObjectDropDown = std::make_unique<Outliner<Primitives *>>(ui);
-        addObjectDropDown->SetSize({100, 30});
+        addObjectDropDown->SetSize({100, 60});
         addObjectDropDown->SetBGColor({61, 61, 61});
         addObjectDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
@@ -63,7 +63,17 @@ public:
             AddRecord(plane);
         }, nullptr);
 
+        addObjectDropDown->AddRecord(nullptr, "Polygon", [this](){
+            auto material = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
+            auto polygon = new PolygonObject({{1, 0, 0}, {0, 0, 0}, {0, 0, 1}}, material, &GetSceneManager());
+            AddRecord(polygon);
+        }, nullptr);
 
+        addObjectDropDown->AddRecord(nullptr, "Cube", [this](){
+            auto material = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
+            auto cube = new CubeObject({1, 1, 1}, material, &GetSceneManager());
+            AddRecord(cube);
+        }, nullptr);
 
         auto addObjectMenuUnique = std::make_unique<DropDownMenu>(ui);
         addObjectMenuUnique->SetLabel("add");
@@ -118,6 +128,9 @@ public:
         for (auto primitive : viewport3D->GetPrimitives()) {
             file << *primitive << " " << *primitive->material() << "\n";
         }
+        for (auto light : viewport3D->GetLights()) {
+            file << *light << "\n";
+        }
         return true;
     }
 
@@ -140,9 +153,9 @@ public:
      void deserializeString(const std::string str) {
         std::istringstream iss(str);
 
-        std::string primitiveName;
-        iss >> primitiveName;
-        if (primitiveName == "Sphere") {
+        std::string objectName;
+        iss >> objectName;
+        if (objectName == "Sphere") {
             SphereObject *sphere = new SphereObject(&viewport3D->GetSceneManager());
             iss >> *sphere;
             RTMaterial *material = materialManager.deserializeMaterial(iss);
@@ -151,7 +164,7 @@ public:
             AddRecord(sphere);
             return;        
         }
-        if (primitiveName == "Plane") {
+        if (objectName == "Plane") {
             PlaneObject *plane = new PlaneObject(&viewport3D->GetSceneManager());
             iss >> *plane;
             RTMaterial *material = materialManager.deserializeMaterial(iss);
@@ -161,7 +174,7 @@ public:
             return;        
         }
 
-        if (primitiveName == "Polygon") {
+        if (objectName == "Polygon") {
             PolygonObject *polygon = new PolygonObject(&viewport3D->GetSceneManager());
             iss >> *polygon;
             RTMaterial *material = materialManager.deserializeMaterial(iss);
@@ -171,7 +184,24 @@ public:
             return;        
         }
 
-        std::cerr << "deserializeString failed\n";
+        if (objectName == "Cube") {
+            CubeObject *cube = new CubeObject(&viewport3D->GetSceneManager());
+            iss >> *cube;
+            RTMaterial *material = materialManager.deserializeMaterial(iss);
+            cube->setMaterial(material);
+
+            AddRecord(cube);
+            return;        
+        }
+
+         if (objectName == "Light") {
+            Light *light = new Light(&viewport3D->GetSceneManager());
+            iss >> *light;
+            AddLight(light);
+            return;        
+        }
+
+        std::cerr << "deserializeString failed. Unknown objectName : " << objectName << "\n";
     }
 
 
@@ -303,6 +333,14 @@ private:
             propertiesPanel->AddProperty(std::move(planeProperty));
             return;
         }
+
+        ::CubeObject *cube = dynamic_cast<::CubeObject *>(selectedObject);
+        if (cube) {
+            auto cubeProperty = std::make_unique<roa::Property>(GetUI());
+            fillCubeProperty(cube, cubeProperty.get());
+            propertiesPanel->AddProperty(std::move(cubeProperty));
+            return;
+        }
     }
 
     void fillSpecularProperty(::Primitives *selectedObject, roa::Property *specularProperty) {
@@ -428,6 +466,46 @@ private:
 
         property->SetLabel("Sphere properties");
         property->AddPropertyField(radiusLabel, radiusContent, setRadius);
+    }
+
+    void fillCubeProperty(::CubeObject *selectedCube, roa::Property *property) {
+        assert(selectedCube);
+        assert(property);
+
+        std::string XLabel = "HalfSize X";
+        std::string YLabel = "                   Y";
+        std::string ZLabel = "                   Z";
+
+        std::string XContent = std::to_string(selectedCube->getHalfSize().x());
+        std::string YContent = std::to_string(selectedCube->getHalfSize().y());
+        std::string ZContent = std::to_string(selectedCube->getHalfSize().z());
+
+        auto setX = [selectedCube](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedCube](float v){
+                gm::IVec3f halfSize = selectedCube->getHalfSize();
+                halfSize.setX(v);
+                selectedCube->setHalfSize(halfSize);
+            });
+        };
+        auto setY = [selectedCube](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedCube](float v){
+                gm::IVec3f halfSize = selectedCube->getHalfSize();
+                halfSize.setY(v);
+                selectedCube->setHalfSize(halfSize);
+            });
+        };
+        auto setZ = [selectedCube](const std::string &s){
+            setIfStringConvertedToFloat(s, [selectedCube](float v){
+                gm::IVec3f halfSize = selectedCube->getHalfSize();
+                halfSize.setZ(v);
+                selectedCube->setHalfSize(halfSize);
+            });
+        };
+
+        property->SetLabel("Cube properties");
+        property->AddPropertyField(XLabel, XContent, setX);
+        property->AddPropertyField(YLabel, YContent, setY);
+        property->AddPropertyField(ZLabel, ZContent, setZ);
     }
 
     void fillPlaneProperty(::PlaneObject *seletedPlane, roa::Property *property) {

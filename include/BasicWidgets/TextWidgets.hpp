@@ -23,8 +23,8 @@ public:
     TextWidget(hui::UI *ui): hui::Widget(ui), text(GetUI()->GetWindow()->CreateText()), caret(GetUI()->GetWindow()->CreateLine()) { 
         assert(ui); 
         text->SetFont(ui->GetWindow()->GetDefaultFont());
-        caret->SetColor(BLACK);
         caret->SetThickness(2);
+        caret->SetColor(BLACK);
     }
 
     ~TextWidget() = default;
@@ -49,6 +49,7 @@ public:
 
     void SetColor(const dr4::Color color) {
         text->SetColor(color);
+        caret->SetColor(color);
         ForceRedraw();
     }
 
