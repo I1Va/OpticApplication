@@ -78,6 +78,14 @@ public:
         records.clear();
         relayout();
     }
+    void ClearRecord(hui::Widget *EraseRecord) {
+        auto it = std::find(records.begin(), records.end(), EraseRecord);
+        if (it == records.end()) return;
+
+        EraseWidget(*it);
+        records.erase(it);
+        relayout();
+    }
 
 protected:
     void OnSizeChanged() override { relayout(); }
@@ -129,6 +137,11 @@ private:
             scrollBar->Hide();
 
         scrollBar->SetThumbLayoutShare(thumbShare);
+    }
+
+    void EraseWidget(hui::Widget *wgt) {
+        assert(wgt);
+        Container::EraseWidget(wgt);
     }
 };
 

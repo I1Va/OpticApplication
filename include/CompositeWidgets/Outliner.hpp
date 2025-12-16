@@ -34,6 +34,8 @@ class ObjectButton final : public Button {
     std::unique_ptr<dr4::Text> label;
     std::unique_ptr<dr4::Image> mainIcon;
 
+    std::function<void()> onDeleteAction = nullptr;
+
 public:
     explicit ObjectButton(hui::UI* ui) : Button(ui),
         label(ui->GetWindow()->CreateText()),
@@ -52,6 +54,7 @@ public:
         layout(); 
     }
 
+    void SetOnDeleteAction(std::function<void()> action) { onDeleteAction = action; }
     void SetLabel(const std::string& text) { label->SetText(text); }
     void SetLabelFontSize(int fontSize) { label->SetFontSize(fontSize); }
     void LoadSVGMainIcon(const std::string& path) {
@@ -80,6 +83,15 @@ protected:
 
         mainIcon->DrawOn(GetTexture());
         label->DrawOn(GetTexture());
+    }   
+
+
+    hui::EventResult OnKeyDown(hui::KeyEvent &event) {
+        if (GetUI()->GetFocused() == this && event.key == dr4::KeyCode::KEYCODE_DELETE) {
+            if (onDeleteAction) onDeleteAction();
+            return hui::EventResult::HANDLED; 
+        }
+        return hui::EventResult::UNHANDLED;
     }
 
 private:
@@ -104,11 +116,16 @@ class Outliner final : public RecordsPanel<ObjectButton> {
 
     std::optional<std::pair<std::string,T>> currentSelected = std::nullopt;
     std::function<void()> onSelectChangedAction = nullptr;
+    std::function<void(T)> onDeleteAction = nullptr;
     Button::Mode recordButtonMode = Button::Mode::STICK_MODE;
 
 public:
     Outliner(hui::UI *ui) : RecordsPanel<ObjectButton>(ui) {
         assert(ui);
+    }
+
+    void SetOnDeleteAction(std::function<void(T)> action) {
+        onDeleteAction = action;
     }
 
     void AddRecord(T object, const std::string& name,
@@ -142,6 +159,18 @@ public:
                 currentSelected.reset();
                 if (onSelectChangedAction) onSelectChangedAction();
             }
+        });
+
+        ObjectButton *recordPtr = record.get();
+        record->SetOnDeleteAction([this,object,recordPtr]{
+            if (onDeleteAction) {
+                onDeleteAction(object);
+            }
+            if (currentSelected.has_value() && currentSelected.value().second == object) {
+                currentSelected = std::nullopt;
+                if (onSelectChangedAction) onSelectChangedAction();
+            }
+            ClearRecord(recordPtr);
         });
 
         if (GetRecordCount() % 2) record->SetColorPack(GRAY_OBJECT_PACK);
@@ -209,6 +238,7 @@ public:
         outliner->AddRecord(object,name,onSelect,onUnSelect,iconPath);
     }
 
+    void SetOnDeleteAction(std::function<void(T)> action) { outliner->SetOnDeleteAction(action); }
     void ClearRecords() { outliner->ClearRecords(); }
 
     std::optional<std::pair<std::string,T>> GetSelected() { return outliner->GetSelected(); }

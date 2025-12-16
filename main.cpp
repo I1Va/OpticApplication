@@ -25,101 +25,24 @@ const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
 const static roa::TexturePack ICONS_TEXTURE_PACK =
 {
-    .outlinerObMeshSvgPath = "assets/icons/OutlinerObMesh.svg",
-    .collectionSvgPath     = "assets/icons/Collection.svg",
-    .triaDownSvgPath       = "assets/icons/TriaDown.svg",
-    .triaRightSvgPath      = "assets/icons/TriaRight.svg",
-    .fileSaveIconPath      = "assets/icons/fileFolder.svg",
-    .fileLoadIconPath      = "assets/icons/file.svg",
-    .addIconPath           = "assets/icons/add.svg",
+    .outlinerObMeshSvgPath      = "assets/icons/meshes/mesh_data.svg",
+    .outlinerSphereIconPath     = "assets/icons/meshes/mesh_uvsphere.svg",
+    .outlinerPlaneIconPath      = "assets/icons/meshes/mesh_plane.svg",
+    .outlinerPolygonIconPath    = "assets/icons/meshes/mesh_polygon.svg",
+    .outlinerCubeIconPath       = "assets/icons/meshes/mesh_cube.svg",
+
+    .collectionSvgPath          = "assets/icons/Collection.svg",
+    .triaDownSvgPath            = "assets/icons/TriaDown.svg",
+    .triaRightSvgPath           = "assets/icons/TriaRight.svg",
+    .fileSaveIconPath           = "assets/icons/fileFolder.svg",
+    .fileLoadIconPath           = "assets/icons/file.svg",
+    .addIconPath                = "assets/icons/add.svg",
 
     .whiteTextColor = dr4::Color(222, 222, 222),
     .fontSize = 11,
 
     .propertiesPanelBGColor = dr4::Color(48, 48, 48)
 };
-void createMinimalistScene(RTMaterialManager &materialManager, roa::EditorWidget *editor) {
-    // Создаем материалы
-    RTMaterial* metalMaterial = materialManager.MakeMetal({0.8, 0.8, 0.9}, 0.1);     // Серебристый металл
-    RTMaterial* dielectricMaterial = materialManager.MakeDielectric({1.0, 1.0, 1.0}, 1.5); // Стекло
-    RTMaterial* lambertianMaterial = materialManager.MakeLambertian({0.7, 0.2, 0.2});     // Красный лампертиан
-    RTMaterial* groundMaterial = materialManager.MakeLambertian({0.3, 0.3, 0.3});    // Серый пол
-    
-    // Солнце (эмиссионная сфера + источник света)
-    RTMaterial* sunMaterial = materialManager.MakeEmissive({1.0* 10, 0.9* 10, 0.7* 10 });
-    SphereObject* sun = new SphereObject(2.0, sunMaterial, &editor->GetSceneManager());
-    sun->setPosition({0, 20, 10});
-    editor->AddRecord(sun);
-    
-    // Создаем плоскость (землю)
-    PlaneObject* ground = new PlaneObject({0, 0, -2}, {0, 0, 1}, groundMaterial, &editor->GetSceneManager());
-    editor->AddRecord(ground);
-    
-    // Первая сфера - металлическая
-    SphereObject* metalSphere = new SphereObject(1.0, metalMaterial, &editor->GetSceneManager());
-    metalSphere->setPosition({-3, 0, 0});
-    editor->AddRecord(metalSphere);
-    
-    // Вторая сфера - диэлектрическая (стеклянная)
-    SphereObject* glassSphere = new SphereObject(0.8, dielectricMaterial, &editor->GetSceneManager());
-    glassSphere->setPosition({3, 0, 0.5});
-    editor->AddRecord(glassSphere);
-    
-    // Первый куб - металлический
-    CubeObject* metalCube = new CubeObject({0.5, 0.5, 0.5}, metalMaterial, &editor->GetSceneManager());
-    metalCube->setPosition({-1.5, -2, 0});
-    editor->AddRecord(metalCube);
-    
-    // Второй куб - лампертиановый
-    CubeObject* lambertianCube = new CubeObject({0.6, 0.6, 0.6}, lambertianMaterial, &editor->GetSceneManager());
-    lambertianCube->setPosition({1.5, -2, 0});
-    editor->AddRecord(lambertianCube);
-    
-    // Первый полигон (треугольник) - металлический
-    std::vector<gm::IPoint3> triangle1Vertices = {
-        {0, 2, 0.5},
-        {-1, 3, 0},
-        {1, 3, 0}
-    };
-    PolygonObject* metalTriangle = new PolygonObject(triangle1Vertices, metalMaterial, &editor->GetSceneManager());
-    editor->AddRecord(metalTriangle);
-    
-    // Второй полигон (треугольник) - лампертиановый
-    std::vector<gm::IPoint3> triangle2Vertices = {
-        {0, -2, 2},
-        {-2, -3, 0},
-        {2, -3, 0}
-    };
-    PolygonObject* lambertianTriangle = new PolygonObject(triangle2Vertices, lambertianMaterial, &editor->GetSceneManager());
-    editor->AddRecord(lambertianTriangle);
-    
-    // Создаем освещение
-    Light* directionalLight = new Light(
-        {0.1, 0.1, 0.15},     // Ambient
-        {0.9, 0.8, 0.7},      // Diffuse (теплый свет)
-        {1.0, 0.9, 0.8},      // Specular
-        40.0                  // Shininess
-    );
-    directionalLight->setPosition({0, 5, 15});
-    editor->AddLight(directionalLight);
-    
-    std::cout << "Created minimalist scene with:" << std::endl;
-    std::cout << " - 2 spheres (metal, dielectric)" << std::endl;
-    std::cout << " - 2 cubes (metal, lambertian)" << std::endl;
-    std::cout << " - 2 polygons (triangles)" << std::endl;
-    std::cout << " - 1 plane (ground)" << std::endl;
-    std::cout << " - 1 sun (emissive sphere + light)" << std::endl;
-}
-void createSceneObjects
-(
-    RTMaterialManager &materialManager,
-    roa::EditorWidget *editor
-) {
-    // RTMaterial *material      = materialManager.MakeLambertian({0.8, 0.8, 0.0});
-
-
-    // editor->AddRecord(cube);
-}
 
 int main(int argc, const char *argv[]) {
     if (argc != 2) {
@@ -170,7 +93,6 @@ int main(int argc, const char *argv[]) {
     RTMaterialManager materialManager;
     auto editor = std::make_unique<roa::EditorWidget>(&ui);
     roa::EditorWidget *editorPtr = editor.get();
-    createMinimalistScene(materialManager, editorPtr);
     editor->SetSize(desktop->GetSize());
     desktop->AddWidget(std::move(editor)); 
 
@@ -213,7 +135,7 @@ int main(int argc, const char *argv[]) {
     saveDropDown->AddRecord(nullptr, "Load", [desktop, editorPtr](){
         auto loadWindow = std::make_unique<roa::TextWindow>(desktop->GetUI());
         loadWindow->SetPos({(desktop->GetSize().x - loadWindow->GetSize().x) / 2, (desktop->GetSize().y - loadWindow->GetSize().y) / 2});
-        loadWindow->SetTitle("Saving scene to file");
+        loadWindow->SetTitle("Loading scene from file");
         auto *loadWindowPtr = loadWindow.get();
         loadWindow->SetInputFieldOnEnterAction([loadWindowPtr, editorPtr](const std::string &text){
             try {
@@ -222,9 +144,9 @@ int main(int argc, const char *argv[]) {
                     loadWindowPtr->DisplayMessage("Provide filename", {200, 120, 0, 255});
                 } else if (fs::exists(fs::path(text))) {
                     if (editorPtr->DeserializeScene(text)) {
-                        loadWindowPtr->DisplayMessage("Scene is loaded from `" + text + "` successfully!", {0, 200, 0, 255});
+                        loadWindowPtr->DisplayMessage("Scene loaded successfully!", {0, 200, 0, 255});
                     } else {
-                        loadWindowPtr->DisplayMessage("Scene loading from `" + text + "` failed!", {0, 200, 0, 255});
+                        loadWindowPtr->DisplayMessage("Scene loadeding failed!", {0, 200, 0, 255});
                     }
                 } else {
                     loadWindowPtr->DisplayMessage("Scene file is not found", {200, 0, 0, 255});

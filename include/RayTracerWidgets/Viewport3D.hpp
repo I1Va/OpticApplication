@@ -51,7 +51,8 @@ public:
         camera.renderProperties.maxRayDepth = 5;
     }
 
-    void AddRecord(Primitives *object) { sceneManager.addObject(object); }
+    void AddRecord(Primitives *primitive) { sceneManager.addObject(primitive); }
+    void EraseRecord(Primitives *primitive) { sceneManager.eraseObject(primitive); }
     void AddLight(Light *light) { sceneManager.addLight(light); }
     void AddRecord(gm::IPoint3 position, Primitives *object) { sceneManager.addObject(position, object); }
     void AddLight(gm::IPoint3 position, Light *light) { sceneManager.addLight(position, light); }
@@ -275,6 +276,10 @@ public:
     ~Viewport3DWindow() = default;
 
     void AddRecord(Primitives *object) { viewport3D->AddRecord(object); }
+    void EraseRecord(Primitives *deletedPrimitive) {
+        viewport3D->EraseRecord(deletedPrimitive);
+    }
+
     void AddLight(Light *light)        { viewport3D->AddLight(light); }
     void AddRecord(gm::IPoint3 position, Primitives *object) { viewport3D->AddRecord(position, object); }
     void AddLight(gm::IPoint3 position, Light *light)        { viewport3D->AddLight(position, light); }

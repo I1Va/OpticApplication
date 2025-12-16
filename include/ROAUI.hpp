@@ -14,19 +14,27 @@ template<typename T>
 concept IsPointer = std::is_pointer_v<T>;
 
 struct TexturePack {
-// SVG
+// ICONS -------
+
+// OUTLINER
     std::string outlinerObMeshSvgPath;
+    std::string outlinerSphereIconPath;
+    std::string outlinerPlaneIconPath;
+    std::string outlinerPolygonIconPath;
+    std::string outlinerCubeIconPath;
+
     std::string collectionSvgPath;
     std::string triaDownSvgPath;
     std::string triaRightSvgPath;
     std::string fileSaveIconPath;
     std::string fileLoadIconPath;
     std::string addIconPath;
-// TEXT
+
+// TEXT -------
     dr4::Color whiteTextColor;
     int fontSize;
 
-// GUI COLORS
+// GUI COLORS -------
     dr4::Color propertiesPanelBGColor;
 };
 

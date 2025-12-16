@@ -45,35 +45,52 @@ public:
         layout();
 
         outliner->SetOnSelectChangedAction([this](){ updateRecords(); });
+        outliner->SetOnDeleteAction([this](Primitives *deletedObject){ EraseRecord(deletedObject); });
         
         auto addObjectDropDown = std::make_unique<Outliner<Primitives *>>(ui);
         addObjectDropDown->SetSize({100, 60});
         addObjectDropDown->SetBGColor({61, 61, 61});
         addObjectDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
-        addObjectDropDown->AddRecord(nullptr, "Sphere", [this](){
-            auto sphereMaterial = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
-            auto sphere = new SphereObject(1.0f, sphereMaterial, &GetSceneManager());
-            AddRecord(sphere);
-        }, nullptr);
+        addObjectDropDown->AddRecord(nullptr, "Sphere", 
+            [this](){
+                auto sphereMaterial = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
+                auto sphere = new SphereObject(1.0f, sphereMaterial, &GetSceneManager());
+                AddRecord(sphere);
+            }, 
+            nullptr,
+            static_cast<UI*>(GetUI())->GetTexturePack().outlinerSphereIconPath
+        );
 
-        addObjectDropDown->AddRecord(nullptr, "Plane", [this](){
-            auto planeMaterial = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
-            auto plane = new PlaneObject({0,0,0}, {0,0,1}, planeMaterial, &GetSceneManager());
-            AddRecord(plane);
-        }, nullptr);
+        addObjectDropDown->AddRecord(nullptr, "Plane", 
+            [this](){
+                auto planeMaterial = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
+                auto plane = new PlaneObject({0,0,0}, {0,0,1}, planeMaterial, &GetSceneManager());
+                AddRecord(plane);
+            }, 
+            nullptr,
+            static_cast<UI*>(GetUI())->GetTexturePack().outlinerPlaneIconPath    
+        );
 
-        addObjectDropDown->AddRecord(nullptr, "Polygon", [this](){
-            auto material = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
-            auto polygon = new PolygonObject({{1, 0, 0}, {0, 0, 0}, {0, 0, 1}}, material, &GetSceneManager());
-            AddRecord(polygon);
-        }, nullptr);
+        addObjectDropDown->AddRecord(nullptr, "Polygon", 
+            [this]() {
+                auto material = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
+                auto polygon = new PolygonObject({{1, 0, 0}, {0, 0, 0}, {0, 0, 1}}, material, &GetSceneManager());
+                AddRecord(polygon);
+            }, 
+            nullptr,
+            static_cast<UI*>(GetUI())->GetTexturePack().outlinerPolygonIconPath
+        );
 
-        addObjectDropDown->AddRecord(nullptr, "Cube", [this](){
-            auto material = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
-            auto cube = new CubeObject({1, 1, 1}, material, &GetSceneManager());
-            AddRecord(cube);
-        }, nullptr);
+        addObjectDropDown->AddRecord(nullptr, "Cube", 
+            [this]() {
+                auto material = materialManager.MakeLambertian({0.0f, 0.8f, 1.0f}); 
+                auto cube = new CubeObject({1, 1, 1}, material, &GetSceneManager());
+                AddRecord(cube);
+            }, 
+            nullptr,
+            static_cast<UI*>(GetUI())->GetTexturePack().outlinerCubeIconPath
+        );
 
         auto addObjectMenuUnique = std::make_unique<DropDownMenu>(ui);
         addObjectMenuUnique->SetLabel("add");
@@ -94,6 +111,11 @@ public:
         outliner->AddRecord(object, object->typeString() + std::to_string(AddObjectIter),
             [object](){ object->setSelectFlag(true); },
             [object](){ object->setSelectFlag(false); });
+    }
+
+    void EraseRecord(Primitives *deletedObject) {
+        assert(deletedObject);
+        viewport3D->EraseRecord(deletedObject);
     }
 
     void AddLight(::Light *light) {
@@ -150,7 +172,7 @@ public:
         return true;
     }
 
-     void deserializeString(const std::string str) {
+    void deserializeString(const std::string str) {
         std::istringstream iss(str);
 
         std::string objectName;
@@ -203,9 +225,6 @@ public:
 
         std::cerr << "deserializeString failed. Unknown objectName : " << objectName << "\n";
     }
-
-
-
 
     std::vector<::Primitives *> &GetPrimitives() { return viewport3D->GetPrimitives(); }
     std::vector<::Light *>      &GetLights()     { return viewport3D->GetLights(); }
