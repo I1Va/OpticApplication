@@ -5,10 +5,13 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+
 #include "BasicWidgets/Containers.hpp"
-#include "CompositeWidgets/RecordsPanel.hpp"
-#include "RayTracerWidgets/Viewport3D.hpp"
 #include "Utilities/ROAGUIRender.hpp"
+#include "RayTracerWidgets/Viewport3D.hpp"
+
+#include "CompositeWidgets/Outliner.hpp"
+#include "CompositeWidgets/RecordsPanel.hpp"
 #include "CompositeWidgets/PropertiesPanel.hpp"
 
 namespace roa 

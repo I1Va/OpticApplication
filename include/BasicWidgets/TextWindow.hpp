@@ -6,6 +6,7 @@
 
 #include "BasicWidgets/Containers.hpp"
 #include "BasicWidgets/Buttons.hpp"
+#include "BasicWidgets/Window.hpp"
 #include "BasicWidgets/TextWidgets.hpp"
 
 namespace roa {

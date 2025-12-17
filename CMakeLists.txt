@@ -25,9 +25,10 @@ add_subdirectory(external/RayTracer)
 add_executable(${PROJECT_NAME} 
     ${CMAKE_CURRENT_SOURCE_DIR}/source/Utilities/ROACommon.cpp    
     ${CMAKE_CURRENT_SOURCE_DIR}/source/Utilities/SVGImageConverter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/CustomWidgets/MainMenuItems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/CustomWidgets/OpticDesktop.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
-
 add_subdirectory(${CMAKE_SOURCE_DIR}/external/gui-interface)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

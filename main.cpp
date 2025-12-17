@@ -21,7 +21,7 @@
 #include "CompositeWidgets/EditorWidget.hpp"
 #include "BasicWidgets/TextWindow.hpp"
 #include "PP/PPWidgets.hpp"
-#include "CustomWidgets.hpp"
+#include "CustomWidgets/OpticDesktop.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 

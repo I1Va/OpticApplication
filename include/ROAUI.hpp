@@ -6,6 +6,7 @@
 #include <functional>
 
 #include "dr4/event.hpp"
+#include "hui/ui.hpp"
 
 namespace roa
 {
