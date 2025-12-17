@@ -5,9 +5,7 @@
 namespace roa
 {
 
-
-
-class Desktop final : public Container {
+class Desktop : public Container {
     std::unique_ptr<dr4::Rectangle> mainMenuBackGround;
     std::vector<DropDownMenu *> mainMenu;
     
@@ -28,7 +26,7 @@ public:
     }
 
     Desktop(const Container&) = delete;
-    ~Desktop() = default;  
+    virtual ~Desktop() = default;  
     Desktop& operator=(const Desktop&) = delete;
     Desktop(Desktop&&) = default;
     Desktop& operator=(Desktop&&) = default;
