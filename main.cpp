@@ -20,6 +20,7 @@
 #include "CompositeWidgets/Outliner.hpp"
 #include "CompositeWidgets/EditorWidget.hpp"
 #include "BasicWidgets/TextWindow.hpp"
+#include "PP/PPWidgets.hpp"
 
 const static char FONT_PATH[] = "assets/RobotoFont.ttf";
 
@@ -186,6 +187,12 @@ int main(int argc, const char *argv[]) {
 // MAIN MENU
     CreateDesktopMainMenu(desktop, editor.get());
     desktop->AddWidget(std::move(editor)); 
+
+// PP
+
+    auto ppCanvas = std::make_unique<roa::PPCanvasWidget>(&ui, ppPlugins);
+    desktop->SetModal(ppCanvas.get());
+    ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [desktop](){desktop->SwitchModalActiveFlag(); });
 
 // MAIN LOOP
     ui.Run(0.01);

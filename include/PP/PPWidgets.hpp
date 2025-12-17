@@ -18,7 +18,7 @@
 namespace roa
 {
 
-class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
+class PPCanvasWidget : public Container, public pp::Canvas {
     const int BORDER_RADIUS = 3;
     const int BORDER_THICKNESS = 3;
     const dr4::Color BORDER_COLOR = dr4::Color(255, 255, 0, 255);
@@ -26,6 +26,7 @@ class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
     {
         .shapeFillColor = RED,
         .shapeBorderColor = BLACK,
+        .selectColor = GREEN,
         .textColor = BLACK,
         .baseFontSize = 20,
         .handleColor = { 255, 105, 180, 255 },
@@ -33,8 +34,8 @@ class PPCanvasWidget : public LinContainer<hui::Widget>, public pp::Canvas {
         .handleActiveColor = { 255, 105, 180, 255 }
     };
 
-    OutlinerWindow<pp::Tool *> *toolsMenu;
-    ColorPickerWindow          *colorPicker;
+    OutlinerWindow<pp::Tool *> *toolsMenu = nullptr;
+    ColorPickerWindow          *colorPicker = nullptr;
 
     std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
     std::vector<std::unique_ptr<pp::Tool>> tools;
@@ -48,11 +49,15 @@ public:
         hui::UI *ui,
         std::vector<cum::PPToolPlugin*> &toolPlugins
     ) : 
-        LinContainer(ui),
-        toolsMenu(new OutlinerWindow<pp::Tool *>(ui)),
-        colorPicker(new roa::ColorPickerWindow(ui, theme))
+        Container(ui)
     {
         assert(ui);
+
+        auto toolsMenuUnique = std::make_unique<OutlinerWindow<pp::Tool *>>(ui);
+        toolsMenu = toolsMenuUnique.get();
+        
+        auto colorPickerUnique = std::make_unique<roa::ColorPickerWindow>(ui, theme);
+        colorPicker = colorPickerUnique.get();
 
         SetSize({GetUI()->GetWindow()->GetSize()});
         
@@ -63,11 +68,11 @@ public:
             theme.shapeFillColor = c;
         });
     
-        AddWidget(colorPicker);
+        AddWidget(std::move(colorPickerUnique));
               
         toolsMenu->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
-        AddWidget(toolsMenu);
+        AddWidget(std::move(toolsMenuUnique));
         
         for (auto* plugin : toolPlugins) {
             for (auto& tool : plugin->CreateTools(this)) {

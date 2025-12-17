@@ -10,6 +10,10 @@ namespace roa
 class Desktop final : public Container {
     std::unique_ptr<dr4::Rectangle> mainMenuBackGround;
     std::vector<DropDownMenu *> mainMenu;
+    
+    std::unique_ptr<hui::Widget> modal;
+    bool modalActivated = false;
+
 public:
     static constexpr float MAIN_MENU_HEIGHT = 20;
     const dr4::Color mainMenuColor = dr4::Color(24, 24, 24, 255);
@@ -38,14 +42,54 @@ public:
         BringToFront(itemPtr);
     }
 
+    void SetModal(hui::Widget *widget) {
+        if (modal) {
+            std::cerr << "modal widget has been already set\n";
+            return;
+        }
+    
+        BecomeParentOf(widget);
+        modal.reset(widget);
+    }
+    void ActivateModal() { 
+        modalActivated = true;
+        ForceRedraw(); 
+    }
+    void DeactivateModal() {
+        modalActivated = false; 
+        ForceRedraw(); 
+    }
+    void SwitchModalActiveFlag() {
+        modalActivated = !modalActivated;
+        ForceRedraw(); 
+    }
+
+
 protected:
+    hui::EventResult PropagateToChildren(hui::Event &event) override {
+        if (modal && modalActivated) return event.Apply(*modal);
+        
+        for (auto &child : children) {
+            if (event.Apply(*child) == hui::EventResult::HANDLED) {
+                return hui::EventResult::HANDLED;
+            }
+        }
+    
+        return hui::EventResult::UNHANDLED;
+    }
+
     void Redraw() const override {
         GetTexture().Clear(BGColor);
         mainMenuBackGround->DrawOn(GetTexture());
+
         for (auto it = children.rbegin(); it != children.rend(); it++) {
             (*it)->DrawOn(GetTexture());
         }
+        if (modal && modalActivated) {
+            modal->DrawOn(GetTexture());
+        }
     }
+
 private:
     float calculateMainMenuWidth() const { 
         float res = 0;

@@ -23,6 +23,7 @@ const dr4::Color BLACK = dr4::Color{0, 0, 0, 255};
 const dr4::Color GRAY = dr4::Color{60, 60, 60, 255};
 const dr4::Color WHITE = dr4::Color{255, 255, 255, 255};
 const dr4::Color RED = dr4::Color{255, 0, 0, 255};
+const dr4::Color GREEN = dr4::Color{0, 255, 0, 255};
 const dr4::Color FULL_TRANSPARENT = dr4::Color{0, 0, 0, 0};
 
 dr4::Vec2f getClampedDotInRect(const dr4::Vec2f dot, const dr4::Rect2f rect);

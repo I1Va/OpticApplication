@@ -356,27 +356,28 @@ private:
 
 class ColorPickerWindow final : public Window {
     static constexpr float TOOL_AREA = 0;
-    ColorPicker *picker_;
+    ColorPicker *picker;
 public:
     ColorPickerWindow(hui::UI *ui, const pp::ControlsTheme &theme = pp::ControlsTheme{})
         : Window(ui)
     {
-        picker_ = new ColorPicker(ui, theme);
-        AddWidget(picker_);
+        auto pickerUnique = std::make_unique<ColorPicker>(ui, theme);
+        picker = pickerUnique.get();
+        AddWidget(std::move(pickerUnique));
     }
     ~ColorPickerWindow() override = default;
 
     void OnSizeChanged() override { Arrange(); }
 
     void SetOnColorChangedAction(std::function<void(dr4::Color)> action) {
-        picker_->onColorChanged = action;
+        picker->onColorChanged = action;
     }
 
 private:
     void Arrange()
     {
-        picker_->SetPos({0.0f, TOOL_AREA});
-        picker_->SetSize(GetSize() - picker_->GetPos());
+        picker->SetPos({0.0f, TOOL_AREA});
+        picker->SetSize(GetSize() - picker->GetPos());
     }
 };
 
