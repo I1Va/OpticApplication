@@ -1,4 +1,3 @@
-
 #include <cassert>
 #include <filesystem>
 #include <memory>
@@ -11,6 +10,58 @@
 namespace roa
 {
 
+inline dr4::Vec2f CalculateCenteredPosition(Desktop *desktop,
+                                            hui::Widget *widget)
+{
+    return {
+        (desktop->GetSize().x - widget->GetSize().x) / 2,
+        (desktop->GetSize().y - widget->GetSize().y) / 2
+    };
+}
+
+template <typename OnEnterCallback>
+void OpenCenteredTextWindow(Desktop *desktop,
+                            const char *windowTitle,
+                            OnEnterCallback &&onEnterCallback)
+{
+    auto textWindow = std::make_unique<TextWindow>(desktop->GetUI());
+    textWindow->SetPos(
+        CalculateCenteredPosition(desktop, textWindow.get())
+    );
+    textWindow->SetTitle(windowTitle);
+
+    TextWindow *windowPtr = textWindow.get();
+    textWindow->SetInputFieldOnEnterAction(
+        [windowPtr,
+         callback = std::forward<OnEnterCallback>(onEnterCallback)]
+        (const std::string &inputText)
+        {
+            try {
+                callback(windowPtr, inputText);
+            } catch (...) {
+                windowPtr->DisplayMessage("Error", {200,0,0,255});
+            }
+        }
+    );
+
+    desktop->AddWidget(std::move(textWindow));
+}
+
+template <typename RecordAction>
+void AddDropdownRecord(Outliner<int *> *dropDownMenu,
+                       const char *recordLabel,
+                       const std::string &iconPath,
+                       RecordAction &&action)
+{
+    dropDownMenu->AddRecord(
+        nullptr,
+        recordLabel,
+        std::forward<RecordAction>(action),
+        nullptr,
+        iconPath
+    );
+}
+
 FileItem::FileItem(Desktop *desktop, EditorWidget *editor)
     : DropDownMenu(desktop->GetUI())
 {
@@ -19,120 +70,94 @@ FileItem::FileItem(Desktop *desktop, EditorWidget *editor)
     SetBorderColor(WHITE);
     SetLabel("file");
 
-    auto fileDropDown = std::make_unique<Outliner<int *>>(desktop->GetUI());
-    fileDropDown->SetSize({70, 40});
-    fileDropDown->SetRecordIconStartPos({5, 3});
-    fileDropDown->SetRecordIconSize({14, 14});
-    fileDropDown->SetBGColor(desktop->BGColor);
-    fileDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
+    auto fileDropDownMenu =
+        std::make_unique<Outliner<int *>>(desktop->GetUI());
 
-    addSaveFileDropdownRecord(desktop, editor, fileDropDown.get());
-    addLoadFileDropdownRecord(desktop, editor, fileDropDown.get());
+    fileDropDownMenu->SetSize({70, 40});
+    fileDropDownMenu->SetRecordIconStartPos({5, 3});
+    fileDropDownMenu->SetRecordIconSize({14, 14});
+    fileDropDownMenu->SetBGColor(desktop->BGColor);
+    fileDropDownMenu->SetRecordButtonMode(
+        Button::Mode::CAPTURE_MODE
+    );
 
-    SetDropDownWidget(std::move(fileDropDown));
-}
-
-void FileItem::addSaveFileDropdownRecord(Desktop *desktop,
-                                         EditorWidget *editor,
-                                         Outliner<int *> *fileDropDown)
-{
-    assert(desktop);
-    assert(editor);
-    assert(fileDropDown);
-
-    fileDropDown->AddRecord(
-        nullptr, "Save",
+    AddDropdownRecord(
+        fileDropDownMenu.get(),
+        "Save",
+        static_cast<UI *>(desktop->GetUI())
+            ->GetTexturePack().fileSaveIconPath,
         [desktop, editor]() {
-            auto saveWindow = std::make_unique<TextWindow>(desktop->GetUI());
-            saveWindow->SetPos({
-                (desktop->GetSize().x - saveWindow->GetSize().x) / 2,
-                (desktop->GetSize().y - saveWindow->GetSize().y) / 2
-            });
-            saveWindow->SetTitle("Saving scene to file");
-            auto *ptr = saveWindow.get();
-
-            saveWindow->SetInputFieldOnEnterAction(
-                [ptr, editor](const std::string &text) {
-                    try {
-                        if (text.empty()) {
-                            ptr->DisplayMessage("Provide filename", {200,120,0,255});
-                        } else if (editor->SerializeScene(text)) {
-                            ptr->DisplayMessage(
-                                "Scene is saved to `" + text + "`",
-                                {0,200,0,255}
-                            );
-                        } else {
-                            ptr->DisplayMessage(
-                                "`" + text + "` serialization failed",
-                                {200,0,0,255}
-                            );
-                        }
-                    } catch (...) {
-                        ptr->DisplayMessage("Error", {200,0,0,255});
+            OpenCenteredTextWindow(
+                desktop,
+                "Saving scene to file",
+                [editor](TextWindow *window,
+                         const std::string &filename)
+                {
+                    if (filename.empty()) {
+                        window->DisplayMessage(
+                            "Provide filename",
+                            {200,120,0,255}
+                        );
+                    } else if (editor->SerializeScene(filename)) {
+                        window->DisplayMessage(
+                            "Scene is saved to `" + filename + "`",
+                            {0,200,0,255}
+                        );
+                    } else {
+                        window->DisplayMessage(
+                            "`" + filename + "` serialization failed",
+                            {200,0,0,255}
+                        );
                     }
                 }
             );
-            desktop->AddWidget(std::move(saveWindow));
-        },
-        nullptr,
-        static_cast<UI *>(desktop->GetUI())
-            ->GetTexturePack().fileSaveIconPath
+        }
     );
-}
 
-void FileItem::addLoadFileDropdownRecord(Desktop *desktop,
-                                         EditorWidget *editor,
-                                         Outliner<int *> *fileDropDown)
-{
-    fileDropDown->AddRecord(
-        nullptr, "Load",
+    AddDropdownRecord(
+        fileDropDownMenu.get(),
+        "Load",
+        static_cast<UI *>(desktop->GetUI())
+            ->GetTexturePack().fileLoadIconPath,
         [desktop, editor]() {
-            auto loadWindow = std::make_unique<TextWindow>(desktop->GetUI());
-            loadWindow->SetPos({
-                (desktop->GetSize().x - loadWindow->GetSize().x) / 2,
-                (desktop->GetSize().y - loadWindow->GetSize().y) / 2
-            });
-            loadWindow->SetTitle("Loading scene from file");
-            auto *ptr = loadWindow.get();
+            OpenCenteredTextWindow(
+                desktop,
+                "Loading scene from file",
+                [editor](TextWindow *window,
+                         const std::string &filename)
+                {
+                    namespace fs = std::filesystem;
 
-            loadWindow->SetInputFieldOnEnterAction(
-                [ptr, editor](const std::string &text) {
-                    try {
-                        namespace fs = std::filesystem;
-                        if (text.empty()) {
-                            ptr->DisplayMessage("Provide filename", {200,120,0,255});
-                        } else if (fs::exists(fs::path(text))) {
-                            if (editor->DeserializeScene(text)) {
-                                ptr->DisplayMessage(
-                                    "Scene loaded successfully!",
-                                    {0,200,0,255}
-                                );
-                            } else {
-                                ptr->DisplayMessage(
-                                    "Scene loading failed!",
-                                    {200,0,0,255}
-                                );
-                            }
-                        } else {
-                            ptr->DisplayMessage(
-                                "Scene file is not found",
-                                {200,0,0,255}
-                            );
-                        }
-                    } catch (...) {
-                        ptr->DisplayMessage("Error", {200,0,0,255});
+                    if (filename.empty()) {
+                        window->DisplayMessage(
+                            "Provide filename",
+                            {200,120,0,255}
+                        );
+                    } else if (!fs::exists(filename)) {
+                        window->DisplayMessage(
+                            "Scene file is not found",
+                            {200,0,0,255}
+                        );
+                    } else if (editor->DeserializeScene(filename)) {
+                        window->DisplayMessage(
+                            "Scene loaded successfully!",
+                            {0,200,0,255}
+                        );
+                    } else {
+                        window->DisplayMessage(
+                            "Scene loading failed!",
+                            {200,0,0,255}
+                        );
                     }
                 }
             );
-            desktop->AddWidget(std::move(loadWindow));
-        },
-        nullptr,
-        static_cast<UI *>(desktop->GetUI())
-            ->GetTexturePack().fileLoadIconPath
+        }
     );
+
+    SetDropDownWidget(std::move(fileDropDownMenu));
 }
 
-PluginItem::PluginItem(OpticDesktop *desktop, EditorWidget *editor)
+PluginItem::PluginItem(OpticDesktop *desktop, EditorWidget *)
     : DropDownMenu(desktop->GetUI())
 {
     SetBorderThinkess(1);
@@ -140,69 +165,63 @@ PluginItem::PluginItem(OpticDesktop *desktop, EditorWidget *editor)
     SetSize({70, desktop->MAIN_MENU_HEIGHT});
     SetLabel("plugins");
 
-    auto pluginDropDown = std::make_unique<Outliner<int *>>(desktop->GetUI());
-    pluginDropDown->SetSize({100, 20});
-    pluginDropDown->SetRecordIconStartPos({5, 3});
-    pluginDropDown->SetRecordIconSize({14, 14});
-    pluginDropDown->SetBGColor(desktop->BGColor);
-    pluginDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
+    auto pluginDropDownMenu =
+        std::make_unique<Outliner<int *>>(desktop->GetUI());
 
-    pluginDropDown->AddRecord(
-        nullptr, "Add pp plugin",
-        [desktop, editor]() {
-            auto addWindow = std::make_unique<TextWindow>(desktop->GetUI());
-            addWindow->SetPos({
-                (desktop->GetSize().x - addWindow->GetSize().x) / 2,
-                (desktop->GetSize().y - addWindow->GetSize().y) / 2
-            });
-            addWindow->SetTitle("Saving scene to file");
-            auto *ptr = addWindow.get();
+    pluginDropDownMenu->SetSize({100, 20});
+    pluginDropDownMenu->SetRecordIconStartPos({5, 3});
+    pluginDropDownMenu->SetRecordIconSize({14, 14});
+    pluginDropDownMenu->SetBGColor(desktop->BGColor);
+    pluginDropDownMenu->SetRecordButtonMode(
+        Button::Mode::CAPTURE_MODE
+    );
 
-            addWindow->SetInputFieldOnEnterAction(
-                [ptr, desktop](const std::string &text) {
-                    try {
-                        namespace fs = std::filesystem;
-                        if (text.empty()) {
-                            ptr->DisplayMessage(
-                                "Provide pp plugin filename",
-                                {200,120,0,255}
-                            );
-                        } else if (fs::exists(fs::path(text))) {
-                            if (desktop->ExistsPPPlugin(text)) {
-                                ptr->DisplayMessage(
-                                    "Plugin already exists",
-                                    {200,0,0,255}
-                                );
-                            } else if (desktop->LoadPPPlugin(text)) {
-                                ptr->DisplayMessage(
-                                    "Plugin loaded successfully!",
-                                    {0,200,0,255}
-                                );
-                            } else {
-                                ptr->DisplayMessage(
-                                    "Plugin loading failed",
-                                    {200,0,0,255}
-                                );
-                            }
-                        } else {
-                            ptr->DisplayMessage(
-                                "file `" + text + "` was not found",
-                                {200,0,0,255}
-                            );
-                        }
-                    } catch (...) {
-                        ptr->DisplayMessage("Error", {200,0,0,255});
+    AddDropdownRecord(
+        pluginDropDownMenu.get(),
+        "Add pp plugin",
+        static_cast<UI *>(desktop->GetUI())
+            ->GetTexturePack().addIconPath,
+        [desktop]() {
+            OpenCenteredTextWindow(
+                desktop,
+                "Add pp plugin",
+                [desktop](TextWindow *window,
+                           const std::string &pluginPath)
+                {
+                    namespace fs = std::filesystem;
+
+                    if (pluginPath.empty()) {
+                        window->DisplayMessage(
+                            "Provide pp plugin filename",
+                            {200,120,0,255}
+                        );
+                    } else if (!fs::exists(pluginPath)) {
+                        window->DisplayMessage(
+                            "file `" + pluginPath + "` was not found",
+                            {200,0,0,255}
+                        );
+                    } else if (desktop->ExistsPPPlugin(pluginPath)) {
+                        window->DisplayMessage(
+                            "Plugin already exists",
+                            {200,0,0,255}
+                        );
+                    } else if (desktop->LoadPPPlugin(pluginPath)) {
+                        window->DisplayMessage(
+                            "Plugin loaded successfully!",
+                            {0,200,0,255}
+                        );
+                    } else {
+                        window->DisplayMessage(
+                            "Plugin loading failed",
+                            {200,0,0,255}
+                        );
                     }
                 }
             );
-            desktop->AddWidget(std::move(addWindow));
-        },
-        nullptr,
-        static_cast<UI *>(desktop->GetUI())
-            ->GetTexturePack().addIconPath
+        }
     );
 
-    SetDropDownWidget(std::move(pluginDropDown));
+    SetDropDownWidget(std::move(pluginDropDownMenu));
 }
 
 } // namespace roa
