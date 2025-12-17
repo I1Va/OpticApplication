@@ -7,12 +7,15 @@
 #include "cum/plugin.hpp"
 #include "cum/ifc/pp.hpp"
 #include "BasicWidgets/Desktop.hpp"
+#include "PP/PPWidgets.hpp"
 
 namespace roa
 {
 
 class OpticDesktop final : public Desktop {
     cum::Manager *pluginManager;
+
+    PPCanvasWidget *ppCanvas = nullptr;
     std::unordered_map<std::string, cum::PPToolPlugin*> PPTable;
 
 public:

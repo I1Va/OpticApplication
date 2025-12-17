@@ -38,18 +38,14 @@ class PPCanvasWidget : public Container, public pp::Canvas {
     ColorPickerWindow          *colorPicker = nullptr;
 
     std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
+
     std::vector<std::unique_ptr<pp::Tool>> tools;
 
     pp::Tool* selectedTool = nullptr;
     pp::Shape* selectedShape = nullptr;
 
 public:
-    PPCanvasWidget
-    (
-        hui::UI *ui,
-        std::vector<cum::PPToolPlugin*> &toolPlugins
-    ) : 
-        Container(ui)
+    PPCanvasWidget(hui::UI *ui) : Container(ui)
     {
         assert(ui);
 
@@ -73,21 +69,22 @@ public:
         toolsMenu->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
         AddWidget(std::move(toolsMenuUnique));
-        
-        for (auto* plugin : toolPlugins) {
-            for (auto& tool : plugin->CreateTools(this)) {
-                pp::Tool *toolPtr = tool.get();
-                toolsMenu->AddRecord
-                (
-                    toolPtr, std::string(tool->Icon()),
-                    [this, toolPtr]() { 
-                        selectedTool = toolPtr; 
-                    },
-                    nullptr,
-                    "./assets/icons/sculptmode_hlt.svg"
-                );
-                tools.push_back(std::move(tool));
-            }
+    }
+
+    void LoadToolPlugin(cum::PPToolPlugin* toolPlugin) {
+        assert(toolPlugin);
+        for (auto& tool : toolPlugin->CreateTools(this)) {
+            pp::Tool *toolPtr = tool.get();
+            toolsMenu->AddRecord
+            (
+                toolPtr, std::string(tool->Icon()),
+                [this, toolPtr]() { 
+                    selectedTool = toolPtr; 
+                },
+                nullptr,
+                "./assets/icons/sculptmode_hlt.svg"
+            );
+            tools.push_back(std::move(tool));
         }
     }
 

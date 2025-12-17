@@ -77,10 +77,6 @@ int main(int argc, const char *argv[]) {
     ui.SetRoot(desktop);
 
 
-
-
-    // auto ppCanvas = std::make_unique<roa::PPCanvasWidget>(&ui, ppPlugins);
-    // desktop->SetModal(std::move(ppCanvas));
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [desktop](){desktop->SwitchModalActiveFlag(); });
 
 // MAIN LOOP
