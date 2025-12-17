@@ -1,9 +1,47 @@
 #pragma once
+#include <unordered_map>
+
+#include "cum/manager.hpp"
+#include "cum/plugin.hpp"
 
 #include "BasicWidgets/Desktop.hpp"
 
 namespace roa
 {
+
+class OpticDesktop final : public Desktop {
+    cum::Manager *pluginManager;
+    std::unordered_map<std::string, cum::PPToolPlugin*> PPTable;
+
+public:
+    OpticDesktop(hui::UI *ui, cum::Manager *pluginManager_) : Desktop(ui), pluginManager(pluginManager_) {
+        assert(ui);
+        assert(pluginManager);
+
+        auto editor = std::make_unique<roa::EditorWidget>(ui);
+        editor->SetSize(GetSize());
+    
+        auto fileItem = std::make_unique<FileItem>(this, editor.get());
+        AddMaiMenuItem(std::move(fileItem));
+
+        auto pluginItem = std::make_unique<PluginItem>(this, editor.get());
+        AddMaiMenuItem(std::move(pluginItem));
+
+        AddWidget(std::move(editor));
+    }
+    ~OpticDesktop() = default;
+
+    bool ExistsPPPlugin(const std::string &path) {
+        return (PPTable.find(path) != PPTable.end());
+    }
+
+    bool LoadPPPlugin(const std::string &path) {
+        if (ExistsPPPlugin(path)) return false;
+        auto plugin = dynamic_cast<cum::PPToolPlugin*>(pluginManager->LoadFromFile(path));
+        assert(plugin);
+        PPTable[path] = plugin;
+    }
+};
 
 class FileItem final : public DropDownMenu {
 public:
@@ -86,7 +124,7 @@ private:
 
 class PluginItem final : public DropDownMenu {
 public:
-    PluginItem(Desktop *desktop, EditorWidget *editor): DropDownMenu(desktop->GetUI()) {
+    PluginItem(OpticDesktop *desktop, EditorWidget *editor): DropDownMenu(desktop->GetUI()) {
         SetBorderThinkess(1);
         SetBorderColor(WHITE);
 
@@ -98,32 +136,38 @@ public:
         pluginDropDown->SetRecordIconSize({14, 14});
         pluginDropDown->SetBGColor(desktop->BGColor);
         pluginDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
-        
-        pluginDropDown->AddRecord(nullptr, "Add pp plugin", [](){
-            std::cout << "open plugin add widget!\n";
+
+        pluginDropDown->AddRecord(nullptr, "Add pp plugin", [desktop, editor](){
+            auto addWindow = std::make_unique<TextWindow>(desktop->GetUI());
+            addWindow->SetPos({(desktop->GetSize().x - addWindow->GetSize().x) / 2, (desktop->GetSize().y - addWindow->GetSize().y) / 2});
+            addWindow->SetTitle("Saving scene to file");
+            auto *addWindowPtr = addWindow.get();
+            addWindow->SetInputFieldOnEnterAction([addWindowPtr, desktop](const std::string &text){
+                try {
+                    namespace fs = std::filesystem;
+                    if (text.empty()) {
+                        addWindowPtr->DisplayMessage("Provide pp plugin filename", {200, 120, 0, 255});
+                    } else if (fs::exists(fs::path(text))) {
+                        if (desktop->ExistsPPPlugin(text)) {
+                            addWindowPtr->DisplayMessage("Plugin already exists", {200, 0, 0, 255});
+                        } else if (desktop->LoadPPPlugin(text)){
+                            addWindowPtr->DisplayMessage("Plugin loaded successfully!", {0, 200, 0, 255});
+                        } else {
+                            addWindowPtr->DisplayMessage("Plugin loading failed", {200, 0, 0, 255});
+                        }
+                    } else {
+                        addWindowPtr->DisplayMessage("file `" + text + "` was not found", {200, 0, 0, 255});
+                    }
+                } catch (...) {
+                    addWindowPtr->DisplayMessage("Error", {200, 0, 0, 255});
+                }
+            });
+            desktop->AddWidget(std::move(addWindow));
         }, nullptr, static_cast<UI *>(desktop->GetUI())->GetTexturePack().addIconPath);
 
         SetDropDownWidget(std::move(pluginDropDown));
     } 
 };
 
-class OpticDesktop final : public Desktop {
-public:
-    OpticDesktop(hui::UI *ui) : Desktop(ui) {
-        assert(ui);;
-
-        auto editor = std::make_unique<roa::EditorWidget>(ui);
-        editor->SetSize(GetSize());
-    
-        auto fileItem = std::make_unique<FileItem>(this, editor.get());
-        AddMaiMenuItem(std::move(fileItem));
-
-        auto pluginItem = std::make_unique<PluginItem>(this, editor.get());
-        AddMaiMenuItem(std::move(pluginItem));
-
-        AddWidget(std::move(editor));
-    }
-    ~OpticDesktop() = default;
-};
 
 } // namespace roa

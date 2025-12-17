@@ -73,28 +73,14 @@ int main(int argc, const char *argv[]) {
     roa::UI ui(window, FONT_PATH);
     ui.SetTexturePack(ICONS_TEXTURE_PACK);
 
-    roa::OpticDesktop *desktop = new roa::OpticDesktop(&ui);
+    roa::OpticDesktop *desktop = new roa::OpticDesktop(&ui, &pluginManager);
     ui.SetRoot(desktop);
 
-// SETUP PP PLUGIN
-    std::vector<cum::PPToolPlugin*> ppPlugins;
-    std::vector<std::string> ppPluginsPathes =
-    {
-        "external/plugins/pp/libIADorisovkaPlugin.so",
-        "external/plugins/pp/libArtemLine.so",
-        "external/plugins/pp/libSeva.so"
-    };
 
-    for (auto &path : ppPluginsPathes) {
-        auto plugin = dynamic_cast<cum::PPToolPlugin*>(pluginManager.LoadFromFile(path));
-        assert(plugin);
-        ppPlugins.push_back(plugin);
-    }
 
-// PP
 
-    auto ppCanvas = std::make_unique<roa::PPCanvasWidget>(&ui, ppPlugins);
-    desktop->SetModal(std::move(ppCanvas));
+    // auto ppCanvas = std::make_unique<roa::PPCanvasWidget>(&ui, ppPlugins);
+    // desktop->SetModal(std::move(ppCanvas));
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [desktop](){desktop->SwitchModalActiveFlag(); });
 
 // MAIN LOOP
