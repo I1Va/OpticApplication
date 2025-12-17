@@ -42,14 +42,15 @@ public:
         BringToFront(itemPtr);
     }
 
-    void SetModal(hui::Widget *widget) {
+    void SetModal(std::unique_ptr<hui::Widget> widget) {
         if (modal) {
             std::cerr << "modal widget has been already set\n";
             return;
         }
-    
-        BecomeParentOf(widget);
-        modal.reset(widget);
+
+        BecomeParentOf(widget.get());
+        modal.reset();
+        modal = std::move(widget);
     }
     void ActivateModal() { 
         modalActivated = true;

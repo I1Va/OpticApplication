@@ -45,71 +45,94 @@ const static roa::TexturePack ICONS_TEXTURE_PACK =
     .propertiesPanelBGColor = dr4::Color(48, 48, 48)
 };
 
-void CreateDesktopMainMenu(roa::Desktop *desktop, roa::EditorWidget *editor) {
-    assert(desktop);
-    assert(editor);
+namespace roa {
 
-    auto fileItem = std::make_unique<roa::DropDownMenu>(desktop->GetUI());
-    fileItem->SetSize({50, desktop->MAIN_MENU_HEIGHT});
-    fileItem->SetBorderThinkess(1);
-    fileItem->SetBorderColor(roa::WHITE);
-    fileItem->SetLabel("file");
-    auto saveDropDown = std::make_unique<roa::Outliner<int *>>(desktop->GetUI());
-    saveDropDown->SetSize({70, 40});
-    saveDropDown->SetRecordIconStartPos({5, 3});
-    saveDropDown->SetRecordIconSize({14, 14});
-    saveDropDown->SetBGColor(desktop->BGColor);
-    saveDropDown->SetRecordButtonMode(roa::Button::Mode::CAPTURE_MODE);
+class FileItem final : public DropDownMenu {
+public:
+    FileItem(Desktop *desktop, roa::EditorWidget *editor): DropDownMenu(desktop->GetUI()) {
+        SetSize({50, desktop->MAIN_MENU_HEIGHT});
+        SetBorderThinkess(1);
+        SetBorderColor(roa::WHITE);
+        SetLabel("file");
     
-    saveDropDown->AddRecord(nullptr, "Save", [desktop, editor](){
-        auto saveWindow = std::make_unique<roa::TextWindow>(desktop->GetUI());
-        saveWindow->SetPos({(desktop->GetSize().x - saveWindow->GetSize().x) / 2, (desktop->GetSize().y - saveWindow->GetSize().y) / 2});
-        saveWindow->SetTitle("Saving scene to file");
-        auto *saveWindowPtr = saveWindow.get();
-        saveWindow->SetInputFieldOnEnterAction([saveWindowPtr, editor](const std::string &text){
-            try {
-                namespace fs = std::filesystem;
-                if (text.empty()) {
-                    saveWindowPtr->DisplayMessage("Provide filename", {200, 120, 0, 255});
-                } else if (editor->SerializeScene(text)) {
-                    saveWindowPtr->DisplayMessage("Scene is saved to `" + text + "`", {0, 200, 0, 255});
-                } else {
-                    saveWindowPtr->DisplayMessage("`" + text + "` serialization failed", {200, 0, 0, 255});
-                }
-            } catch (...) {
-                saveWindowPtr->DisplayMessage("Error", {200, 0, 0, 255});
-            }
-        });
-        desktop->AddWidget(std::move(saveWindow));
-    }, nullptr, static_cast<roa::UI *>(desktop->GetUI())->GetTexturePack().fileSaveIconPath);
+        auto fileDropDown = std::make_unique<roa::Outliner<int *>>(desktop->GetUI());
+        fileDropDown->SetSize({70, 40});
+        fileDropDown->SetRecordIconStartPos({5, 3});
+        fileDropDown->SetRecordIconSize({14, 14});
+        fileDropDown->SetBGColor(desktop->BGColor);
+        fileDropDown->SetRecordButtonMode(roa::Button::Mode::CAPTURE_MODE);
 
-    saveDropDown->AddRecord(nullptr, "Load", [desktop, editor](){
+        addSaveFileDropdownRecord(desktop, editor, fileDropDown.get());
+        addLoadFileDropdownRecord(desktop, editor, fileDropDown.get());
+
+        SetDropDownWidget(std::move(fileDropDown));
+    } 
+private:
+    void addSaveFileDropdownRecord(roa::Desktop *desktop, roa::EditorWidget *editor, roa::Outliner<int *> *fileDropDown) {
+        assert(desktop);
+        assert(editor);
+        assert(fileDropDown);
+
+        fileDropDown->AddRecord(nullptr, "Save", [desktop, editor](){
+            auto saveWindow = std::make_unique<roa::TextWindow>(desktop->GetUI());
+            saveWindow->SetPos({(desktop->GetSize().x - saveWindow->GetSize().x) / 2, (desktop->GetSize().y - saveWindow->GetSize().y) / 2});
+            saveWindow->SetTitle("Saving scene to file");
+            auto *saveWindowPtr = saveWindow.get();
+            saveWindow->SetInputFieldOnEnterAction([saveWindowPtr, editor](const std::string &text){
+                try {
+                    namespace fs = std::filesystem;
+                    if (text.empty()) {
+                        saveWindowPtr->DisplayMessage("Provide filename", {200, 120, 0, 255});
+                    } else if (editor->SerializeScene(text)) {
+                        saveWindowPtr->DisplayMessage("Scene is saved to `" + text + "`", {0, 200, 0, 255});
+                    } else {
+                        saveWindowPtr->DisplayMessage("`" + text + "` serialization failed", {200, 0, 0, 255});
+                    }
+                } catch (...) {
+                    saveWindowPtr->DisplayMessage("Error", {200, 0, 0, 255});
+                }
+            });
+            desktop->AddWidget(std::move(saveWindow));
+        }, nullptr, static_cast<roa::UI *>(desktop->GetUI())->GetTexturePack().fileSaveIconPath);
+    }   
+
+    void addLoadFileDropdownRecord(roa::Desktop *desktop, roa::EditorWidget *editor, roa::Outliner<int *> *fileDropDown) {
+        fileDropDown->AddRecord(nullptr, "Load", [desktop, editor](){
         auto loadWindow = std::make_unique<roa::TextWindow>(desktop->GetUI());
         loadWindow->SetPos({(desktop->GetSize().x - loadWindow->GetSize().x) / 2, (desktop->GetSize().y - loadWindow->GetSize().y) / 2});
         loadWindow->SetTitle("Loading scene from file");
         auto *loadWindowPtr = loadWindow.get();
-        loadWindow->SetInputFieldOnEnterAction([loadWindowPtr, editor](const std::string &text){
-            try {
-                namespace fs = std::filesystem;
-                if (text.empty()) {
-                    loadWindowPtr->DisplayMessage("Provide filename", {200, 120, 0, 255});
-                } else if (fs::exists(fs::path(text))) {
-                    if (editor->DeserializeScene(text)) {
-                        loadWindowPtr->DisplayMessage("Scene loaded successfully!", {0, 200, 0, 255});
+        loadWindow->SetInputFieldOnEnterAction(
+            [loadWindowPtr, editor](const std::string &text) {
+                try {
+                    namespace fs = std::filesystem;
+                    if (text.empty()) {
+                        loadWindowPtr->DisplayMessage("Provide filename", {200, 120, 0, 255});
+                    } else if (fs::exists(fs::path(text))) {
+                        if (editor->DeserializeScene(text)) {
+                            loadWindowPtr->DisplayMessage("Scene loaded successfully!", {0, 200, 0, 255});
+                        } else {
+                            loadWindowPtr->DisplayMessage("Scene loadeding failed!", {0, 200, 0, 255});
+                        }
                     } else {
-                        loadWindowPtr->DisplayMessage("Scene loadeding failed!", {0, 200, 0, 255});
+                        loadWindowPtr->DisplayMessage("Scene file is not found", {200, 0, 0, 255});
                     }
-                } else {
-                    loadWindowPtr->DisplayMessage("Scene file is not found", {200, 0, 0, 255});
+                } catch (...) {
+                    loadWindowPtr->DisplayMessage("Error", {200, 0, 0, 255});
                 }
-            } catch (...) {
-                loadWindowPtr->DisplayMessage("Error", {200, 0, 0, 255});
-            }
-        });
-        desktop->AddWidget(std::move(loadWindow));
-    }, nullptr, static_cast<roa::UI *>(desktop->GetUI())->GetTexturePack().fileLoadIconPath);
+            });
+            desktop->AddWidget(std::move(loadWindow));
+        }, nullptr, static_cast<roa::UI *>(desktop->GetUI())->GetTexturePack().fileLoadIconPath);
+    }
+};
 
-    fileItem->SetDropDownWidget(std::move(saveDropDown));
+}
+
+void CreateDesktopMainMenu(roa::Desktop *desktop, roa::EditorWidget *editor) {
+    assert(desktop);
+    assert(editor);
+
+    auto fileItem = std::make_unique<roa::FileItem>(desktop, editor);
     desktop->AddMaiMenuItem(std::move(fileItem));
 
 
@@ -191,7 +214,7 @@ int main(int argc, const char *argv[]) {
 // PP
 
     auto ppCanvas = std::make_unique<roa::PPCanvasWidget>(&ui, ppPlugins);
-    desktop->SetModal(ppCanvas.get());
+    desktop->SetModal(std::move(ppCanvas));
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [desktop](){desktop->SwitchModalActiveFlag(); });
 
 // MAIN LOOP
