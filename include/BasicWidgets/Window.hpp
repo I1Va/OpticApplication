@@ -11,12 +11,18 @@ namespace roa
  
 class Window : public Container  {
     bool implicitHovered = false;
+
+    std::unique_ptr<dr4::Rectangle> toolsBG;
     std::vector<DropDownMenu *> tools;
 public:
-    static constexpr float TOOL_BAR_HEIGHT = 20;
+    float TOOL_BAR_HEIGHT = 20;
     static constexpr float TOOL_WIDTH = 60;
 
-    using Container::Container;
+    Window(hui::UI *ui) : Container(ui), toolsBG(ui->GetWindow()->CreateRectangle()) {
+        assert(ui);
+        toolsBG->SetFillColor(FULL_TRANSPARENT);
+    }
+
     Window(const Window &) = delete;
     Window& operator=(const Window&) = delete;
     Window(Window&&) = default;
@@ -34,6 +40,11 @@ public:
         BringToFront(menuRaw);
     }
 
+    void SetToolsBG(const dr4::Color color) {
+        toolsBG->SetFillColor(color);
+        ForceRedraw();
+    }
+
 protected:
     hui::EventResult OnIdle(hui::IdleEvent &evt) override {
         PropagateToChildren(evt);
@@ -48,7 +59,9 @@ protected:
 
     void Redraw() const override {
         GetTexture().Clear(FULL_TRANSPARENT);
-        
+        toolsBG->SetSize({GetSize().x, TOOL_BAR_HEIGHT});
+        toolsBG->DrawOn(GetTexture());
+
         WindowDrawSelfAction();
         for (auto &child : children) child->DrawOn(GetTexture());
         for (auto &tool : tools) tool->DrawOn(GetTexture());

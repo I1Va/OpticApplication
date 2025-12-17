@@ -21,6 +21,7 @@ namespace roa
 class PPCanvasWidget : public Container, public pp::Canvas {
     const int BORDER_RADIUS = 3;
     const int BORDER_THICKNESS = 3;
+    const float PADDING = 3;
     const dr4::Color BORDER_COLOR = dr4::Color(255, 255, 0, 255);
     pp::ControlsTheme theme = 
     {
@@ -34,7 +35,9 @@ class PPCanvasWidget : public Container, public pp::Canvas {
         .handleActiveColor = { 255, 105, 180, 255 }
     };
 
-    OutlinerWindow<pp::Tool *> *toolsMenu = nullptr;
+    OutlinerWindow<pp::Tool *>          *toolsMenu = nullptr;
+    OutlinerWindow<cum::PPToolPlugin*>  *pluginsMenu = nullptr;
+
     ColorPickerWindow          *colorPicker = nullptr;
 
     std::unordered_map<pp::Shape*, std::unique_ptr<pp::Shape>> shapes;
@@ -51,7 +54,28 @@ public:
 
         auto toolsMenuUnique = std::make_unique<OutlinerWindow<pp::Tool *>>(ui);
         toolsMenu = toolsMenuUnique.get();
-        
+        toolsMenu->SetToolsBG({20, 20, 20});
+        toolsMenu->AddRecord
+        (
+            nullptr, "Move",
+            [this]() { 
+                selectedTool = nullptr; 
+            },
+            nullptr,
+            "./assets/icons/sculptmode_hlt.svg"
+        );
+        toolsMenu->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
+        AddWidget(std::move(toolsMenuUnique));
+
+
+
+
+
+        auto pluginsMenuUnique = std::make_unique<OutlinerWindow<cum::PPToolPlugin*>>(ui);
+        pluginsMenu = pluginsMenuUnique.get();
+        AddWidget(std::move(pluginsMenuUnique));
+
+
         auto colorPickerUnique = std::make_unique<roa::ColorPickerWindow>(ui, theme);
         colorPicker = colorPickerUnique.get();
 
@@ -66,9 +90,9 @@ public:
     
         AddWidget(std::move(colorPickerUnique));
               
-        toolsMenu->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
+       
 
-        AddWidget(std::move(toolsMenuUnique));
+        
     }
 
     void LoadToolPlugin(cum::PPToolPlugin* toolPlugin) {
@@ -92,7 +116,8 @@ protected:
     void layout() {
         toolsMenu->SetSize(100, 100);
         toolsMenu->SetPos(GetSize().x - BORDER_THICKNESS * 3 - toolsMenu->GetSize().x, BORDER_THICKNESS * 3);
-
+        pluginsMenu->SetPos(toolsMenu->GetPos() + dr4::Vec2f(0, toolsMenu->GetSize().y + PADDING));
+        pluginsMenu->SetSize(100, 100);
         ForceRedraw();
     }
 

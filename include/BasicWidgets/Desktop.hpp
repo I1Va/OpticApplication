@@ -66,8 +66,10 @@ public:
 
 protected:
     hui::EventResult PropagateToChildren(hui::Event &event) override {
-        if (modal && modalActivated) return event.Apply(*modal);
-        
+        if (modal && modalActivated) {
+            return event.Apply(*modal);
+        }
+      
         for (auto &child : children) {
             if (event.Apply(*child) == hui::EventResult::HANDLED) {
                 return hui::EventResult::HANDLED;

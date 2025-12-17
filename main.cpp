@@ -74,9 +74,8 @@ int main(int argc, const char *argv[]) {
     ui.SetTexturePack(ICONS_TEXTURE_PACK);
 
     roa::OpticDesktop *desktop = new roa::OpticDesktop(&ui, &pluginManager);
+
     ui.SetRoot(desktop);
-
-
     ui.AddHotkey({dr4::KeyCode::KEYCODE_D, dr4::KeyMode::KEYMOD_CTRL}, [desktop](){desktop->SwitchModalActiveFlag(); });
 
 // MAIN LOOP

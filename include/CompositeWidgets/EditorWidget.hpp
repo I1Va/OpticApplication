@@ -51,7 +51,7 @@ public:
         outliner->SetOnDeleteAction([this](Primitives *deletedObject){ EraseRecord(deletedObject); });
         
         auto addObjectDropDown = std::make_unique<Outliner<Primitives *>>(ui);
-        addObjectDropDown->SetSize({100, 60});
+        addObjectDropDown->SetSize({100, 80});
         addObjectDropDown->SetBGColor({61, 61, 61});
         addObjectDropDown->SetRecordButtonMode(Button::Mode::CAPTURE_MODE);
 
