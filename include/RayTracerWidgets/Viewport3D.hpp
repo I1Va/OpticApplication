@@ -69,21 +69,15 @@ public:
     SceneManager &GetSceneManager() { return sceneManager; }
 
     double MeasureRenderTime(const std::size_t MEASURE_COUNT=1) {
-        static std::vector<RTPixelColor> tempBufer;
         std::pair<int, int> screenResolution = {};
         screenResolution.first  = static_cast<int>(sceneImage->GetWidth());
         screenResolution.second = static_cast<int>(sceneImage->GetHeight());
-        tempBufer.resize(screenResolution.first * screenResolution.second);       
-    
+        static std::vector<RTPixelColor> tempBufer(screenResolution.first * screenResolution.second);
+        
         double duration = 0;
         for (std::size_t i = 0; i < MEASURE_COUNT; i++) {
-            auto start = std::chrono::high_resolution_clock::now();
-            camera.render(sceneManager, screenResolution, tempBufer);
-            auto end = std::chrono::high_resolution_clock::now();  
-        
-            duration += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            duration += renderWithTimeMeasure(tempBufer);
         }
-
         return duration / MEASURE_COUNT;
     }
 
@@ -139,7 +133,8 @@ protected:
         if (cameraNeedRelocation) applyCameraRelocation();
         if (cameraNeedZoom)       applyCameraZoom();
         
-        camera.render(sceneManager, screenResolution, tempBufer);
+        // camera.render(sceneManager, screenResolution, tempBufer);
+        std::cout << "FPS : " << 1000.0 / renderWithTimeMeasure(tempBufer) << "\n";
         ForceRedraw();
 
         for (int pixelX = 0; pixelX < screenResolution.first; pixelX++) {
@@ -258,7 +253,19 @@ protected:
         accumulatedCameraZoom = 0;
         cameraNeedZoom = false;
     }   
+private:
+    double renderWithTimeMeasure(std::vector<RTPixelColor> &bufer) {
+        std::pair<int, int> screenResolution = {};
+        screenResolution.first  = static_cast<int>(sceneImage->GetWidth());
+        screenResolution.second = static_cast<int>(sceneImage->GetHeight());
 
+        auto start = std::chrono::high_resolution_clock::now();
+        camera.render(sceneManager, screenResolution, bufer);
+        auto end = std::chrono::high_resolution_clock::now();  
+
+        return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    }
 };
 
 class Viewport3DWindow final : public Window {
