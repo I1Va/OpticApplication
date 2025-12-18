@@ -41,6 +41,10 @@ public:
         ForceRedraw();
     }
 
+    std::string GetText() const {
+        return text->GetText();
+    }
+
     void SetText(const std::string &content) {
         text->SetText(content);
         relayoutCaret();
@@ -134,6 +138,10 @@ public:
     }
 
     ~TextInputWidget() = default;
+
+    std::function<void(const std::string&)> GetOnEnterAction() const {
+        return onEnterAction; 
+    }
 
     void SetOnEnterAction(std::function<void(const std::string&)> action) {
         onEnterAction = action;

@@ -12,10 +12,15 @@
 namespace roa {
 
 class TextWindow final : public Window {
-    RoundedBlenderButton *deleteBtn = nullptr;
+    static constexpr float PADDING = 3; 
+
+    RoundedBlenderButton *closeButton = nullptr;
     TextInputWidget *inputField = nullptr;
     TextWidget *messageField = nullptr;
     TextWidget *titleWidget = nullptr;
+
+    TextButton *okButton = nullptr;
+    TextButton *cancelButton = nullptr;
 
     bool requestBringToFront = true;
     std::string pendingTitle;
@@ -39,6 +44,17 @@ public:
         ForceRedraw();
     }
 
+    void SetOkButtonLabel(const std::string &label) {
+        assert(okButton);
+        okButton->SetLabel(label);
+        ForceRedraw();
+    }
+    void SetCancelButtonLabel(const std::string &label) {
+        assert(cancelButton);
+        cancelButton->SetLabel(label);
+        ForceRedraw();
+    }
+
     void DisplayMessage(const std::string &message, const dr4::Color color=WHITE) {
         messageField->SetText(message);
         messageField->SetColor(color);
@@ -47,10 +63,11 @@ public:
     
     void SetInputFieldOnEnterAction(std::function<void(const std::string &text)> action) {
         inputField->SetOnEnterAction(action);
+        okButton->SetOnPressAction([this, action](){ action(inputField->GetText()); });
     }
 
     void InitLayout() {
-        SetSize({200, 120});
+        SetSize({200, 150});
 
         auto title = std::make_unique<TextWidget>(GetUI());
         titleWidget = title.get();
@@ -63,18 +80,20 @@ public:
         if (!pendingTitle.empty()) titleWidget->SetText(pendingTitle);
         AddWidget(std::move(title));
 
-        auto delBtn = std::make_unique<RoundedBlenderButton>(GetUI());
-        deleteBtn = delBtn.get();
-        deleteBtn->SetSize({24, 18});
-        deleteBtn->SetPos({GetSize().x - deleteBtn->GetSize().x - 6, 6});
-        deleteBtn->SetOnPressAction([this] {
+        auto closeButtonUnique = std::make_unique<RoundedBlenderButton>(GetUI());
+        closeButton = closeButtonUnique.get();
+        closeButton->SetHoverColor({251, 149, 159, 255});
+        closeButton->SetClickedColor({109, 32, 41, 255});
+        closeButton->SetSize({24, 18});
+        closeButton->SetPos({GetSize().x - closeButton->GetSize().x - 6, 6});
+        closeButton->SetOnPressAction([this] {
             if (auto parent = GetParent()) {
                 if (auto container = dynamic_cast<roa::Container*>(parent)) {
                     container->EraseWidget(this);
                 }
             }
         });
-        AddWidget(std::move(delBtn));
+        AddWidget(std::move(closeButtonUnique));
 
         auto in = std::make_unique<TextInputWidget>(GetUI());
         inputField = in.get();
@@ -96,9 +115,35 @@ public:
         messageField->SetFontSize(static_cast<UI*>(GetUI())->GetTexturePack().fontSize);
         AddWidget(std::move(msg));
 
+      
 
-        // auto okButton = std::make_unique<TextButton>(GetUI());
+        auto okButtonUnique = std::make_unique<TextButton>(GetUI());
+        okButton = okButtonUnique.get();
+        okButton->SetNonActiveColor({74, 114, 179, 255});
+        okButton->SetHoverColor({98, 139, 202, 255});
+        okButton->SetClickedColor({71, 114, 179, 255});
+        okButton->SetLabelFontSize(static_cast<UI*>(GetUI())->GetTexturePack().fontSize);
+        okButton->SetSize({(GetSize().x - 12 - PADDING) / 2, 24});
+        okButton->SetPos(messageField->GetPos() + dr4::Vec2f(0, messageField->GetSize().y + 24));
+        AddWidget(std::move(okButtonUnique));
 
+        auto cancelButtonUnique = std::make_unique<TextButton>(GetUI());
+        cancelButton = cancelButtonUnique.get();
+        cancelButton->SetNonActiveColor({84, 84, 84, 255});
+        cancelButton->SetHoverColor({101, 101, 101, 255});
+        cancelButton->SetClickedColor({71, 114, 179, 255});
+        cancelButton->SetLabelFontSize(static_cast<UI*>(GetUI())->GetTexturePack().fontSize);
+        cancelButton->SetSize({(GetSize().x - 12 - PADDING) / 2, 24});
+        cancelButton->SetPos(okButton->GetPos() + dr4::Vec2f(cancelButton->GetSize().x + PADDING, 0));
+        cancelButton->SetOnPressAction([this] {  
+            if (auto parent = GetParent()) {
+                if (auto container = dynamic_cast<roa::Container*>(parent)) {
+                    container->EraseWidget(this);
+                }
+            }
+        });
+
+        AddWidget(std::move(cancelButtonUnique));
 
         SetSize(GetSize());
         ForceRedraw();
@@ -119,14 +164,21 @@ protected:
     }
 
     void OnSizeChanged() override {
-        if (deleteBtn) deleteBtn->SetPos({GetSize().x - deleteBtn->GetSize().x - 6, 6});
-        if (titleWidget) titleWidget->SetSize({GetSize().x - deleteBtn->GetSize().x - 18, 20});
+        if (closeButton) closeButton->SetPos({GetSize().x - closeButton->GetSize().x - 6, 6});
+        if (titleWidget) titleWidget->SetSize({GetSize().x - closeButton->GetSize().x - 18, 20});
         if (inputField) {
             inputField->SetSize({GetSize().x - 12, 24});
         }
         if (messageField) {
             messageField->SetSize({GetSize().x - 12, 24});
         }
+        if (cancelButton) {
+            cancelButton->SetSize({(GetSize().x - 12 - PADDING) / 2, 24});
+        }
+        if (okButton) {
+            okButton->SetSize({(GetSize().x - 12 - PADDING) / 2, 24});
+        }
+        
         Window::OnSizeChanged();
     }
 

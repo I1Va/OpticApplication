@@ -175,8 +175,22 @@ class RoundedBlenderButton : public Button {
 public:
     using Button::Button;
     virtual ~RoundedBlenderButton() = default;
-    void SetBorderRadius(const int radius) { borderRadius = radius; }
     int  GetBorderRadius() const { return borderRadius; }
+
+    void SetNonActiveColor(const dr4::Color color) {
+        nonActiveColor = color;
+        ForceRedraw();
+    }
+    
+    void SetHoverColor(const dr4::Color color) {
+        hoverColor = color;
+        ForceRedraw();
+    }
+
+    void SetClickedColor(const dr4::Color color) {
+        clickedColor = color;
+        ForceRedraw();
+    }
 
 protected:
     void Redraw() const override final {
@@ -209,25 +223,74 @@ protected:
 
 
 class TextButton : public Button {
+    std::unique_ptr<dr4::Text> label;
+    
     dr4::Color nonActiveColor = dr4::Color(44, 44, 44);
     dr4::Color hoverColor     = dr4::Color(54, 54, 54);
     dr4::Color clickedColor   = dr4::Color(77, 77, 77);
     int borderRadius = 2;
-    std::unique_ptr<dr4::Text> label;
+    int borderThikness = 0;
 
 public:
-    using Button::Button;
+    TextButton(hui::UI *ui): Button(ui), label(GetUI()->GetWindow()->CreateText()) {
+        label->SetFont(ui->GetWindow()->GetDefaultFont());
+        label->SetColor(static_cast<UI *>(GetUI())->GetTexturePack().whiteTextColor);
+        label->SetFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
+        // label->SetVAlign(dr4::Text::VAlign::TOP);
+    }
+
     virtual ~TextButton() = default;
     void SetBorderRadius(const int radius) { borderRadius = radius; }
     int  GetBorderRadius() const { return borderRadius; }
-    // void SetLabel(const std::string &content) {
-    //     label->SetText()
-    // }
+
+    void SetNonActiveColor(const dr4::Color color) {
+        nonActiveColor = color;
+        ForceRedraw();
+    }
+    
+    void SetHoverColor(const dr4::Color color) {
+        hoverColor = color;
+        ForceRedraw();
+    }
+
+    void SetClickedColor(const dr4::Color color) {
+        clickedColor = color;
+        ForceRedraw();
+    }
+
+    void SetBorderThickness(const int thikness) {
+        borderThikness = thikness;
+        ForceRedraw();
+    }
+
+    void SetLabelFontSize(const int fontSize) {
+        label->SetFontSize(fontSize);
+        relayoutLabel();
+        ForceRedraw();
+    }
+
+    void SetLabel(const std::string &content) {
+        label->SetText(content);
+        relayoutLabel();
+        ForceRedraw();
+    }
 
 protected:
+    void OnSizeChanged() override {
+        relayoutLabel();
+    }
+
+    void relayoutLabel() {
+        if (label->GetBounds().x > GetSize().x) return;
+        if (label->GetBounds().y > GetSize().y) return;
+        label->SetPos((GetSize().x - label->GetBounds().x) / 2, (GetSize().y - label->GetBounds().y) / 2);
+        ForceRedraw();
+    }
+
     void Redraw() const override final {
         GetTexture().Clear(FULL_TRANSPARENT);
-
+       
+    
         dr4::Image *backSurface = GetTexture().GetImage();
         assert(backSurface);
 
@@ -249,6 +312,7 @@ protected:
         );
 
         backSurface->DrawOn(GetTexture());
+        label->DrawOn(GetTexture());
     }
 };
 

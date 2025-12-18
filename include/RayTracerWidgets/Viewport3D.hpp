@@ -133,8 +133,8 @@ protected:
         if (cameraNeedRelocation) applyCameraRelocation();
         if (cameraNeedZoom)       applyCameraZoom();
         
-        // camera.render(sceneManager, screenResolution, tempBufer);
-        std::cout << "FPS : " << 1000.0 / renderWithTimeMeasure(tempBufer) << "\n";
+        camera.render(sceneManager, screenResolution, tempBufer);
+        // std::cout << "FPS : " << 1000.0 / renderWithTimeMeasure(tempBufer) << "\n";
         ForceRedraw();
 
         for (int pixelX = 0; pixelX < screenResolution.first; pixelX++) {

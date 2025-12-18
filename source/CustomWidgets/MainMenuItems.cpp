@@ -22,6 +22,8 @@ inline dr4::Vec2f CalculateCenteredPosition(Desktop *desktop,
 template <typename OnEnterCallback>
 void OpenCenteredTextWindow(Desktop *desktop,
                             const char *windowTitle,
+                            const char *okLabel,
+                            const char *cancelLabel,
                             OnEnterCallback &&onEnterCallback)
 {
     auto textWindow = std::make_unique<TextWindow>(desktop->GetUI());
@@ -29,6 +31,8 @@ void OpenCenteredTextWindow(Desktop *desktop,
         CalculateCenteredPosition(desktop, textWindow.get())
     );
     textWindow->SetTitle(windowTitle);
+    textWindow->SetOkButtonLabel(okLabel);
+    textWindow->SetCancelButtonLabel(cancelLabel);
 
     TextWindow *windowPtr = textWindow.get();
     textWindow->SetInputFieldOnEnterAction(
@@ -92,6 +96,8 @@ FileItem::FileItem(Desktop *desktop, EditorWidget *editor)
             OpenCenteredTextWindow(
                 desktop,
                 "Saving scene to file",
+                "Save",
+                "Cancel",
                 [editor](TextWindow *window,
                          const std::string &filename)
                 {
@@ -125,6 +131,8 @@ FileItem::FileItem(Desktop *desktop, EditorWidget *editor)
             OpenCenteredTextWindow(
                 desktop,
                 "Loading scene from file",
+                "Load",
+                "Cancel",
                 [editor](TextWindow *window,
                          const std::string &filename)
                 {
@@ -188,6 +196,8 @@ PluginItem::PluginItem(OpticDesktop *desktop, EditorWidget *)
             OpenCenteredTextWindow(
                 desktop,
                 "Add pp plugin",
+                "Add plugin",
+                "Cancel",
                 [desktop](TextWindow *window,
                            const std::string &pluginPath)
                 {
