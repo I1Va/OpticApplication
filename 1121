@@ -1,0 +1,4 @@
+Polygon 0.333333 0 0.333333 0 3 1 0 0 0 0 0 0 0 1 Lambertian 0 0.8 1 0 0 0 0 0 0
+Cube 0 0 0 0 1 1 1 Lambertian 0 0.8 1 0 0 0 0 0 0
+Plane 0 0 0 0 0 0 1 Lambertian 0 0.8 1 0 0 0 0 0 0
+Sphere 0 2 0 1 1 Lambertian 0 0.8 1 0 0 0 0 0 0

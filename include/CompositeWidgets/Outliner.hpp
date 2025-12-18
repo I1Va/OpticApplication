@@ -53,7 +53,6 @@ public:
         iconSize = size;
         layout(); 
     }
-
     void SetOnDeleteAction(std::function<void()> action) { onDeleteAction = action; }
     void SetLabel(const std::string& text) { label->SetText(text); }
     void SetLabelFontSize(int fontSize) { label->SetFontSize(fontSize); }
@@ -100,7 +99,6 @@ private:
         mainIcon->SetSize(iconSize);
 
         label->SetPos({mainIcon->GetSize().x + mainIcon->GetPos().x + PADDING, 3});
-        label->SetFontSize(11);
 
         ForceRedraw();
     }
@@ -113,6 +111,7 @@ class Outliner final : public RecordsPanel<ObjectButton> {
 
     dr4::Vec2f recordIconStartPos = {20, 3};
     dr4::Vec2f recordIconSize = {16, 16};
+    int recordLabelFontSize = 14;
 
     std::optional<std::pair<std::string,T>> currentSelected = std::nullopt;
     std::function<void()> onSelectChangedAction = nullptr;
@@ -135,6 +134,7 @@ public:
     {
         auto record = std::make_unique<ObjectButton>(GetUI());
         record->SetLabel(name);
+        record->SetLabelFontSize(recordLabelFontSize);
         record->SetMode(recordButtonMode);
         record->SetIconSize(recordIconSize);
         record->SetIconStartPos(recordIconStartPos);
@@ -196,6 +196,13 @@ public:
         for (auto record : records) record->SetIconStartPos(recordIconStartPos);
         ForceRedraw();
     }
+
+    void SetRecordLabelFontSize(const int fontSize) {
+        recordLabelFontSize = fontSize;
+        for (auto record : records) record->SetLabelFontSize(recordLabelFontSize);
+        ForceRedraw();
+    }
+
     void SetRecordIconSize(const dr4::Vec2f size) {
         recordIconSize = size;
         for (auto record : records) record->SetIconSize(recordIconSize);

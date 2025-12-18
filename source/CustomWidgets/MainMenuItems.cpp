@@ -68,8 +68,9 @@ FileItem::FileItem(Desktop *desktop, EditorWidget *editor)
     SetSize({50, desktop->MAIN_MENU_HEIGHT});
     SetBorderThinkess(1);
     SetBorderColor(WHITE);
+    SetLabelFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
     SetLabel("file");
-
+    
     auto fileDropDownMenu =
         std::make_unique<Outliner<int *>>(desktop->GetUI());
 
@@ -77,6 +78,7 @@ FileItem::FileItem(Desktop *desktop, EditorWidget *editor)
     fileDropDownMenu->SetRecordIconStartPos({5, 3});
     fileDropDownMenu->SetRecordIconSize({14, 14});
     fileDropDownMenu->SetBGColor(desktop->BGColor);
+    fileDropDownMenu->SetRecordLabelFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
     fileDropDownMenu->SetRecordButtonMode(
         Button::Mode::CAPTURE_MODE
     );
@@ -100,12 +102,12 @@ FileItem::FileItem(Desktop *desktop, EditorWidget *editor)
                         );
                     } else if (editor->SerializeScene(filename)) {
                         window->DisplayMessage(
-                            "Scene is saved to `" + filename + "`",
+                            "Scene is saved",
                             {0,200,0,255}
                         );
                     } else {
                         window->DisplayMessage(
-                            "`" + filename + "` serialization failed",
+                            "serialization failed",
                             {200,0,0,255}
                         );
                     }
@@ -164,11 +166,12 @@ PluginItem::PluginItem(OpticDesktop *desktop, EditorWidget *)
     SetBorderColor(WHITE);
     SetSize({70, desktop->MAIN_MENU_HEIGHT});
     SetLabel("plugins");
+    SetLabelFontSize(static_cast<UI *>(GetUI())->GetTexturePack().fontSize);
 
     auto pluginDropDownMenu =
         std::make_unique<Outliner<int *>>(desktop->GetUI());
 
-    pluginDropDownMenu->SetSize({100, 20});
+    pluginDropDownMenu->SetSize({150, 20});
     pluginDropDownMenu->SetRecordIconStartPos({5, 3});
     pluginDropDownMenu->SetRecordIconSize({14, 14});
     pluginDropDownMenu->SetBGColor(desktop->BGColor);
@@ -197,7 +200,7 @@ PluginItem::PluginItem(OpticDesktop *desktop, EditorWidget *)
                         );
                     } else if (!fs::exists(pluginPath)) {
                         window->DisplayMessage(
-                            "file `" + pluginPath + "` was not found",
+                            "file was not found",
                             {200,0,0,255}
                         );
                     } else if (desktop->ExistsPPPlugin(pluginPath)) {

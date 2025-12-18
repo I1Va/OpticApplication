@@ -70,7 +70,10 @@ public:
     }
 
     void SetLabel(const std::string &text) { label->SetText(text); }
-    void SetLabelFontSize(int fontSize) { label->SetFontSize(fontSize); }
+    void SetLabelFontSize(int fontSize) { 
+        label->SetFontSize(fontSize); 
+        ForceRedraw();
+    }
 
     bool IsDropDownActive() const { return pressed; }
 
@@ -141,6 +144,10 @@ public:
         topButton->SetBorderColor(color);
     }
 
+    void SetLabelFontSize(const int fontSize) {
+        topButton->SetLabelFontSize(fontSize); 
+        ForceRedraw();
+    }
     void SetLabel(const std::string& label) { 
         topButton->SetLabel(label); 
         ForceRedraw();

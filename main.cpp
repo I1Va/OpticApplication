@@ -41,8 +41,7 @@ const static roa::TexturePack ICONS_TEXTURE_PACK =
     .addIconPath                = "assets/icons/add.svg",
 
     .whiteTextColor = dr4::Color(222, 222, 222),
-    .fontSize = 11,
-
+    .fontSize = 14,
     .propertiesPanelBGColor = dr4::Color(48, 48, 48)
 };
 
