@@ -96,6 +96,10 @@ public:
         messageField->SetFontSize(static_cast<UI*>(GetUI())->GetTexturePack().fontSize);
         AddWidget(std::move(msg));
 
+
+        // auto okButton = std::make_unique<TextButton>(GetUI());
+
+
         SetSize(GetSize());
         ForceRedraw();
     }

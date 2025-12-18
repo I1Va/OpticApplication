@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 #include "hui/widget.hpp"
 #include "Utilities/ROACommon.hpp"
@@ -204,5 +205,52 @@ protected:
         backSurface->DrawOn(GetTexture());
     }
 };
+
+
+
+class TextButton : public Button {
+    dr4::Color nonActiveColor = dr4::Color(44, 44, 44);
+    dr4::Color hoverColor     = dr4::Color(54, 54, 54);
+    dr4::Color clickedColor   = dr4::Color(77, 77, 77);
+    int borderRadius = 2;
+    std::unique_ptr<dr4::Text> label;
+
+public:
+    using Button::Button;
+    virtual ~TextButton() = default;
+    void SetBorderRadius(const int radius) { borderRadius = radius; }
+    int  GetBorderRadius() const { return borderRadius; }
+    // void SetLabel(const std::string &content) {
+    //     label->SetText()
+    // }
+
+protected:
+    void Redraw() const override final {
+        GetTexture().Clear(FULL_TRANSPARENT);
+
+        dr4::Image *backSurface = GetTexture().GetImage();
+        assert(backSurface);
+
+        dr4::Color bgColor = nonActiveColor;
+        if (checkStateProperty(Button::StateProperty::CLICKED)) {
+            bgColor = clickedColor;
+        } else if (checkStateProperty(Button::StateProperty::HOVERED)) {
+            bgColor = hoverColor;
+        }
+
+        DrawBlenderRoundedRectangle(
+            backSurface->GetWidth(),
+            backSurface->GetHeight(),
+            borderRadius,               
+            0,                
+            FULL_TRANSPARENT,  
+            bgColor,
+            [&](int x, int y, dr4::Color c) { backSurface->SetPixel(x,y,c); }
+        );
+
+        backSurface->DrawOn(GetTexture());
+    }
+};
+
 
 }
