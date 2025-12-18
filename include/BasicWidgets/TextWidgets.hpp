@@ -126,7 +126,7 @@ class TextInputWidget : public TextWidget {
     bool needOnEnterCall_ = false;
     std::string textBufer;
 
-    
+    bool caretForceEnabled = false;
 
 public:
     TextInputWidget(hui::UI *ui) : TextWidget(ui) {
@@ -151,10 +151,17 @@ public:
         textBufer = content;
         TextWidget::SetText(content);
     }
+    
+    void EnableCaret() {
+        caretForceEnabled = true;
+    }
+    void DisableCaret() {
+        caretForceEnabled = false;
+    }
 
 protected:
     hui::EventResult OnIdle(hui::IdleEvent &event) override {
-        caretBlinkState = (GetUI()->GetFocused() == this);
+        caretBlinkState = (GetUI()->GetFocused() == this || caretForceEnabled);
         SetCaretPos(caretPos);
         curCaretBlinkDeltaSecs -= event.deltaTime;
         if (curCaretBlinkDeltaSecs <= 0) {
@@ -173,8 +180,6 @@ protected:
     }
 
     hui::EventResult OnText(hui::TextEvent &event) { 
-        if (GetUI()->GetFocused() != this) return hui::EventResult::UNHANDLED;
-    
         int prevSize = static_cast<int>(textBufer.size());
         textBufer.insert(caretPos, event.text);
         caretPos += static_cast<int>(textBufer.size()) -  prevSize;
@@ -184,8 +189,6 @@ protected:
     }
 
     hui::EventResult OnKeyDown(hui::KeyEvent &event) override {
-        if (GetUI()->GetFocused() != this) return hui::EventResult::UNHANDLED;
-    
         if (event.key == dr4::KeyCode::KEYCODE_BACKSPACE && !textBufer.empty()) {
             if (caretPos > 0) {
                 textBufer.erase(caretPos - 1, 1);
